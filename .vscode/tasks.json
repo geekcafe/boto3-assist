@@ -1,0 +1,35 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Check and Setup CodeArtifact",
+            "type": "shell",
+            "command": "python",
+            "args": ["${workspaceFolder}/devops/check_and_setup.py"],
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "pip install",
+            "type": "shell",
+            "command": "pip install -r ${workspaceFolder}/src/requirements.txt",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": [],
+            "dependsOn": "Check and Setup CodeArtifact"
+        }
+    ]
+}

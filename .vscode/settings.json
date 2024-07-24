@@ -1,0 +1,29 @@
+{
+    "python.testing.pytestEnabled": false,
+    "python.testing.unittestEnabled": true,
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./tests",
+        "-p",
+        "*_test.py"
+    ],
+    "python.testing.cwd": "${workspaceFolder}",
+    "python.analysis.extraPaths": [                
+        "${workspaceFolder}/src",
+        "${workspaceFolder}/src/gc_boto3_lib",        
+        "${workspaceFolder}/tests",
+        "${workspaceFolder}/devops",
+        "${workspaceFolder}/devops/cdk",   
+    ],
+    "python.analysis.typeCheckingMode": "off",
+    "pylint.args": [
+        "--max-line-length=150"
+    ],
+    "[python]": {
+        
+        "editor.formatOnSave": true,        
+        "editor.defaultFormatter": "charliermarsh.ruff",
+    },
+    
+}

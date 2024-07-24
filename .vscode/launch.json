@@ -1,0 +1,70 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "env": {
+                
+                "ENVRIONMENT": "dev",
+                "DEBUG_MODE": "True",
+                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/src:${workspaceFolder}/devops:${workspaceFolder}/tests"                                           
+            }
+        },
+        {
+            "name": "Debug DynamoDb Example Docker .env.docker",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/dynamodb/main.py",
+            "console": "integratedTerminal",
+            "env": {
+                "ENVRIONMENT_FILE": ".env.docker",
+                "ENVRIONMENT": "dev",
+                "DEBUG_MODE": "True",
+                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/src"                                           
+            }
+        },
+        {
+            "name": "Debug DynamoDb Example AWS Profile .env.development",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/dynamodb/main.py",
+            "console": "integratedTerminal",
+            "env": {
+                "ENVRIONMENT_FILE": ".env.development",
+                "ENVRIONMENT": "dev",
+                "DEBUG_MODE": "True",
+                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/src"                                           
+            }
+        },
+
+        {
+            "name": "Artifact Login",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/devops/pip_code_artifact_setup.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Install Requirements",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/devops/install_requirements.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Build & Deploy Artifacts",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/devops/build.py",
+            "console": "integratedTerminal"
+        },
+        
+    ]
+}
