@@ -58,6 +58,27 @@ class EnvironmentVariables:
             value = os.getenv("AWS_ENDPOINT_URL")
             return value
 
+        @staticmethod
+        def display_aws_access_key_id() -> bool:
+            """
+            Determines if you want to display the aws access key
+            """
+            value = (
+                str(os.getenv("DISPLAY_AWS_ACCESS_KEY_ID", "false")).lower() == "true"
+            )
+            return value
+
+        @staticmethod
+        def display_aws_secret_access_key() -> bool:
+            """
+            Determines if you want to display the aws access key
+            """
+            value = (
+                str(os.getenv("DISPLAY_AWS_SECRET_ACCESS_KEY", "false")).lower()
+                == "true"
+            )
+            return value
+
         class SES:
             @staticmethod
             def user_name() -> str | None:

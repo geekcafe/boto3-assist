@@ -84,18 +84,25 @@ class Boto3SessionManager:
         try:
             self.aws_profile = aws_profile or EnvironmentVariables.AWS.profile()
             self.aws_region = aws_region or EnvironmentVariables.AWS.region()
+            tmp_access_key_id = self.aws_access_key_id
+            tmp_secret_access_key = self.aws_secret_access_key
+            if not EnvironmentVariables.AWS.display_aws_access_key_id():
+                tmp_access_key_id = (
+                    "None" if tmp_access_key_id is None else "***************"
+                )
+            if not EnvironmentVariables.AWS.display_aws_secret_access_key():
+                tmp_secret_access_key = (
+                    "None" if tmp_secret_access_key is None else "***************"
+                )
+
             logger.debug(
                 {
                     "profile": self.aws_profile,
                     "region": self.aws_region,
-                    "aws_access_key_id": "*******"
-                    if self.aws_access_key_id is not None
-                    else "",
-                    "aws_secret_access_key": "*******"
-                    if self.aws_access_key_id is not None
-                    else "",
+                    "aws_access_key_id": tmp_access_key_id,
+                    "aws_secret_access_key": tmp_secret_access_key,
                     "aws_session_token": "*******"
-                    if self.aws_access_key_id is not None
+                    if self.aws_session_token is not None
                     else "",
                 }
             )
