@@ -18,7 +18,7 @@ class DynamoDbTableService:
         if len(tables) > 0:
             print("The following Tables were found.")
             for table in tables:
-                print(f"\t{table}")
+                print(f"\t{table.name}")
         else:
             print("no tables were found")
 
@@ -33,6 +33,7 @@ class DynamoDbTableService:
     def create_a_table(self, table_name: str, wait: bool = True):
         # create table is an async call, returns quickly but the table
         # may or may not be ready.
+        print(f"creating table: {table_name}")
         response = self.db.dynamodb_resource.create_table(
             TableName=table_name,
             KeySchema=[

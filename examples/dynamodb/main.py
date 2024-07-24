@@ -40,6 +40,7 @@ class DynamoDbExample:
         self.user_service.get_user(user_id=user_id, table_name=table_name)
 
     def __load_users(self, table_name: str):
+        print("upserting users")
         ################################################
         ### Alice Smith
 
@@ -88,6 +89,9 @@ class DynamoDbExample:
 
     def __add_user_some_posts(self, user_id: str, table_name: str):
         """Add some random posts"""
+
+        print("adding posts")
+
         for i in range(5):
             model: UserPostDbModel = UserPostDbModel(
                 title=f"Title {i}", user_id=user_id
@@ -103,8 +107,9 @@ class DynamoDbExample:
 
 
 def main():
-    # load an environment file so that we can test
-    path = os.path.join(str(Path(__file__).parents[2].absolute()), ".env.docker")
+    # get an environment file name or default to .env.docker
+    env_file_name: str = os.getenv("ENVRIONMENT_FILE", ".env.docker")
+    path = os.path.join(str(Path(__file__).parents[2].absolute()), env_file_name)
     el: EnvironmentLoader = EnvironmentLoader()
     if not os.path.exists(path=path):
         raise FileNotFoundError("Failed to find the environmetn file")
