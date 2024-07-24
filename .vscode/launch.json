@@ -31,6 +31,19 @@
             }
         },
         {
+            "name": "Debug DynamoDb Example Docker NoSQL Workbench",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/dynamodb/main.py",
+            "console": "integratedTerminal",
+            "env": {
+                "ENVRIONMENT_FILE": ".env.docker.nosql.workbench",
+                "ENVRIONMENT": "dev",
+                "DEBUG_MODE": "True",
+                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/src"                                           
+            }
+        },
+        {
             "name": "Debug DynamoDb Example AWS Profile .env.development",
             "type": "debugpy",
             "request": "launch",
