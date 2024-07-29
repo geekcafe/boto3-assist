@@ -1,4 +1,4 @@
-from gc_boto3_lib.dynamodb.dynamodb_model_serialization import DynamoDbSerializer
+from boto_assist.dynamodb.dynamodb_model_serialization import DynamoDbSerializer
 
 
 class DynamoDbModelBase:

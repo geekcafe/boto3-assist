@@ -11,7 +11,7 @@
     "python.testing.cwd": "${workspaceFolder}",
     "python.analysis.extraPaths": [                
         "${workspaceFolder}/src",
-        "${workspaceFolder}/src/gc_boto3_lib",        
+        "${workspaceFolder}/src/boto_assist",        
         "${workspaceFolder}/tests",
         "${workspaceFolder}/devops",
         "${workspaceFolder}/devops/cdk",   

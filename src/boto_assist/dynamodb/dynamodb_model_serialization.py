@@ -1,5 +1,9 @@
-from boto3.dynamodb.types import TypeSerializer
+import datetime as dt
+import decimal
 import inspect
+import uuid
+
+from boto3.dynamodb.types import TypeSerializer
 
 
 class DynamoDbSerializer:
@@ -40,7 +44,15 @@ class DynamoDbSerializer:
 
         def serialize_value(value):
             """Serialize the value using the provided function."""
-            if is_primitive(value):
+            if isinstance(value, dt.datetime):
+                return serialize_fn(value.isoformat())
+            elif isinstance(value, decimal.Decimal):
+                return serialize_fn(str(value))
+            elif isinstance(value, uuid.UUID):
+                return serialize_fn(str(value))
+            elif isinstance(value, (bytes, bytearray)):
+                return serialize_fn(value.hex())
+            elif is_primitive(value):
                 return serialize_fn(value)
             elif isinstance(value, list):
                 return serialize_fn([serialize_value(v) for v in value])

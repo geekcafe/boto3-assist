@@ -1,7 +1,7 @@
 import datetime
 from boto3.dynamodb.conditions import Key
-from gc_boto3_lib.dynamodb.dynamodb_model_base import DynamoDbModelBase
-from gc_boto3_lib.utilities.string_utility import StringUtility
+from boto_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
+from boto_assist.utilities.string_utility import StringUtility
 
 
 class UserPostDbModel(DynamoDbModelBase):

@@ -1,6 +1,6 @@
 import datetime
-from boto3.dynamodb.conditions import Key
-from gc_boto3_lib.dynamodb.dynamodb_model_base import DynamoDbModelBase
+from boto3.dynamodb.conditions import Key, And
+from boto_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
 
 
 class UserDbModel(DynamoDbModelBase):
@@ -65,7 +65,7 @@ class UserDbModel(DynamoDbModelBase):
         return f"{UserDbModel.EMAIL_SK_PREFIX}{self.email}"
 
     @staticmethod
-    def gsi0() -> tuple[str, Key]:
+    def gsi0() -> tuple[str, And]:
         """
         Get the GSI0 index name and key.  This matches the pattern
         for gsi0 pk & sk for searching (query function), which needs the
@@ -98,7 +98,7 @@ class UserDbModel(DynamoDbModelBase):
         return f"{UserDbModel.LAST_NAME_SK_PREFIX}{self.last_name}"
 
     @staticmethod
-    def gsi1() -> tuple[str, Key]:
+    def gsi1() -> tuple[str, And]:
         """
         Get the GSI1 index name and key.  This matches the pattern
         for gsi1 pk & sk for searching (query function), which needs the
@@ -114,7 +114,7 @@ class UserDbModel(DynamoDbModelBase):
         return index_name, key
 
     @staticmethod
-    def get_projection_expressions() -> tuple[str, dict]:
+    def get_projection_expressions() -> tuple[str, dict | None]:
         """Gets the current projection expressions"""
         projection_expression = "id,first_name,last_name,email,modified_datetime_utc"
 

@@ -6,7 +6,7 @@ This is just an example of creating it here for demo purposes, as well
 as using it in a docker container.
 """
 
-from gc_boto3_lib.dynamodb.dynamodb import DynamoDb
+from boto_assist.dynamodb.dynamodb import DynamoDb
 
 
 class DynamoDbTableService:

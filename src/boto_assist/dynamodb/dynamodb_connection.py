@@ -1,7 +1,7 @@
 from aws_lambda_powertools import Logger
-from gc_boto3_lib.boto3session import Boto3SessionManager
+from boto_assist.boto3session import Boto3SessionManager
 
-from gc_boto3_lib.environment_services.environment_variables import (
+from boto_assist.environment_services.environment_variables import (
     EnvironmentVariables,
 )
 

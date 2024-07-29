@@ -4,8 +4,8 @@ from typing import List
 
 from aws_lambda_powertools import Tracer, Logger
 from boto3.dynamodb.conditions import Key
-from gc_boto3_lib.dynamodb.dynamodb_connection import DynamoDbConnection
-from gc_boto3_lib.dynamodb.dynamodb_helpers import DynamoDbHelpers
+from boto_assist.dynamodb.dynamodb_connection import DynamoDbConnection
+from boto_assist.dynamodb.dynamodb_helpers import DynamoDbHelpers
 
 logger = Logger()
 tracer = Tracer()

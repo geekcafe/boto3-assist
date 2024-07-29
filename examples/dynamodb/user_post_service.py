@@ -1,4 +1,4 @@
-from gc_boto3_lib.dynamodb.dynamodb import DynamoDb
+from boto_assist.dynamodb.dynamodb import DynamoDb
 from examples.dynamodb.user_post_db_model import UserPostDbModel
 
 

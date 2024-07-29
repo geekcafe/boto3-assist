@@ -4,8 +4,8 @@ DynamoDb Example
 
 import os
 from pathlib import Path
-from gc_boto3_lib.dynamodb.dynamodb import DynamoDb
-from gc_boto3_lib.environment_services.environment_loader import EnvironmentLoader
+from boto_assist.dynamodb.dynamodb import DynamoDb
+from boto_assist.environment_services.environment_loader import EnvironmentLoader
 
 from examples.dynamodb.table_service import DynamoDbTableService
 from examples.dynamodb.user_service import UserService
