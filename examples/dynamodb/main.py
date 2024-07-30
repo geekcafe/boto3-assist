@@ -2,14 +2,16 @@
 DynamoDb Example
 """
 
+import json
 import os
 from pathlib import Path
+
 from boto_assist.dynamodb.dynamodb import DynamoDb
 from boto_assist.environment_services.environment_loader import EnvironmentLoader
 
 from examples.dynamodb.table_service import DynamoDbTableService
-from examples.dynamodb.user_service import UserService
 from examples.dynamodb.user_post_service import UserPostDbModel, UserPostService
+from examples.dynamodb.user_service import UserService
 
 
 class DynamoDbExample:
@@ -23,21 +25,25 @@ class DynamoDbExample:
 
     def run_examples(self, table_name: str):
         """Run a basic examples with some CRUD examples"""
-        self.table_service.list_tables()
 
         # I'm going to use a single table design pattern but you don't have to
 
         if not self.table_service.table_exists(table_name):
             self.table_service.create_a_table(table_name)
 
-            # load some data
-            self.__load_users(table_name=table_name)
+        # load some data
+        self.__load_users(table_name=table_name)
 
-        # now we'll list some of the data
-        self.user_service.list_users(table_name=table_name)
+        print("\nLIST OUR USERS")
+        users = self.user_service.list_users(table_name=table_name)
+        for user in users:
+            print(json.dumps(user, indent=4))
+
         # use a known user id from out saving user example
+        print("\nGETTING A SINGLE USER")
         user_id = "98381a51-6397-40cb-b581-1ea313e76c1d"
-        self.user_service.get_user(user_id=user_id, table_name=table_name)
+        user = self.user_service.get_user(user_id=user_id, table_name=table_name)
+        print(json.dumps(user, indent=4))
 
     def __load_users(self, table_name: str):
         print("upserting users")
@@ -96,6 +102,7 @@ class DynamoDbExample:
             model: UserPostDbModel = UserPostDbModel(
                 title=f"Title {i}", user_id=user_id
             )
+            model.slug = f"/coding/{i}"
             model.data = f"""
             <html>
             <body>
@@ -107,6 +114,7 @@ class DynamoDbExample:
 
 
 def main():
+    """Main"""
     # get an environment file name or default to .env.docker
     env_file_name: str = os.getenv("ENVRIONMENT_FILE", ".env.docker")
     path = os.path.join(str(Path(__file__).parents[2].absolute()), env_file_name)

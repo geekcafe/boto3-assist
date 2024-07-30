@@ -1,3 +1,9 @@
+"""
+Geek Cafe, LLC
+Maintainers: Eric Wilson
+MIT License.  See Project Root for the license information.
+"""
+
 from typing import List
 from boto3.dynamodb.conditions import ConditionBase, Key
 from aws_lambda_powertools import Tracer, Logger
@@ -7,10 +13,13 @@ tracer = Tracer()
 
 
 class DynamoDbHelpers:
+    """Dynamo DB Helper Functions"""
+
     def __init__(self) -> None:
         pass
 
     def get_filter_expressions(self, key: ConditionBase) -> dict:
+        """Get the filter expression"""
         value = None
         try:
             expression = {
@@ -35,7 +44,10 @@ class DynamoDbHelpers:
         return value
 
     def get_key_info(self, value: ConditionBase) -> dict:
-        """Get Key Information"""
+        """
+        Get Key Information.  This is helpful for logging and
+        visualizing what the key looks like
+        """
         key_values = value.get_expression()["values"]
         key: Key = key_values[0]
         key_name = key.name
@@ -43,7 +55,7 @@ class DynamoDbHelpers:
         values = {}
         try:
             index = 0
-            for v in value._values:
+            for v in value._values:  # pylint: disable=w0212
                 if index > 0:
                     values[f"value_{index}"] = v
                 index += 1
@@ -61,7 +73,8 @@ class DynamoDbHelpers:
 
         return key_info
 
-    def get_key_sort(self, condition: ConditionBase):
+    def get_key_sort(self, condition: ConditionBase) -> str:
+        """Gets the sort key"""
         try:
             and_values: ConditionBase = condition.get_expression()["values"][1]
             keys = and_values.get_expression()["values"]
@@ -74,6 +87,7 @@ class DynamoDbHelpers:
 
     @tracer.capture_method(capture_response=False)
     def wrap_response(self, items, dynamodb_response: dict, diagnostics) -> dict:
+        """A wrapper for response data"""
         last_key = dynamodb_response.get("LastEvaluatedKey", None)
         more = last_key is not None
 

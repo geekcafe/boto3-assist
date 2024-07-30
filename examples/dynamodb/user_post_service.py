@@ -1,3 +1,9 @@
+"""
+Geek Cafe, LLC
+Maintainers: Eric Wilson
+MIT License.  See Project Root for the license information.
+"""
+
 from boto_assist.dynamodb.dynamodb import DynamoDb
 from examples.dynamodb.user_post_db_model import UserPostDbModel
 
@@ -31,7 +37,6 @@ class UserPostService:
             dict: The saved item as a dictionary.
         """
         item: dict = user_post.to_resource_dictionary()
-        print(item)
         self.db.save(item=item, table_name=table_name)
         return item
 
@@ -45,10 +50,10 @@ class UserPostService:
         Returns:
             list: A list of user posts.
         """
-        index_name, key = UserPostDbModel.gsi0()
-        projections_ex, ex_attributes_names = (
-            UserPostDbModel.get_projection_expressions()
-        )
+        model = UserPostDbModel()
+        index_name, key = model.gsi0()
+        projections_ex = model.projection_expression
+        ex_attributes_names = model.projection_expression_attribute_names
         user_list = self.db.query(
             key=key,
             index_name=index_name,
@@ -60,19 +65,22 @@ class UserPostService:
             user_list = user_list.get("Items")
         return user_list
 
-    def get(self, post_id: str, table_name: str) -> dict:
+    def get(self, slug: str, table_name: str) -> dict:
         """
         Retrieves a user post by post ID from the specified DynamoDB table.
 
         Args:
-            post_id (str): The ID of the post to retrieve.
+            slug (str): The ID of the post to retrieve.
             table_name (str): The name of the DynamoDB table.
 
         Returns:
             dict: The retrieved post as a dictionary.
         """
-        key = UserPostDbModel.pk_sk_key(post_id)
-        p, e = UserPostDbModel.get_projection_expressions()
+
+        model = UserPostDbModel(slug=slug)
+        key = model.pk_sk_key()
+        p = model.projection_expression
+        e = model.projection_expression_attribute_names
         response = self.db.get(
             key=key,
             table_name=table_name,

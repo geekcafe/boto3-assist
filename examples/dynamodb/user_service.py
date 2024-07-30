@@ -1,3 +1,9 @@
+"""
+Geek Cafe, LLC
+Maintainers: Eric Wilson
+MIT License.  See Project Root for the license information.
+"""
+
 from boto_assist.dynamodb.dynamodb import DynamoDb
 from examples.dynamodb.user_db_model import UserDbModel
 
@@ -117,7 +123,7 @@ class UserService:
             if db_dictionary_type == "resource"
             else user.to_client_dictionary()
         )
-        print(item)
+
         self.db.save(item=item, table_name=table_name)
         return item
 
@@ -131,8 +137,9 @@ class UserService:
         Returns:
             list: A list of users.
         """
-        index_name, key = UserDbModel.gsi0()
-        projections_ex, ex_attributes_names = UserDbModel.get_projection_expressions()
+        index_name, key = UserDbModel().gsi0()
+        projections_ex = UserDbModel().projection_expression
+        ex_attributes_names = UserDbModel().projection_expression_attribute_names
         user_list = self.db.query(
             key=key,
             index_name=index_name,
@@ -161,8 +168,12 @@ class UserService:
         key = {"pk": pk, "sk": sk}
 
         # Alternative way to get the key from the model
-        key = UserDbModel.pk_sk_key(user_id)
-        p, e = UserDbModel.get_projection_expressions()
+        u: UserDbModel = UserDbModel(id=user_id)
+
+        key = u.pk_sk_key()
+        # p, e = UserDbModel.get_projection_expressions()
+        p = u.projection_expression
+        e = u.projection_expression_attribute_names
         response = self.db.get(
             key=key,
             table_name=table_name,

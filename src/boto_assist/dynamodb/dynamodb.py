@@ -1,4 +1,8 @@
-""" """
+"""
+Geek Cafe, LLC
+Maintainers: Eric Wilson
+MIT License.  See Project Root for the license information.
+"""
 
 from typing import List
 
@@ -174,7 +178,12 @@ class DynamoDb(DynamoDbConnection):
 
         return response
 
-    def list_tables(self):
+    def list_tables(self) -> List[str]:
         """Get a list of tables from the current connection"""
         tables = list(self.dynamodb_resource.tables.all())
-        return tables
+        table_list: List[str] = []
+        if len(tables) > 0:
+            for table in tables:
+                table_list.append(table.name)
+
+        return table_list

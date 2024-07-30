@@ -1,9 +1,23 @@
+"""
+Geek Cafe, LLC
+Maintainers: Eric Wilson
+MIT License.  See Project Root for the license information.
+"""
+
 import datetime as dt
 import decimal
 import inspect
 import uuid
 
 from boto3.dynamodb.types import TypeSerializer
+
+
+def exclude_from_serialization(method):
+    """
+    Decorator to mark methods or properties to be excluded from serialization.
+    """
+    method.exclude_from_serialization = True
+    return method
 
 
 class DynamoDbSerializer:
@@ -69,7 +83,7 @@ class DynamoDbSerializer:
         instance_dict = {}
         # Add instance variables
         for attr, value in instance.__dict__.items():
-            # don't ge the private properties
+            # don't get the private properties
             if not str(attr).startswith("_"):
                 if value is not None:
                     instance_dict[attr] = serialize_value(value)
@@ -78,8 +92,19 @@ class DynamoDbSerializer:
         for name, _ in inspect.getmembers(
             instance.__class__, predicate=inspect.isdatadescriptor
         ):
-            if isinstance(getattr(instance.__class__, name), property):
-                # don't ge the private properties
+            prop = None
+            try:
+                prop = getattr(instance.__class__, name)
+            except AttributeError:
+                continue
+            if isinstance(prop, property):
+                # Exclude properties marked with the exclude_from_serialization decorator
+                # Check if the property should be excluded
+                exclude = getattr(prop.fget, "exclude_from_serialization", False)
+                if exclude:
+                    continue
+
+                # don't get the private properties
                 if not str(name).startswith("_"):
                     value = getattr(instance, name)
                     if value is not None:
