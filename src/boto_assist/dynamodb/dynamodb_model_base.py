@@ -81,6 +81,10 @@ class DynamoDbModelBase(DynamoDbModelBaseGSI, DynamoDbModelBaseLSI):
 
         return key
 
+    def map(self, item: dict) -> object | None:
+        """Map the item to the instance"""
+        return DynamoDbSerializer.map(source=item, target=self)
+
     def to_client_dictionary(self):
         """
         Convert the instance to a dictionary suitable for DynamoDB client.

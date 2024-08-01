@@ -1,3 +1,10 @@
+"""
+Geek Cafe, LLC
+Maintainers: Eric Wilson
+MIT License.  See Project Root for the license information.
+"""
+
+from typing import Optional
 from aws_lambda_powertools import Logger
 from boto_assist.boto3session import Boto3SessionManager
 
@@ -14,11 +21,11 @@ class DynamoDbConnection:
     def __init__(
         self,
         *,
-        aws_profile: str | None = None,
-        aws_region: str | None = None,
-        aws_end_point_url: str | None = None,
-        aws_access_key_id: str | None = None,
-        aws_secret_access_key: str | None = None,
+        aws_profile: Optional[str] = None,
+        aws_region: Optional[str] = None,
+        aws_end_point_url: Optional[str] = None,
+        aws_access_key_id: Optional[str] = None,
+        aws_secret_access_key: Optional[str] = None,
     ) -> None:
         self.aws_profile = aws_profile or EnvironmentVariables.AWS.profile()
         self.aws_region = aws_region or EnvironmentVariables.AWS.region()
@@ -40,7 +47,7 @@ class DynamoDbConnection:
 
         self.setup(reset_source="__init__")
 
-    def setup(self, reset_source: str | None = None):
+    def setup(self, reset_source: Optional[str] = None):
         """
         Setup the environment.  Automatically called via init.
         You can run setup at anytime with new parameters

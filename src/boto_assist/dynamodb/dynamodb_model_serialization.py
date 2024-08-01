@@ -10,6 +10,7 @@ import inspect
 import uuid
 
 from boto3.dynamodb.types import TypeSerializer
+from boto_assist.utilities.serialization_utility import Serialization
 
 
 def exclude_from_serialization(method):
@@ -22,6 +23,17 @@ def exclude_from_serialization(method):
 
 class DynamoDbSerializer:
     """Library to Serialize object to a DynamoDb Format"""
+
+    @staticmethod
+    def map(source: dict, target: object) -> object | None:
+        """
+        Map the source dictionary to the target object.
+
+        Args:
+        - source: The dictionary to map from.
+        - target: The object to map to.
+        """
+        return Serialization.map(source, target)
 
     @staticmethod
     def to_client_dictionary(instance: object):

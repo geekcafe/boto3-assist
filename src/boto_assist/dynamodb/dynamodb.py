@@ -4,12 +4,15 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import List
+import os
+from typing import List, Optional
 
 from aws_lambda_powertools import Tracer, Logger
 from boto3.dynamodb.conditions import Key
 from boto_assist.dynamodb.dynamodb_connection import DynamoDbConnection
 from boto_assist.dynamodb.dynamodb_helpers import DynamoDbHelpers
+from boto_assist.utilities.string_utility import StringUtility
+
 
 logger = Logger()
 tracer = Tracer()
@@ -23,9 +26,26 @@ class DynamoDb(DynamoDbConnection):
         DynamoDbConnection
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        *,
+        aws_profile: Optional[str] = None,
+        aws_region: Optional[str] = None,
+        aws_end_point_url: Optional[str] = None,
+        aws_access_key_id: Optional[str] = None,
+        aws_secret_access_key: Optional[str] = None,
+    ) -> None:
+        super().__init__(
+            aws_profile=aws_profile,
+            aws_region=aws_region,
+            aws_end_point_url=aws_end_point_url,
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+        )
         self.helpers: DynamoDbHelpers = DynamoDbHelpers()
+        self.log_dynamodb_item_size = (
+            str(os.getenv("LOG_DYNAMODB_ITEM_SIZE", "false")).lower() == "true"
+        )
 
     @tracer.capture_method
     def save(self, item: dict, table_name: str, source: str = None) -> dict:
@@ -46,6 +66,12 @@ class DynamoDb(DynamoDbConnection):
         response = None
 
         try:
+            if self.log_dynamodb_item_size:
+                size_bytes: int = StringUtility.get_size_in_bytes(item)
+                size_kb: int = StringUtility.get_size_in_kb(item)
+
+                print(f"Size of item: {size_bytes}bytes")
+                print(f"Size of item: {size_kb:.2f}kb")
             if isinstance(next(iter(item.values())), dict):
                 # Use boto3.client syntax
                 response = self.dynamodb_client.put_item(
@@ -117,6 +143,33 @@ class DynamoDb(DynamoDbConnection):
             response = {"exception": str(e)}
             if self.raise_on_error:
                 raise e
+
+        return response
+
+    def update_item(
+        self,
+        table_name: str,
+        key: dict,
+        update_expression: str,
+        expression_attribute_values: dict,
+    ) -> dict:
+        """_summary_
+
+        Args:
+            table_name (str): table name
+            key (dict): pk or pk and sk (composite key)
+            update_expression (str): update expression
+            expression_attribute_values (dict): expression attribute values
+
+        Returns:
+            dict: dynamodb response dictionary
+        """
+        table = self.dynamodb_resource.Table(table_name)
+        response = table.update_item(
+            Key=key,
+            UpdateExpression=update_expression,
+            ExpressionAttributeValues=expression_attribute_values,
+        )
 
         return response
 

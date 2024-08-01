@@ -24,6 +24,7 @@
             "program": "${workspaceFolder}/examples/dynamodb/main.py",
             "console": "integratedTerminal",
             "env": {
+                "LOG_DYNAMODB_ITEM_SIZE": "True",
                 "ENVRIONMENT_FILE": ".env.docker",
                 "ENVRIONMENT": "dev",
                 "DEBUG_MODE": "True",
@@ -37,6 +38,7 @@
             "program": "${workspaceFolder}/examples/dynamodb/main.py",
             "console": "integratedTerminal",
             "env": {
+                "LOG_DYNAMODB_ITEM_SIZE": "True",
                 "ENVRIONMENT_FILE": ".env.docker.nosql.workbench",
                 "ENVRIONMENT": "dev",
                 "DEBUG_MODE": "True",

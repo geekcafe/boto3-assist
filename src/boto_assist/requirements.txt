@@ -1,7 +1,9 @@
 aws-lambda-powertools
+aws-xray-sdk
 boto3
 boto3-stubs
-requests
+jsons
 python-dateutil
 python-dotenv
 pytz
+requests

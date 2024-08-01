@@ -128,3 +128,120 @@ class DynamoDbHelpers:
             record_start = record_end
 
         return response
+
+    @staticmethod
+    def validate_dynamodb_format(item):
+        """validate_dynamodb_format"""
+
+        def validate_attribute(key, value, path):
+            logger.debug({"key": key, "value": value, "path": path})
+            if not isinstance(value, dict):
+                return (
+                    False,
+                    f"Error at key [{path}]: Expected a dictionary, got {type(value).__name__}. Review [{path}] it should have an M ",
+                )
+            if len(value) != 1:
+                return (
+                    False,
+                    f"Error at {path}: Dictionary should contain exactly one key-value pair",
+                )
+            type_key = list(value.keys())[0]
+            if type_key not in [
+                "S",
+                "N",
+                "B",
+                "SS",
+                "NS",
+                "BS",
+                "M",
+                "L",
+                "NULL",
+                "BOOL",
+            ]:
+                return False, f"Error at {path}: Invalid type key '{type_key}'"
+            type_value = value[type_key]
+            if type_key == "S" and not isinstance(type_value, str):
+                return (
+                    False,
+                    f"Error at {path}: Expected a string for type 'S', got {type(type_value).__name__}",
+                )
+            if type_key == "N" and not isinstance(type_value, (int, float, str)):
+                return (
+                    False,
+                    f"Error at {path}: Expected a number for type 'N', got {type(type_value).__name__}",
+                )
+            if type_key == "B" and not isinstance(type_value, bytes):
+                return (
+                    False,
+                    f"Error at {path}: Expected bytes for type 'B', got {type(type_value).__name__}",
+                )
+            if type_key == "SS" and not (
+                isinstance(type_value, list)
+                and all(isinstance(i, str) for i in type_value)
+            ):
+                return (
+                    False,
+                    f"Error at {path}: Expected a list of strings for type 'SS', got {type(type_value).__name__}",
+                )
+            if type_key == "NS" and not (
+                isinstance(type_value, list)
+                and all(isinstance(i, (int, float, str)) for i in type_value)
+            ):
+                return (
+                    False,
+                    f"Error at {path}: Expected a list of numbers for type 'NS', got {type(type_value).__name__}",
+                )
+            if type_key == "BS" and not (
+                isinstance(type_value, list)
+                and all(isinstance(i, bytes) for i in type_value)
+            ):
+                return (
+                    False,
+                    f"Error at {path}: Expected a list of bytes for type 'BS', got {type(type_value).__name__}",
+                )
+            if type_key == "M":
+                if not isinstance(type_value, dict):
+                    return (
+                        False,
+                        f"Error at {path}: Expected a dictionary for type 'M', got {type(type_value).__name__}",
+                    )
+                for k, v in type_value.items():
+                    valid, error = validate_attribute(k, v, f"{path}.{k}")
+                    if not valid:
+                        return False, error
+            if type_key == "L":
+                if not isinstance(type_value, list):
+                    return (
+                        False,
+                        f"Error at {path}: Expected a list for type 'L', got {type(type_value).__name__}",
+                    )
+                for index, item in enumerate(type_value):
+                    valid, error = validate_attribute(
+                        f"{index}", item, f"{path}[{index}]"
+                    )
+                    if not valid:
+                        return False, error
+            if type_key == "NULL" and type_value is not True:
+                return (
+                    False,
+                    f"Error at {path}: Expected True for type 'NULL', got {type(type_value).__name__}",
+                )
+            if type_key == "BOOL" and not isinstance(type_value, bool):
+                return (
+                    False,
+                    f"Error at {path}: Expected a boolean for type 'BOOL', got {type(type_value).__name__}",
+                )
+            return True, None
+
+        if not isinstance(item, dict):
+            return False, f"Error: Item ({item}) should be a dictionary"
+        for key, value in item.items():
+            if not isinstance(key, str):
+                return (
+                    False,
+                    f"Error: Key '{key}' should be a string, got {type(key).__name__}",
+                )
+            valid, error = validate_attribute(key, value, key)
+            if not valid:
+                return False, error
+        return True, None

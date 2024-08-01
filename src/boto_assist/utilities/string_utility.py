@@ -1,13 +1,22 @@
+"""
+Geek Cafe, LLC
+Maintainers: Eric Wilson
+MIT License.  See Project Root for the license information.
+"""
+
 import hashlib
 import secrets
 import string
 import uuid
+import json
 from aws_lambda_powertools import Logger
 
 logger = Logger()
 
 
 class StringUtility:
+    """String Utilities"""
+
     SPECIAL_CHARACTERS = "!\\#$%&()*+,-.:;<=>?@[]^_{|}~"
 
     @staticmethod
@@ -144,3 +153,41 @@ class StringUtility:
         hash_object = hashlib.sha256()
         hash_object.update(encoded_string)
         return hash_object.hexdigest()
+
+    @staticmethod
+    def get_size_in_kb(input_string: str | dict) -> float:
+        """
+        Get the size of the input string in kilobytes.
+
+        Args:
+            input_string (str): The input string.
+
+        Returns:
+            int: The size of the input string in kilobytes.
+        """
+        size_in_bytes = StringUtility.get_size_in_bytes(input_string)
+
+        size = size_in_bytes / 1024
+
+        return size
+
+    @staticmethod
+    def get_size_in_bytes(input_string: str | dict) -> int:
+        """
+        Get the size of the input string in kilobytes.
+
+        Args:
+            input_string (str): The input string.
+
+        Returns:
+            int: The size of the input string in kilobytes.
+        """
+        if isinstance(input_string, dict):
+            input_string = json.dumps(input_string)
+        # encodes the string to bytes, which is necessary because the length of a string
+        # can differ from the length of its byte representation,
+        # especially for non-ASCII characters.
+        input_string = input_string.encode("utf-8")
+        size = int(len(input_string))
+
+        return size
