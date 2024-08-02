@@ -55,59 +55,53 @@ class DynamoDbTableService:
                     "KeyType": "RANGE",
                 },
             ],
-            AttributeDefinitions=[
-                {"AttributeName": "pk", "AttributeType": "S"},
-                {"AttributeName": "sk", "AttributeType": "S"},
-                {
-                    "AttributeName": "gsi0_pk",
-                    "AttributeType": "S",
-                },  # GSI0 partition key
-                {"AttributeName": "gsi0_sk", "AttributeType": "S"},  # GSI0 sort key
-                {"AttributeName": "lsi0_sk", "AttributeType": "S"},  # LSI0 sort key
-            ],
+            AttributeDefinitions=self.__create_attribute_defs(),
             BillingMode="PAY_PER_REQUEST",
             GlobalSecondaryIndexes=[
-                {
-                    "IndexName": "gsi0",
-                    "KeySchema": [
-                        {
-                            "AttributeName": "gsi0_pk",
-                            "KeyType": "HASH",
-                        },
-                        {
-                            "AttributeName": "gsi0_sk",
-                            "KeyType": "RANGE",
-                        },
-                    ],
-                    "Projection": {
-                        "ProjectionType": "ALL"  # This can be KEYS_ONLY, INCLUDE, or ALL
-                    },
-                    # ProvisionedThroughput={  # Not needed when using PAY_PER_REQUEST
-                    #     "ReadCapacityUnits": 5,
-                    #     "WriteCapacityUnits": 5,
-                    # },
-                }
+                self.__generate_secondary_index("gsi0", "gsi0_pk", "gsi0_sk"),
+                self.__generate_secondary_index("gsi1", "gsi1_pk", "gsi1_sk"),
+                self.__generate_secondary_index("gsi2", "gsi2_pk", "gsi2_sk"),
+                self.__generate_secondary_index("gsi3", "gsi3_pk", "gsi3_sk"),
             ],
             LocalSecondaryIndexes=[
-                {
-                    "IndexName": "lsi0",
-                    "KeySchema": [
-                        {
-                            "AttributeName": "pk",
-                            "KeyType": "HASH",  # Must be the same as the table's partition key
-                        },
-                        {
-                            "AttributeName": "lsi0_sk",
-                            "KeyType": "RANGE",  # Different sort key for the LSI
-                        },
-                    ],
-                    "Projection": {
-                        "ProjectionType": "ALL",
-                        # "NonKeyAttributes": ["attribute1", "attribute2"],
-                    },
-                }
+                self.__generate_secondary_index("lsi0", "pk", "lsi0_sk"),
             ],
         )
 
         if wait:
             response.meta.client.get_waiter("table_exists").wait(TableName=table_name)
+
+    def __create_attribute_defs(self, gsi_count: int = 4, lsi_count: int = 1) -> dict:
+        attribute_defs = []
+        attribute_defs.append(self.__create_attribute_def("pk"))
+        attribute_defs.append(self.__create_attribute_def("sk"))
+
+        for i in range(gsi_count):
+            attribute_defs.append(self.__create_attribute_def(f"gsi{i}_pk"))
+            attribute_defs.append(self.__create_attribute_def(f"gsi{i}_sk"))
+
+        for i in range(lsi_count):
+            attribute_defs.append(self.__create_attribute_def(f"lsi{i}_sk"))
+
+        return attribute_defs
+
+    def __create_attribute_def(
+        self,
+        name: str,
+        attr_type: str = "S",
+    ) -> dict:
+        attr_def = {"AttributeName": f"{name}", "AttributeType": f"{attr_type}"}
+
+        return attr_def
+
+    def __generate_secondary_index(
+        self, index_name: str, pk_name: str, sk_name: str, projection_type: str = "ALL"
+    ) -> dict:
+        return {
+            "IndexName": f"{index_name}",
+            "KeySchema": [
+                {"AttributeName": f"{pk_name}", "KeyType": "HASH"},
+                {"AttributeName": f"{sk_name}", "KeyType": "RANGE"},
+            ],
+            "Projection": {"ProjectionType": f"{projection_type}"},
+        }

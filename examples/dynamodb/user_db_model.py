@@ -25,7 +25,7 @@ class UserDbModel(DynamoDbModelBase):
         self.last_name: Optional[str] = last_name
         self.email: Optional[str] = email
         self.modified_datetime_utc: str = str(datetime.datetime.now(datetime.UTC))
-
+        self.status: Optional[str] = None
         self.__setup_indexes()
 
     def __setup_indexes(self):
@@ -46,10 +46,17 @@ class UserDbModel(DynamoDbModelBase):
                 "pk": "users#",
                 "sk": lambda: f"lastname#{self.first_name if self.first_name else ''}",
             },
+            "gsi3": {
+                "pk": "users#",
+                "sk": lambda: (
+                    f"status#{self.status if self.status else ''}"
+                    f"#email#{self.email if self.email else ''}"
+                ),
+            },
         }
 
         self.key_configs = key_configs
         self.projection_expression = (
-            "id,first_name,last_name,email,modified_datetime_utc"
+            "id,first_name,last_name,email,modified_datetime_utc,#status"
         )
-        self.projection_expression_attribute_names = None
+        self.projection_expression_attribute_names = {"#status": "status"}

@@ -13,6 +13,8 @@ from boto_assist.utilities.serialization_utility import Serialization
 
 
 class DynamoDbReindexer(DynamoDb):
+    """Reindexing your database"""
+
     def __init__(
         self,
         table_name: str,

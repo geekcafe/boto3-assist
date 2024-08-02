@@ -41,9 +41,19 @@ class DynamoDbExample:
 
         # use a known user id from out saving user example
         print("\nGETTING A SINGLE USER")
-        user_id = "98381a51-6397-40cb-b581-1ea313e76c1d"
+        user_id = "dfcad9d0-a9b3-43ff-83a6-a62965c70178"
         user = self.user_service.get_user(user_id=user_id, table_name=table_name)
         print(json.dumps(user, indent=4))
+
+        print("\nGETTING A SUSPENDED USER")
+        users = self.user_service.list_users(table_name=table_name, status="suspended")
+        for user in users:
+            print(json.dumps(user, indent=4))
+
+        print("\nGETTING ACTIVE USERS")
+        users = self.user_service.list_users(table_name=table_name, status="active")
+        for user in users:
+            print(json.dumps(user, indent=4))
 
     def __load_users(self, table_name: str):
         print("upserting users")
@@ -90,6 +100,7 @@ class DynamoDbExample:
             first_name="Bett",
             last_name="Smith",
             email="betty.smith@example.com",
+            status="suspended",
             table_name=table_name,
         )
 

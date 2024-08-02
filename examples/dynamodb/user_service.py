@@ -4,6 +4,7 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
+from typing import Any
 from boto_assist.dynamodb.dynamodb import DynamoDb
 from examples.dynamodb.user_db_model import UserDbModel
 
@@ -95,7 +96,8 @@ class UserService:
         first_name: str,
         last_name: str,
         email: str,
-        table_name: str,
+        status: str = "active",
+        table_name: str | None = None,
         db_dictionary_type: str = "resource",
     ) -> dict:
         """
@@ -118,6 +120,9 @@ class UserService:
             last_name=last_name,
             email=email,
         )
+
+        user.status = status
+
         item: dict = (
             user.to_resource_dictionary()
             if db_dictionary_type == "resource"
@@ -127,7 +132,7 @@ class UserService:
         self.db.save(item=item, table_name=table_name)
         return item
 
-    def list_users(self, table_name: str) -> list:
+    def list_users(self, table_name: str, status: str | None = None) -> list:
         """
         Lists users using a global secondary index.
 
@@ -137,7 +142,18 @@ class UserService:
         Returns:
             list: A list of users.
         """
-        index_name, key = UserDbModel().gsi0()
+        um: UserDbModel = UserDbModel()
+
+        index_name: str = ""
+        key: Any = {}
+
+        if status is None:
+            index_name, key = um.gsi0()
+        if status is not None:
+            um: UserDbModel = UserDbModel()
+            um.status = status
+            index_name, key = um.gsi3()
+
         projections_ex = UserDbModel().projection_expression
         ex_attributes_names = UserDbModel().projection_expression_attribute_names
         user_list = self.db.query(
