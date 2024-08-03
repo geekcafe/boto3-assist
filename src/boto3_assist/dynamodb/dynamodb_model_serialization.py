@@ -10,7 +10,7 @@ import inspect
 import uuid
 
 from boto3.dynamodb.types import TypeSerializer
-from boto_assist.utilities.serialization_utility import Serialization
+from boto3_assist.utilities.serialization_utility import Serialization
 
 
 def exclude_from_serialization(method):

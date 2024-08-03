@@ -6,11 +6,13 @@ MIT License.  See Project Root for the license information.
 
 from typing import Optional
 from aws_lambda_powertools import Logger
-from boto_assist.boto3session import Boto3SessionManager
 
-from boto_assist.environment_services.environment_variables import (
+from mypy_boto3_dynamodb import DynamoDBClient, DynamoDBServiceResource
+from boto3_assist.boto3session import Boto3SessionManager
+from boto3_assist.environment_services.environment_variables import (
     EnvironmentVariables,
 )
+
 
 logger = Logger()
 
@@ -39,9 +41,9 @@ class DynamoDbConnection:
             aws_secret_access_key
             or EnvironmentVariables.AWS.DynamoDb.aws_secret_access_key()
         )
-        self.session = None
-        self.dynamodb_client = None
-        self.dynamodb_resource = None
+        self.session: Boto3SessionManager
+        self.dynamodb_client: DynamoDBClient
+        self.dynamodb_resource: DynamoDBServiceResource
 
         self.raise_on_error: bool = True
 

@@ -5,7 +5,7 @@ MIT License.  See Project Root for the license information.
 """
 
 from typing import Callable, Mapping
-from boto_assist.dynamodb.dynamodb_model_base_interfaces import HasKeys
+from boto3_assist.dynamodb.dynamodb_model_base_interfaces import HasKeys
 
 
 class DynamoDbModelBaseLSI:

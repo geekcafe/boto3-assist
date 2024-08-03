@@ -1,9 +1,11 @@
 aws-lambda-powertools
 aws-xray-sdk
 boto3
-boto3-stubs
+boto3-stubs[dynamodb]
 jsons
+#mypy-boto3
 python-dateutil
 python-dotenv
 pytz
 requests
+types-python-dateutil

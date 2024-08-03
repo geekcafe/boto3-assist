@@ -1,7 +1,19 @@
-import os
+"""
+Geek Cafe, LLC
+Maintainers: Eric Wilson
+MIT License.  See Project Root for the license information.
+"""
+
+from typing import Any, Optional
+
 import boto3
 from aws_lambda_powertools import Logger
-from boto_assist.environment_services.environment_variables import EnvironmentVariables
+from botocore.config import Config
+from botocore.client import BaseClient
+
+from boto3.resources.base import ServiceResource
+from boto3_assist.environment_services.environment_variables import EnvironmentVariables
+
 
 logger = Logger(__name__)
 
@@ -13,16 +25,16 @@ class Boto3SessionManager:
         self,
         service_name: str,
         *,
-        aws_profile: str | None = None,
-        aws_region: str | None = None,
-        assume_role_arn: str | None = None,
-        assume_role_session_name: str | None = None,
-        cross_account_role_arn: str | None = None,
-        config: boto3.session.Config | None = None,
-        aws_endpoint_url: str | None = None,
-        aws_access_key_id: str | None = None,
-        aws_secret_access_key: str | None = None,
-        aws_session_token: str | None = None,
+        aws_profile: Optional[str] = None,
+        aws_region: Optional[str] = None,
+        assume_role_arn: Optional[str] = None,
+        assume_role_session_name: Optional[str] = None,
+        cross_account_role_arn: Optional[str] = None,
+        config: Optional[Config] = None,
+        aws_endpoint_url: Optional[str] = None,
+        aws_access_key_id: Optional[str] = None,
+        aws_secret_access_key: Optional[str] = None,
+        aws_session_token: Optional[str] = None,
     ):
         self.service_name = service_name
         self.aws_profile = aws_profile
@@ -35,16 +47,14 @@ class Boto3SessionManager:
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
         self.aws_session_token = aws_session_token
-        self.__session = None
-        self.__client = None
-        self.__resource = None
+        self.__session: Any = None
+        self.__client: Any = None
+        self.__resource: Any = None
 
         self.__setup()
 
     def __setup(self):
         """Setup AWS session, client, and resource."""
-        self.__client = None
-        self.__resource = None
 
         profile = self.aws_profile or EnvironmentVariables.AWS.profile()
         region = self.aws_profile or EnvironmentVariables.AWS.region()
@@ -78,7 +88,9 @@ class Boto3SessionManager:
             logger.error(f"Error assuming role: {e}")
             raise RuntimeError(f"Failed to assume role {self.assume_role_arn}") from e
 
-    def __get_aws_session(self, aws_profile: str = None, aws_region: str = None):
+    def __get_aws_session(
+        self, aws_profile: Optional[str] = None, aws_region: Optional[str] = None
+    ):
         """Get a boto3 session for AWS."""
         logger.debug({"profile": aws_profile, "region": aws_region})
         try:
@@ -125,7 +137,7 @@ class Boto3SessionManager:
         return session
 
     @property
-    def client(self):
+    def client(self) -> Any:
         """Return the boto3 client connection."""
         if not self.__client:
             self.__client = self.__session.client(
@@ -137,7 +149,7 @@ class Boto3SessionManager:
         return self.__client
 
     @property
-    def resource(self):
+    def resource(self) -> Any:
         """Return the boto3 resource connection."""
         if not self.__resource:
             self.__resource = self.__session.resource(

@@ -2,8 +2,8 @@
 
 import unittest
 from typing import Optional
-from boto_assist.utilities.serialization_utility import Serialization
-from boto_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
+from boto3_assist.utilities.serialization_utility import Serialization
+from boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
 
 
 class User:

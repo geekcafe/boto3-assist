@@ -187,7 +187,7 @@ class StringUtility:
         # encodes the string to bytes, which is necessary because the length of a string
         # can differ from the length of its byte representation,
         # especially for non-ASCII characters.
-        input_string = input_string.encode("utf-8")
-        size = int(len(input_string))
+        _bytes: bytes = input_string.encode("utf-8")
+        size = int(len(_bytes))
 
         return size

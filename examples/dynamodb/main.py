@@ -6,8 +6,8 @@ import json
 import os
 from pathlib import Path
 
-from boto_assist.dynamodb.dynamodb import DynamoDb
-from boto_assist.environment_services.environment_loader import EnvironmentLoader
+from boto3_assist.dynamodb.dynamodb import DynamoDb
+from boto3_assist.environment_services.environment_loader import EnvironmentLoader
 
 from examples.dynamodb.table_service import DynamoDbTableService
 from examples.dynamodb.user_post_service import UserPostDbModel, UserPostService

@@ -24,17 +24,18 @@ class Serialization:
     @tracer.capture_method
     def map(source: object, target: object) -> object | None:
         """Map an object from one object to another"""
-        source_dict: dict = None
+        source_dict: dict | object
         if isinstance(source, dict):
             source_dict = source
         else:
             source_dict = Serialization.convert_object_to_dict(source)
-
+            if not isinstance(source_dict, dict):
+                return None
         return Serialization.load_properties(source_dict, target=target)
 
     @staticmethod
     @tracer.capture_method
-    def load_properties(source: dict, target: object) -> object | None:
+    def load_properties(source: dict, target: object) -> str | object | None:
         """
         converts a source to an object
         """
@@ -59,7 +60,11 @@ class Serialization:
                     if isinstance(value, dict):
                         obj = getattr(target, attr)
                         if obj:
-                            attr = Serialization.load_properties(value, obj)
+                            tmp: str | object | None = Serialization.load_properties(
+                                value, obj
+                            )
+                            if isinstance(tmp, str):
+                                value = tmp
                     if value is not None:
                         if isinstance(attr, str):
                             try:

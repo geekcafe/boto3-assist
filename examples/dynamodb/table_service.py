@@ -11,7 +11,7 @@ as using it in a docker container.
 """
 
 from typing import List
-from boto_assist.dynamodb.dynamodb import DynamoDb
+from boto3_assist.dynamodb.dynamodb import DynamoDb
 
 
 class DynamoDbTableService:

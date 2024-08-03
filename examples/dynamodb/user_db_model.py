@@ -6,7 +6,7 @@ MIT License.  See Project Root for the license information.
 
 import datetime
 from typing import Optional
-from boto_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
+from boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
 
 
 class UserDbModel(DynamoDbModelBase):

@@ -7,9 +7,9 @@ MIT License.  See Project Root for the license information.
 import json
 from typing import Any, Callable, Dict, Optional
 
-from boto_assist.dynamodb.dynamodb import DynamoDb
-from boto_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
-from boto_assist.utilities.serialization_utility import Serialization
+from boto3_assist.dynamodb.dynamodb import DynamoDb
+from boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
+from boto3_assist.utilities.serialization_utility import Serialization
 
 
 class DynamoDbReindexer(DynamoDb):
@@ -70,7 +70,7 @@ class DynamoDbReindexer(DynamoDb):
         self, key_configs: Dict[str, Dict[str, Callable[[], str]]]
     ) -> Dict[str, Any]:
         """Update key values"""
-        updated_keys = {}
+        updated_keys: Dict[str, Any] = {}
         for index_name, index_config in key_configs.items():
             updated_keys[index_name] = {}
             for key_type, key_value_lambda in index_config.items():

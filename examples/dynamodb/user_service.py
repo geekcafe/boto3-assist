@@ -5,7 +5,7 @@ MIT License.  See Project Root for the license information.
 """
 
 from typing import Any
-from boto_assist.dynamodb.dynamodb import DynamoDb
+from boto3_assist.dynamodb.dynamodb import DynamoDb
 from examples.dynamodb.user_db_model import UserDbModel
 
 
@@ -150,12 +150,11 @@ class UserService:
         if status is None:
             index_name, key = um.gsi0()
         if status is not None:
-            um: UserDbModel = UserDbModel()
             um.status = status
             index_name, key = um.gsi3()
 
-        projections_ex = UserDbModel().projection_expression
-        ex_attributes_names = UserDbModel().projection_expression_attribute_names
+        projections_ex = um.projection_expression
+        ex_attributes_names = um.projection_expression_attribute_names
         user_list = self.db.query(
             key=key,
             index_name=index_name,

@@ -6,7 +6,7 @@ MIT License.  See Project Root for the license information.
 
 from typing import Tuple, Callable, Mapping
 from boto3.dynamodb.conditions import Key, And
-from boto_assist.dynamodb.dynamodb_model_base_interfaces import HasKeys
+from boto3_assist.dynamodb.dynamodb_model_base_interfaces import HasKeys
 
 
 class DynamoDbModelBaseGSI:

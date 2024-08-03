@@ -106,7 +106,7 @@ class EnvironmentVariables:
 
         class Cognito:
             @staticmethod
-            def user_pool():
+            def user_pool() -> str | None:
                 """
                 gets the cognito user pool from an environment var
                 """
@@ -126,7 +126,7 @@ class EnvironmentVariables:
                 return value
 
             @staticmethod
-            def single_table() -> str:
+            def single_table() -> str | None:
                 """
                 If a single table design is used this can be a usefull way to send it around
                 """

@@ -4,7 +4,7 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import List
+from typing import List, Any, Dict
 from boto3.dynamodb.conditions import ConditionBase, Key
 from aws_lambda_powertools import Tracer, Logger
 
@@ -18,22 +18,27 @@ class DynamoDbHelpers:
     def __init__(self) -> None:
         pass
 
-    def get_filter_expressions(self, key: ConditionBase) -> dict:
+    def get_filter_expressions(self, key: ConditionBase) -> Dict[str, Any] | None:
         """Get the filter expression"""
         value = None
         try:
             expression = {
                 "expression_format": key.expression_format,
                 "expression_operator": key.expression_operator,
-                "keys": [],
+                "keys": List[Dict[str, Any]],
             }
 
             count = 0
             key_values = key.get_expression()["values"]
             for v in key_values:
                 kv = self.get_key_info(v)
-                k = {f"key_{count}": kv}
-                expression["keys"].append(k)
+                k: dict[str, dict[str, Any]] = {f"key_{count}": kv}
+                keys: List[Dict[str, Any]] | Any = expression["keys"]
+                # if isinstance(keys, List):
+                if k:
+                    keys.append(k)
+
+                expression["keys"] = keys
 
             expression["sort"] = self.get_key_sort(key)
 
@@ -43,7 +48,7 @@ class DynamoDbHelpers:
 
         return value
 
-    def get_key_info(self, value: ConditionBase) -> dict:
+    def get_key_info(self, value: ConditionBase) -> dict[str, Any]:
         """
         Get Key Information.  This is helpful for logging and
         visualizing what the key looks like
@@ -55,14 +60,16 @@ class DynamoDbHelpers:
         values = {}
         try:
             index = 0
-            for v in value._values:  # pylint: disable=w0212
-                if index > 0:
-                    values[f"value_{index}"] = v
-                index += 1
+            sub_values = value.get_expression()["values"]
+            if sub_values:
+                for v in sub_values:  # value._values:  # pylint: disable=w0212,w0012,
+                    if index > 0:
+                        values[f"value_{index}"] = v
+                    index += 1
         except:  # noqa e722, pylint: disable=w0702
             pass
 
-        key_info = {
+        key_info: Dict[str, Any] = {
             "name": key_name,
             "key": key_value,
             "expression_format": value.expression_format,
@@ -104,13 +111,13 @@ class DynamoDbHelpers:
         return response
 
     @tracer.capture_method(capture_response=False)
-    def wrap_collection_response(self, collection: List[dict]):
+    def wrap_collection_response(self, collection: List[dict]) -> dict[str, List]:
         """
         Wraps Up Some usefull information when dealing with
 
         """
-        response = {"Items": [], "Batches": []}
-        record_start = 0
+        response: dict[str, List] = {"Items": [], "Batches": []}
+        record_start: int = 0
         for item in collection:
             record_start += 1
             record_end = record_start + len(collection)

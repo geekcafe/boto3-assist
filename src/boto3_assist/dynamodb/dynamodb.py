@@ -5,13 +5,13 @@ MIT License.  See Project Root for the license information.
 """
 
 import os
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from aws_lambda_powertools import Tracer, Logger
-from boto3.dynamodb.conditions import Key
-from boto_assist.dynamodb.dynamodb_connection import DynamoDbConnection
-from boto_assist.dynamodb.dynamodb_helpers import DynamoDbHelpers
-from boto_assist.utilities.string_utility import StringUtility
+from boto3.dynamodb.conditions import Key, And
+from boto3_assist.dynamodb.dynamodb_connection import DynamoDbConnection
+from boto3_assist.dynamodb.dynamodb_helpers import DynamoDbHelpers
+from boto3_assist.utilities.string_utility import StringUtility
 
 
 logger = Logger()
@@ -48,7 +48,7 @@ class DynamoDb(DynamoDbConnection):
         )
 
     @tracer.capture_method
-    def save(self, item: dict, table_name: str, source: str = None) -> dict:
+    def save(self, item: dict, table_name: str, source: Optional[str] = None) -> dict:
         """
         Save an item to the database
         Args:
@@ -103,7 +103,7 @@ class DynamoDb(DynamoDbConnection):
         return_consumed_capacity: str | None = None,
         projection_expression: str | None = None,
         expression_attribute_names: dict | None = None,
-        source: str = None,
+        source: Optional[str] = None,
         call_type: str = "resource",
     ) -> dict:
         """
@@ -176,14 +176,14 @@ class DynamoDb(DynamoDbConnection):
     def query(
         self,
         key: Key,
-        index_name: str = None,
+        index_name: Optional[str] = None,
         ascending: bool = False,
-        table_name: str = None,
-        source: str = None,
+        table_name: Optional[str] = None,
+        source: Optional[str] = None,
         strongly_consistent: bool = False,
-        projection_expression: str = None,
-        expression_attribute_names: dict = None,
-        start_key: str = None,
+        projection_expression: Optional[str] = None,
+        expression_attribute_names: Optional[dict] = None,
+        start_key: Optional[str] = None,
     ) -> List[dict]:
         """
         Run a query and return a list of items
@@ -223,7 +223,7 @@ class DynamoDb(DynamoDbConnection):
         return response
 
     @tracer.capture_method
-    def delete(self, primary_key: Key, table_name: str = None):
+    def delete(self, primary_key: Key, table_name: Optional[str] = None):
         """deletes an item from the database"""
 
         table = self.dynamodb_resource.Table(table_name)
@@ -240,3 +240,17 @@ class DynamoDb(DynamoDbConnection):
                 table_list.append(table.name)
 
         return table_list
+
+    def get_key(
+        self, index_name: str, pk_value: str, sk_value: str | None = None
+    ) -> Tuple[str, And]:
+        """Get the GSI index name and key"""
+
+        pk_value = self.get_pk(index_name)  # pylint: disable=e1101
+        sk_value = self.get_sk(index_name)  # pylint: disable=e1101
+
+        key = Key(f"{index_name}_pk").eq(pk_value) & Key(
+            f"{index_name}_sk"
+        ).begins_with(sk_value)
+
+        return index_name, key

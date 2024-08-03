@@ -6,12 +6,12 @@ MIT License.  See Project Root for the license information.
 
 from typing import Tuple, Callable, Mapping
 from boto3.dynamodb.conditions import Key, And
-from boto_assist.dynamodb.dynamodb_model_serialization import (
+from boto3_assist.dynamodb.dynamodb_model_serialization import (
     DynamoDbSerializer,
     exclude_from_serialization,
 )
-from boto_assist.dynamodb.dynamodb_model_base_gsi import DynamoDbModelBaseGSI
-from boto_assist.dynamodb.dynamodb_model_base_lsi import DynamoDbModelBaseLSI
+from boto3_assist.dynamodb.dynamodb_model_base_gsi import DynamoDbModelBaseGSI
+from boto3_assist.dynamodb.dynamodb_model_base_lsi import DynamoDbModelBaseLSI
 
 
 class DynamoDbModelBase(DynamoDbModelBaseGSI, DynamoDbModelBaseLSI):

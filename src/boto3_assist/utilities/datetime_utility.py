@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime, timedelta, timezone
-
-import pytz
+from typing import Any
+import pytz  # type: ignore
 from aws_lambda_powertools import Tracer, Logger
 from dateutil.relativedelta import relativedelta
 
@@ -144,7 +144,7 @@ class DatetimeUtility:
         return result
 
     @staticmethod
-    def to_date_string(value, default: datetime | None | str = None) -> datetime | None:
+    def to_date_string(value: Any, default: datetime | None | str = None) -> str | None:
         """
         Description: takes a value and attempts to turn it into a datetime object
         Returns: datetime or None
@@ -152,12 +152,13 @@ class DatetimeUtility:
         value = DatetimeUtility.to_datetime(value=value)
         result = DatetimeUtility.to_string(value, date_format="%Y-%m-%d")
         if result is None and default is not None:
-            result = default
+            if isinstance(default, datetime):
+                result = DatetimeUtility.to_string(default, date_format="%Y-%m-%d")
 
         return result
 
     @staticmethod
-    def to_time_string(value, default: datetime | None = None) -> datetime | None:
+    def to_time_string(value, default: datetime | None = None) -> str | None:
         """
         Description: takes a value and attempts to turn it into a datetime object
         Returns: datetime or None
@@ -170,7 +171,9 @@ class DatetimeUtility:
         return result
 
     @staticmethod
-    def to_string(value: datetime, date_format: str = "%Y-%m-%d-%H-%M-%S-%f") -> str:
+    def to_string(
+        value: datetime, date_format: str = "%Y-%m-%d-%H-%M-%S-%f"
+    ) -> str | None:
         """
         Description: takes a string value and returns it as a datetime.
         If the value is already a datetime type, it will return it as is, otherwise
