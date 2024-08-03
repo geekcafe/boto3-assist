@@ -9,9 +9,8 @@ from typing import Any, Optional
 import boto3
 from aws_lambda_powertools import Logger
 from botocore.config import Config
-from botocore.client import BaseClient
 
-from boto3.resources.base import ServiceResource
+
 from boto3_assist.environment_services.environment_variables import EnvironmentVariables
 
 

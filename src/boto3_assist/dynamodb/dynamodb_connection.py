@@ -7,7 +7,9 @@ MIT License.  See Project Root for the license information.
 from typing import Optional
 from aws_lambda_powertools import Logger
 
+
 from mypy_boto3_dynamodb import DynamoDBClient, DynamoDBServiceResource
+
 from boto3_assist.boto3session import Boto3SessionManager
 from boto3_assist.environment_services.environment_variables import (
     EnvironmentVariables,
