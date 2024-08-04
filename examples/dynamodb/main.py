@@ -8,6 +8,7 @@ from pathlib import Path
 
 from boto3_assist.dynamodb.dynamodb import DynamoDb
 from boto3_assist.environment_services.environment_loader import EnvironmentLoader
+from boto3_assist.dynamodb.dynamodb_importer import DynamoDbImporter
 
 from examples.dynamodb.table_service import DynamoDbTableService
 from examples.dynamodb.user_post_service import UserPostDbModel, UserPostService
@@ -122,6 +123,28 @@ class DynamoDbExample:
             </html>
             """
             self.user_post_service.save(user_post=model, table_name=table_name)
+
+        self.__import_files(table_name=table_name)
+
+    def __import_files(self, table_name: str):
+        import_directory = os.getenv("IMPORT_DIRECTORY")
+        if import_directory is not None:
+            print(f"Importing files from {import_directory}")
+            root = Path(__file__).parents[2].absolute()
+            import_path = Path(os.path.join(root, import_directory)).absolute()
+            if os.path.exists(import_path):
+                files = os.listdir(import_path)
+                files = [os.path.join(import_path, f) for f in files]
+                print(f"Importing files from {import_path}")
+                # do the import
+                importer: DynamoDbImporter = DynamoDbImporter(
+                    table_name=table_name, db=self.db
+                )
+
+                importer.import_json_files(files)
+
+            else:
+                print(f"Import directory {import_path} does not exist")
 
 
 def main():

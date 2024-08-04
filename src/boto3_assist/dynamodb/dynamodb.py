@@ -5,10 +5,10 @@ MIT License.  See Project Root for the license information.
 """
 
 import os
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from aws_lambda_powertools import Tracer, Logger
-from boto3.dynamodb.conditions import Key, And
+from boto3.dynamodb.conditions import Key, And, Equals
 from boto3_assist.dynamodb.dynamodb_connection import DynamoDbConnection
 from boto3_assist.dynamodb.dynamodb_helpers import DynamoDbHelpers
 from boto3_assist.utilities.string_utility import StringUtility
@@ -82,9 +82,6 @@ class DynamoDb(DynamoDbConnection):
                 table = self.dynamodb_resource.Table(table_name)
                 response = table.put_item(Item=item)
 
-            # response = self.dynamodb_client.put_item(
-            #     TableName=f"{table_name}", Item=item
-            # )
         except Exception as e:  # pylint: disable=w0718
             logger.exception(
                 {"source": f"{source}", "metric_filter": "put_item", "error": str(e)}
@@ -175,7 +172,7 @@ class DynamoDb(DynamoDbConnection):
 
     def query(
         self,
-        key: Key,
+        key: Key | And | Equals,
         index_name: Optional[str] = None,
         ascending: bool = False,
         table_name: Optional[str] = None,
@@ -242,15 +239,35 @@ class DynamoDb(DynamoDbConnection):
         return table_list
 
     def get_key(
-        self, index_name: str, pk_value: str, sk_value: str | None = None
-    ) -> Tuple[str, And]:
+        self,
+        pk_name: str,
+        pk_value: str,
+        sk_name: str | None = None,
+        sk_value: str | None = None,
+        sk_value2: str | None = None,
+        condition: str = "begins_with",
+    ) -> And | Equals:
         """Get the GSI index name and key"""
 
-        pk_value = self.get_pk(index_name)  # pylint: disable=e1101
-        sk_value = self.get_sk(index_name)  # pylint: disable=e1101
+        key: Equals | And = Key(f"{pk_name}").eq(pk_value)
 
-        key = Key(f"{index_name}_pk").eq(pk_value) & Key(
-            f"{index_name}_sk"
-        ).begins_with(sk_value)
+        if sk_name and sk_value:
+            if sk_value2:
+                match condition:
+                    case "between":
+                        key = key & Key(f"{sk_name}").between(sk_value, sk_value2)
 
-        return index_name, key
+            else:
+                match condition:
+                    case "begins_with":
+                        key = key & Key(f"{sk_name}").begins_with(sk_value)
+                    case "eq":
+                        key = key & Key(f"{sk_name}").eq(sk_value)
+                    case "gt":
+                        key = key & Key(f"{sk_name}").gt(sk_value)
+                    case "gte":
+                        key = key & Key(f"{sk_name}").gte(sk_value)
+                    case "lt":
+                        key = key & Key(f"{sk_name}").lt(sk_value)
+
+        return key

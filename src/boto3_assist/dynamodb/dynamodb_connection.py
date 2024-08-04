@@ -5,15 +5,19 @@ MIT License.  See Project Root for the license information.
 """
 
 from typing import Optional
+from typing import TYPE_CHECKING
+
 from aws_lambda_powertools import Logger
-
-
-from mypy_boto3_dynamodb import DynamoDBClient, DynamoDBServiceResource
-
 from boto3_assist.boto3session import Boto3SessionManager
 from boto3_assist.environment_services.environment_variables import (
     EnvironmentVariables,
 )
+
+if TYPE_CHECKING:
+    from mypy_boto3_dynamodb import DynamoDBClient, DynamoDBServiceResource
+else:
+    DynamoDBClient = object
+    DynamoDBServiceResource = object
 
 
 logger = Logger()
@@ -44,8 +48,8 @@ class DynamoDbConnection:
             or EnvironmentVariables.AWS.DynamoDb.aws_secret_access_key()
         )
         self.session: Boto3SessionManager
-        self.dynamodb_client: DynamoDBClient
-        self.dynamodb_resource: DynamoDBServiceResource
+        self.__dynamodb_client: DynamoDBClient | None = None
+        self.__dynamodb_resource: DynamoDBServiceResource | None = None
 
         self.raise_on_error: bool = True
 
@@ -76,7 +80,25 @@ class DynamoDbConnection:
             aws_endpoint_url=self.end_point_url,
         )
 
-        self.dynamodb_client = self.session.client
-        self.dynamodb_resource = self.session.resource
-
         self.raise_on_error = EnvironmentVariables.AWS.DynamoDb.raise_on_error_setting()
+
+    @property
+    def dynamodb_client(self) -> DynamoDBClient:
+        """DynamoDb Client Connection"""
+        if self.__dynamodb_client is None:
+            self.__dynamodb_client = self.session.client
+
+        if self.raise_on_error and self.__dynamodb_client is None:
+            raise RuntimeError("DynamoDb Client is not available")
+        return self.__dynamodb_client
+
+    @property
+    def dynamodb_resource(self) -> DynamoDBServiceResource:
+        """DynamoDb Resource Connection"""
+        if self.__dynamodb_resource is None:
+            self.__dynamodb_resource = self.session.resource
+
+        if self.raise_on_error and self.__dynamodb_resource is None:
+            raise RuntimeError("DynamoDb Resource is not available")
+
+        return self.__dynamodb_resource

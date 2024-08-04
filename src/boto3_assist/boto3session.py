@@ -56,7 +56,7 @@ class Boto3SessionManager:
         """Setup AWS session, client, and resource."""
 
         profile = self.aws_profile or EnvironmentVariables.AWS.profile()
-        region = self.aws_profile or EnvironmentVariables.AWS.region()
+        region = self.aws_region or EnvironmentVariables.AWS.region()
         if self.assume_role_arn:
             self.__assume_role()
         else:
@@ -89,7 +89,7 @@ class Boto3SessionManager:
 
     def __get_aws_session(
         self, aws_profile: Optional[str] = None, aws_region: Optional[str] = None
-    ):
+    ) -> boto3.Session:
         """Get a boto3 session for AWS."""
         logger.debug({"profile": aws_profile, "region": aws_region})
         try:

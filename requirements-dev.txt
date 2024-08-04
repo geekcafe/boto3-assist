@@ -1,2 +1,4 @@
 mypy
+mypy_boto3_dynamodb
 types-python-dateutil
+boto3-stubs[dynamodb]

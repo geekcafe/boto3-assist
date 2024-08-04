@@ -252,3 +252,28 @@ class DynamoDbHelpers:
             if not valid:
                 return False, error
         return True, None
+
+    @staticmethod
+    def clean_null_values(item):
+        """
+        Recursively traverse the dictionary and handle "null" values.
+        Args:
+            item (dict or list): The dictionary or list to clean.
+        Returns:
+            The cleaned dictionary or list.
+        """
+        if isinstance(item, dict):
+            cleaned = {}
+            for k, v in item.items():
+                if v == "null":
+                    print(f"Found 'null' value at key: {k}, replacing with None")
+                    cleaned[k] = ""  # Or handle it as you see fit
+                elif isinstance(v, (dict, list)):
+                    cleaned[k] = DynamoDbHelpers.clean_null_values(v)
+                else:
+                    cleaned[k] = v
+            return cleaned
+        elif isinstance(item, list):
+            return [DynamoDbHelpers.clean_null_values(i) for i in item]
+        else:
+            return item

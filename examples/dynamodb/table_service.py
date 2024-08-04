@@ -57,12 +57,7 @@ class DynamoDbTableService:
             ],
             AttributeDefinitions=self.__create_attribute_defs(),
             BillingMode="PAY_PER_REQUEST",
-            GlobalSecondaryIndexes=[
-                self.__generate_secondary_index("gsi0", "gsi0_pk", "gsi0_sk"),
-                self.__generate_secondary_index("gsi1", "gsi1_pk", "gsi1_sk"),
-                self.__generate_secondary_index("gsi2", "gsi2_pk", "gsi2_sk"),
-                self.__generate_secondary_index("gsi3", "gsi3_pk", "gsi3_sk"),
-            ],
+            GlobalSecondaryIndexes=self.__generate_secondary_gsi_indexes(4),
             LocalSecondaryIndexes=[
                 self.__generate_secondary_index("lsi0", "pk", "lsi0_sk"),
             ],
@@ -93,6 +88,16 @@ class DynamoDbTableService:
         attr_def = {"AttributeName": f"{name}", "AttributeType": f"{attr_type}"}
 
         return attr_def
+
+    def __generate_secondary_gsi_indexes(self, count: int = 4) -> List[dict]:
+        indexes: List[dict] = []
+        for i in range(count):
+            index = self.__generate_secondary_index(
+                f"gsi{i}", f"gsi{i}_pk", f"gsi{i}_sk"
+            )
+            indexes.append(index)
+
+        return indexes
 
     def __generate_secondary_index(
         self, index_name: str, pk_name: str, sk_name: str, projection_type: str = "ALL"
