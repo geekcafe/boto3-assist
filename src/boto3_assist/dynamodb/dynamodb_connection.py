@@ -38,14 +38,14 @@ class DynamoDbConnection:
         self.aws_profile = aws_profile or EnvironmentVariables.AWS.profile()
         self.aws_region = aws_region or EnvironmentVariables.AWS.region()
         self.end_point_url = (
-            aws_end_point_url or EnvironmentVariables.AWS.DynamoDb.endpoint_url()
+            aws_end_point_url or EnvironmentVariables.AWS.DynamoDB.endpoint_url()
         )
         self.aws_access_key_id = (
-            aws_access_key_id or EnvironmentVariables.AWS.DynamoDb.aws_access_key_id()
+            aws_access_key_id or EnvironmentVariables.AWS.DynamoDB.aws_access_key_id()
         )
         self.aws_secret_access_key = (
             aws_secret_access_key
-            or EnvironmentVariables.AWS.DynamoDb.aws_secret_access_key()
+            or EnvironmentVariables.AWS.DynamoDB.aws_secret_access_key()
         )
         self.session: Boto3SessionManager
         self.__dynamodb_client: DynamoDBClient | None = None
@@ -80,25 +80,25 @@ class DynamoDbConnection:
             aws_endpoint_url=self.end_point_url,
         )
 
-        self.raise_on_error = EnvironmentVariables.AWS.DynamoDb.raise_on_error_setting()
+        self.raise_on_error = EnvironmentVariables.AWS.DynamoDB.raise_on_error_setting()
 
     @property
     def dynamodb_client(self) -> DynamoDBClient:
-        """DynamoDb Client Connection"""
+        """DynamoDB Client Connection"""
         if self.__dynamodb_client is None:
             self.__dynamodb_client = self.session.client
 
         if self.raise_on_error and self.__dynamodb_client is None:
-            raise RuntimeError("DynamoDb Client is not available")
+            raise RuntimeError("DynamoDB Client is not available")
         return self.__dynamodb_client
 
     @property
     def dynamodb_resource(self) -> DynamoDBServiceResource:
-        """DynamoDb Resource Connection"""
+        """DynamoDB Resource Connection"""
         if self.__dynamodb_resource is None:
             self.__dynamodb_resource = self.session.resource
 
         if self.raise_on_error and self.__dynamodb_resource is None:
-            raise RuntimeError("DynamoDb Resource is not available")
+            raise RuntimeError("DynamoDB Resource is not available")
 
         return self.__dynamodb_resource

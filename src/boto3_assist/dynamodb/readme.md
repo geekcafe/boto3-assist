@@ -1,4 +1,4 @@
-# DynamoDb Library
+# DynamoDB Library
 
 
 

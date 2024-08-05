@@ -4,7 +4,7 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from boto3_assist.dynamodb.dynamodb import DynamoDb
+from boto3_assist.dynamodb.dynamodb import DynamoDB
 from examples.dynamodb.user_post_db_model import UserPostDbModel
 
 
@@ -13,17 +13,17 @@ class UserPostService:
     A service class to handle user operations on a DynamoDB table.
 
     Attributes:
-        db (DynamoDb): An instance of DynamoDb to interact with the database.
+        db (DynamoDB): An instance of DynamoDB to interact with the database.
     """
 
-    def __init__(self, db: DynamoDb) -> None:
+    def __init__(self, db: DynamoDB) -> None:
         """
-        Initializes the UserService with a DynamoDb instance.
+        Initializes the UserService with a DynamoDB instance.
 
         Args:
-            db (DynamoDb): An instance of DynamoDb.
+            db (DynamoDB): An instance of DynamoDB.
         """
-        self.db: DynamoDb = db
+        self.db: DynamoDB = db
 
     def save(self, user_post: UserPostDbModel, table_name: str) -> dict:
         """
@@ -78,7 +78,7 @@ class UserPostService:
         """
 
         model = UserPostDbModel(slug=slug)
-        key = model.pk_sk_key()
+        key = model.get_primary_key()
         p = model.projection_expression
         e = model.projection_expression_attribute_names
         response = self.db.get(

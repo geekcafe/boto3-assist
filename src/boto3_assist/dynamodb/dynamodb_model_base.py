@@ -69,7 +69,7 @@ class DynamoDbModelBase(DynamoDbModelBaseGSI, DynamoDbModelBaseLSI):
             raise ValueError("Sort key not set")
         return sk
 
-    def pk_sk_key(self) -> dict:  # pylint: disable=w0622
+    def get_primary_key(self) -> dict:  # pylint: disable=w0622
         """Gets the key for the primay pk and sk key pair"""
         pk = self.pk
         sk = self.sk
@@ -83,6 +83,10 @@ class DynamoDbModelBase(DynamoDbModelBaseGSI, DynamoDbModelBaseLSI):
 
     def map(self, item: dict) -> object | None:
         """Map the item to the instance"""
+        if item is None:
+            return None
+        if "Item" in item:
+            item = item["Item"]
         return DynamoDbSerializer.map(source=item, target=self)
 
     def to_client_dictionary(self):

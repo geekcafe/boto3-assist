@@ -7,12 +7,12 @@ MIT License.  See Project Root for the license information.
 import json
 from typing import Any, Callable, Dict, Optional
 
-from boto3_assist.dynamodb.dynamodb import DynamoDb
+from boto3_assist.dynamodb.dynamodb import DynamoDB
 from boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
 from boto3_assist.utilities.serialization_utility import Serialization
 
 
-class DynamoDbReindexer(DynamoDb):
+class DynamoDbReindexer(DynamoDB):
     """Reindexing your database"""
 
     def __init__(
@@ -129,28 +129,3 @@ class DynamoDbReindexer(DynamoDb):
         """
         expression_attribute_values = {f":{k}": v for k, v in updated_keys.items()}
         return expression_attribute_values
-
-
-def main():
-    # Assume the following key_configs is correct and the lambda functions can access model attributes
-    key_configs = {
-        "pk_sk": {
-            "pk": lambda model: f"user#{model.id}",
-            "sk": lambda model: f"user#{model.id}",
-        },
-        "gsi0": {
-            "pk": lambda model: "users#",
-            "sk": lambda model: f"email#{model.email}",
-        },
-        "gsi1": {
-            "pk": lambda model: "users#",
-            "sk": lambda model: f"lastname#{model.last_name}",
-        },
-        "gsi2": {
-            "pk": lambda model: "users#",
-            "sk": lambda model: f"firstname#{model.first_name}",
-        },
-    }
-
-    # reindexer = DynamoDbReindexer(table_name="UserTable", key_configs=key_configs)
-    # reindexer.reindex()

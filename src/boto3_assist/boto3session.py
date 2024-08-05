@@ -4,13 +4,12 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 import boto3
 from aws_lambda_powertools import Logger
 from botocore.config import Config
-
-
+from botocore.exceptions import ProfileNotFound
 from boto3_assist.environment_services.environment_variables import EnvironmentVariables
 
 
@@ -118,13 +117,7 @@ class Boto3SessionManager:
                 }
             )
             logger.debug("Creating boto3 session")
-            session = boto3.Session(
-                profile_name=self.aws_profile,
-                region_name=self.aws_region,
-                aws_access_key_id=self.aws_access_key_id,
-                aws_secret_access_key=self.aws_secret_access_key,
-                aws_session_token=self.aws_session_token,
-            )
+            session = self.__create_boto3_session()
         # if self.aws_profile or self.aws_region
         # else boto3.Session()
 
@@ -157,3 +150,22 @@ class Boto3SessionManager:
                 endpoint_url=self.endpoint_url,
             )
         return self.__resource
+
+    def __create_boto3_session(self) -> boto3.Session:
+        try:
+            session = boto3.Session(
+                profile_name=self.aws_profile,
+                region_name=self.aws_region,
+                aws_access_key_id=self.aws_access_key_id,
+                aws_secret_access_key=self.aws_secret_access_key,
+                aws_session_token=self.aws_session_token,
+            )
+            return session
+        except ProfileNotFound as e:
+            print(
+                f"An error occurred setting up the boto3 sessions. Profile not found: {e}"
+            )
+            raise e
+        except Exception as e:
+            print(f"An error occurred setting up the boto3 sessions: {e}")
+            raise e

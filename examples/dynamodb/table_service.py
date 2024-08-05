@@ -3,7 +3,7 @@ Geek Cafe, LLC
 Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 
-DynamoDb Table Service Example.
+DynamoDB Table Service Example.
 Normally I would create the table with CloudFormation, SAM or the CDK
 
 This is just an example of creating it here for demo purposes, as well
@@ -11,17 +11,17 @@ as using it in a docker container.
 """
 
 from typing import List
-from boto3_assist.dynamodb.dynamodb import DynamoDb
+from boto3_assist.dynamodb.dynamodb import DynamoDB
 
 
 class DynamoDbTableService:
     """
     Dynamo DB Table Service
-    Use this to create and manage tables in DynamoDb
+    Use this to create and manage tables in DynamoDB
     """
 
-    def __init__(self, db: DynamoDb) -> None:
-        self.db: DynamoDb = db
+    def __init__(self, db: DynamoDB) -> None:
+        self.db: DynamoDB = db
 
     def list_tables(self) -> List[str]:
         """List Tables"""

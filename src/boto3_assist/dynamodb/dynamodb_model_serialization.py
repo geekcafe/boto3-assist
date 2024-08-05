@@ -22,7 +22,7 @@ def exclude_from_serialization(method):
 
 
 class DynamoDbSerializer:
-    """Library to Serialize object to a DynamoDb Format"""
+    """Library to Serialize object to a DynamoDB Format"""
 
     @staticmethod
     def map(source: dict, target: object) -> object | None:

@@ -18,7 +18,7 @@
             }
         },
         {
-            "name": "Debug DynamoDb Example Docker .env.docker",
+            "name": "Debug DynamoDB Example Docker .env.docker",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/examples/dynamodb/main.py",
@@ -32,7 +32,7 @@
             }
         },
         {
-            "name": "Debug DynamoDb Example Docker NoSQL Workbench",
+            "name": "Debug DynamoDB Example Docker NoSQL Workbench",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/examples/dynamodb/main.py",
@@ -46,7 +46,7 @@
             }
         },
         {
-            "name": "Debug DynamoDb Example AWS Profile .env.development",
+            "name": "Debug DynamoDB Example AWS Profile .env.development",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/examples/dynamodb/main.py",

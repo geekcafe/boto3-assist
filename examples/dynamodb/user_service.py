@@ -5,7 +5,7 @@ MIT License.  See Project Root for the license information.
 """
 
 from typing import Any
-from boto3_assist.dynamodb.dynamodb import DynamoDb
+from boto3_assist.dynamodb.dynamodb import DynamoDB
 from examples.dynamodb.user_db_model import UserDbModel
 
 
@@ -14,17 +14,17 @@ class UserService:
     A service class to handle user operations on a DynamoDB table.
 
     Attributes:
-        db (DynamoDb): An instance of DynamoDb to interact with the database.
+        db (DynamoDB): An instance of DynamoDB to interact with the database.
     """
 
-    def __init__(self, db: DynamoDb) -> None:
+    def __init__(self, db: DynamoDB) -> None:
         """
-        Initializes the UserService with a DynamoDb instance.
+        Initializes the UserService with a DynamoDB instance.
 
         Args:
-            db (DynamoDb): An instance of DynamoDb.
+            db (DynamoDB): An instance of DynamoDB.
         """
-        self.db: DynamoDb = db
+        self.db: DynamoDB = db
 
     def save_user_resource_syntax(
         self,
@@ -185,7 +185,7 @@ class UserService:
         # Alternative way to get the key from the model
         u: UserDbModel = UserDbModel(id=user_id)
 
-        key = u.pk_sk_key()
+        key = u.get_primary_key()
         # p, e = UserDbModel.get_projection_expressions()
         p = u.projection_expression
         e = u.projection_expression_attribute_names
@@ -195,6 +195,29 @@ class UserService:
             projection_expression=p,
             expression_attribute_names=e,
         )
+
+        user: dict = {}
+        if "Item" in response:
+            user = response.get("Item")
+
+        return user
+
+    def get_user_simplified(self, user_id: str, table_name: str) -> dict:
+        """
+        Retrieves a user by user ID from the specified DynamoDB table.
+
+        Args:
+            user_id (str): The ID of the user to retrieve.
+            table_name (str): The name of the DynamoDB table.
+
+        Returns:
+            dict: The retrieved user as a dictionary.
+        """
+
+        # Alternative way to get the key from the model
+        u: UserDbModel = UserDbModel(id=user_id)
+
+        response = self.db.get(model=u, table_name=table_name, do_projections=True)
 
         user: dict = {}
         if "Item" in response:

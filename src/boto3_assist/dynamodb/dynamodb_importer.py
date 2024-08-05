@@ -10,7 +10,7 @@ import gzip
 from typing import List
 from aws_lambda_powertools import Logger
 from botocore.exceptions import ClientError
-from boto3_assist.dynamodb.dynamodb import DynamoDb
+from boto3_assist.dynamodb.dynamodb import DynamoDB
 from boto3_assist.dynamodb.dynamodb_helpers import DynamoDbHelpers
 
 logger = Logger()
@@ -26,7 +26,7 @@ class DynamoDbImporter:
         self,
         *,
         table_name: str,
-        db: DynamoDb,
+        db: DynamoDB,
     ):
         self.table_name = table_name
         self.db = db

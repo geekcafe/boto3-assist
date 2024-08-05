@@ -1,12 +1,12 @@
 """
-DynamoDb Example
+DynamoDB Example
 """
 
 import json
 import os
 from pathlib import Path
 
-from boto3_assist.dynamodb.dynamodb import DynamoDb
+from boto3_assist.dynamodb.dynamodb import DynamoDB
 from boto3_assist.environment_services.environment_loader import EnvironmentLoader
 from boto3_assist.dynamodb.dynamodb_importer import DynamoDbImporter
 
@@ -16,10 +16,10 @@ from examples.dynamodb.user_service import UserService
 
 
 class DynamoDbExample:
-    """An example of using and debuggin DynamoDb"""
+    """An example of using and debuggin DynamoDB"""
 
     def __init__(self) -> None:
-        self.db: DynamoDb = DynamoDb()
+        self.db: DynamoDB = DynamoDB()
         self.table_service: DynamoDbTableService = DynamoDbTableService(self.db)
         self.user_service: UserService = UserService(self.db)
         self.user_post_service: UserPostService = UserPostService(self.db)
@@ -43,18 +43,26 @@ class DynamoDbExample:
         # use a known user id from out saving user example
         print("\nGETTING A SINGLE USER")
         user_id = "dfcad9d0-a9b3-43ff-83a6-a62965c70178"
-        user = self.user_service.get_user(user_id=user_id, table_name=table_name)
-        print(json.dumps(user, indent=4))
+        user = self.user_service.get_user_simplified(
+            user_id=user_id, table_name=table_name
+        )
+        print(json.dumps(user, indent=5))
 
         print("\nGETTING A SUSPENDED USER")
         users = self.user_service.list_users(table_name=table_name, status="suspended")
         for user in users:
-            print(json.dumps(user, indent=4))
+            print(json.dumps(user, indent=5))
 
         print("\nGETTING ACTIVE USERS")
         users = self.user_service.list_users(table_name=table_name, status="active")
         for user in users:
             print(json.dumps(user, indent=4))
+
+        user = self.user_service.get_user_simplified(
+            user_id="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", table_name=table_name
+        )
+        print("\nGETTING A USER THAT DOESN'T EXIST")
+        print(json.dumps(user, indent=4))
 
     def __load_users(self, table_name: str):
         print("upserting users")

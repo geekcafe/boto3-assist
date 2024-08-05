@@ -5,12 +5,13 @@ MIT License.  See Project Root for the license information.
 """
 
 import os
-from typing import List, Optional
+from typing import List, Optional, Callable, Tuple, overload
 
 from aws_lambda_powertools import Tracer, Logger
 from boto3.dynamodb.conditions import Key, And, Equals
 from boto3_assist.dynamodb.dynamodb_connection import DynamoDbConnection
 from boto3_assist.dynamodb.dynamodb_helpers import DynamoDbHelpers
+from boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
 from boto3_assist.utilities.string_utility import StringUtility
 
 
@@ -18,9 +19,9 @@ logger = Logger()
 tracer = Tracer()
 
 
-class DynamoDb(DynamoDbConnection):
+class DynamoDB(DynamoDbConnection):
     """
-        DynamoDb. Wrapper for basic DynamoDb Connection and Actions
+        DynamoDB. Wrapper for basic DynamoDB Connection and Actions
 
     Inherits:
         DynamoDbConnection
@@ -46,13 +47,14 @@ class DynamoDb(DynamoDbConnection):
         self.log_dynamodb_item_size = (
             str(os.getenv("LOG_DYNAMODB_ITEM_SIZE", "false")).lower() == "true"
         )
+        # self.tabel_name: str | None = None
 
     @tracer.capture_method
     def save(self, item: dict, table_name: str, source: Optional[str] = None) -> dict:
         """
         Save an item to the database
         Args:
-            item (dict): DynamoDb Dictionay Object.  Supports the "client" or
+            item (dict): DynamoDB Dictionay Object.  Supports the "client" or
             "resource" syntax
             table_name (str): The DyamoDb Table Name
             source (str, optional): The source of the call, used for logging. Defaults to None.
@@ -61,7 +63,7 @@ class DynamoDb(DynamoDbConnection):
             e: Any Error Raised
 
         Returns:
-            dict: The Response from DynamoDb's put_item actions
+            dict: The Response from DynamoDB's put_item actions
         """
         response = None
 
@@ -90,16 +92,46 @@ class DynamoDb(DynamoDbConnection):
 
         return response
 
-    @tracer.capture_method
+    @overload
+    def get(
+        self,
+        *,
+        table_name: str,
+        model: DynamoDbModelBase,
+        do_projections: bool = True,
+        strongly_consistent: bool = False,
+        return_consumed_capacity: Optional[str] = None,
+        projection_expression: Optional[str] = None,
+        expression_attribute_names: Optional[dict] = None,
+        source: Optional[str] = None,
+        call_type: str = "resource",
+    ) -> dict: ...
+
+    @overload
     def get(
         self,
         key: dict,
         table_name: str,
         *,
         strongly_consistent: bool = False,
-        return_consumed_capacity: str | None = None,
-        projection_expression: str | None = None,
-        expression_attribute_names: dict | None = None,
+        return_consumed_capacity: Optional[str] = None,
+        projection_expression: Optional[str] = None,
+        expression_attribute_names: Optional[dict] = None,
+        source: Optional[str] = None,
+        call_type: str = "resource",
+    ) -> dict: ...
+
+    @tracer.capture_method
+    def get(
+        self,
+        key: Optional[dict] = None,
+        table_name: Optional[str] = None,
+        model: Optional[DynamoDbModelBase] = None,
+        do_projections: bool = True,
+        strongly_consistent: bool = False,
+        return_consumed_capacity: Optional[str] = None,
+        projection_expression: Optional[str] = None,
+        expression_attribute_names: Optional[dict] = None,
         source: Optional[str] = None,
         call_type: str = "resource",
     ) -> dict:
@@ -108,7 +140,20 @@ class DynamoDb(DynamoDbConnection):
             generic get_item dynamoDb call
         Parameters:
             key: a dictionary object representing the primary key
+            model: a model instance of DynamoDbModelBase
         """
+
+        if model is not None:
+            if table_name is None:
+                raise ValueError("table_name must be provided when model is used.")
+            if key is not None:
+                raise ValueError("key cannot be provided when model is used.")
+            key = model.get_primary_key()
+            if do_projections:
+                projection_expression = model.projection_expression
+                expression_attribute_names = model.projection_expression_attribute_names
+        elif key is None or table_name is None:
+            raise ValueError("Either 'key'  or 'model'  must be provided.")
 
         response = None
         try:
@@ -130,7 +175,7 @@ class DynamoDb(DynamoDbConnection):
                 )
             else:
                 raise ValueError(
-                    f"Uknown call_type of {call_type}.  Supported call_types [resource | client]"
+                    f"Unknown call_type of {call_type}. Supported call_types [resource | client]"
                 )
         except Exception as e:  # pylint: disable=w0718
             logger.exception(
@@ -181,7 +226,7 @@ class DynamoDb(DynamoDbConnection):
         projection_expression: Optional[str] = None,
         expression_attribute_names: Optional[dict] = None,
         start_key: Optional[str] = None,
-    ) -> List[dict]:
+    ) -> dict:
         """
         Run a query and return a list of items
         Args:
@@ -219,9 +264,42 @@ class DynamoDb(DynamoDbConnection):
 
         return response
 
+    @overload
+    def delete(
+        self,
+        *,
+        table_name: str,
+        model: DynamoDbModelBase,
+    ) -> dict:
+        pass
+
+    @overload
+    def delete(
+        self,
+        *,
+        table_name: str,
+        primary_key: dict,
+    ) -> dict:
+        pass
+
     @tracer.capture_method
-    def delete(self, primary_key: Key, table_name: Optional[str] = None):
+    def delete(
+        self,
+        *,
+        primary_key: Optional[dict] = None,
+        table_name: Optional[str] = None,
+        model: Optional[DynamoDbModelBase] = None,
+    ):
         """deletes an item from the database"""
+
+        if model is not None:
+            if table_name is None:
+                raise ValueError("table_name must be provided when model is used.")
+            if primary_key is not None:
+                raise ValueError("primary_key cannot be provided when model is used.")
+            primary_key = model.get_primary_key()
+
+        response = None
 
         table = self.dynamodb_resource.Table(table_name)
         response = table.delete_item(Key=primary_key)
@@ -271,3 +349,36 @@ class DynamoDb(DynamoDbConnection):
                         key = key & Key(f"{sk_name}").lt(sk_value)
 
         return key
+
+    def query_by_criteria(
+        self,
+        *,
+        model: DynamoDbModelBase,
+        table_name: str,
+        gsi_func: Callable[[], Tuple[str, And | Key | Equals]],
+        start_key: Optional[str] = None,
+        do_projections: bool = True,
+        ascending: bool = False,
+    ) -> dict:
+        """Helper function to list by criteria"""
+
+        index, key = gsi_func()
+
+        projection_expression: str | None = None
+        expression_attribute_names: dict | None = None
+
+        if do_projections:
+            projection_expression = model.projection_expression
+            expression_attribute_names = model.projection_expression_attribute_names
+
+        response = self.query(
+            key=key,
+            index_name=index,
+            table_name=table_name,
+            start_key=start_key,
+            projection_expression=projection_expression,
+            expression_attribute_names=expression_attribute_names,
+            ascending=ascending,
+        )
+
+        return response

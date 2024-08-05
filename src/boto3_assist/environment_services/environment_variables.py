@@ -1,4 +1,8 @@
-""" """
+"""
+Geek Cafe, LLC
+Maintainers: Eric Wilson
+MIT License.  See Project Root for the license information.
+"""
 
 import os
 
@@ -80,6 +84,8 @@ class EnvironmentVariables:
             return value
 
         class SES:
+            """SES Settings"""
+
             @staticmethod
             def user_name() -> str | None:
                 """
@@ -105,6 +111,8 @@ class EnvironmentVariables:
                 return value
 
         class Cognito:
+            """Cognito Settings"""
+
             @staticmethod
             def user_pool() -> str | None:
                 """
@@ -113,7 +121,9 @@ class EnvironmentVariables:
                 value = os.getenv("COGNITO_USER_POOL")
                 return value
 
-        class DynamoDb:
+        class DynamoDB:
+            """DynamoDB Settings"""
+
             @staticmethod
             def raise_on_error_setting() -> bool:
                 """
@@ -136,7 +146,7 @@ class EnvironmentVariables:
             @staticmethod
             def endpoint_url() -> str | None:
                 """
-                The DynamoDb Endpoint url.  Often used for local development.
+                The DynamoDB Endpoint url.  Often used for local development.
                 For example a docker containers defaults to http://localhost:8000
                 """
                 value = os.getenv("AWS_DYNAMODB_ENDPOINT_URL")
@@ -145,7 +155,7 @@ class EnvironmentVariables:
             @staticmethod
             def aws_access_key_id() -> str | None:
                 """
-                The DynamoDb aws_access_key_id.  Often used for local development.
+                The DynamoDB aws_access_key_id.  Often used for local development.
                 For example a docker containers defaults to dummy_access_key
                 """
                 value = os.getenv("AWS_DYNAMODB_ACCESS_KEY_ID")
@@ -154,7 +164,7 @@ class EnvironmentVariables:
             @staticmethod
             def aws_secret_access_key() -> str | None:
                 """
-                The DynamoDb aws_secret_access_key.  Often used for local development.
+                The DynamoDB aws_secret_access_key.  Often used for local development.
                 For example a docker containers defaults to dummy_secret_key
                 """
                 value = os.getenv("AWS_DYNAMODB_SECRET_ACCESS_KEY")
