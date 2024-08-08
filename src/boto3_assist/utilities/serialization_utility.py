@@ -41,43 +41,28 @@ class Serialization:
     @tracer.capture_method
     def load_properties(source: dict, target: object) -> str | object | None:
         """
-        converts a source to an object
+        Converts a source to an object
         """
-
-        # we need a loaded object
-        if not isinstance(target, object):
-            target = target()
-
+        # Ensure target is an instance of the class
         if isinstance(target, type):
-            # create a new instance
             target = target()
 
+        # Convert source to a dictionary if it has a __dict__ attribute
         if hasattr(source, "__dict__"):
             source = source.__dict__
 
-        try:
-            for attr in dir(target):
-                # Skip private and special methods
-                if not attr.startswith("_"):
-                    value = source.get(attr)
-
-                    if isinstance(value, dict):
-                        obj = getattr(target, attr)
-                        if obj:
-                            tmp: str | object | None = Serialization.load_properties(
-                                value, obj
-                            )
-                            if isinstance(tmp, str):
-                                value = tmp
-                    if value is not None:
-                        if isinstance(attr, str):
-                            try:
-                                setattr(target, attr, value)
-                            except:  # noqa: E722, pylint: disable=bare-except
-                                # this will occur on things like methods
-                                pass
-
-            return target
-        except Exception as e:  # pylint: disable=w0718
-            logger.exception(str(e))
-            return None
+        for key, value in source.items():
+            if hasattr(target, key):
+                attr = getattr(target, key)
+                if isinstance(attr, (int, float, str, bool, type(None))):
+                    setattr(target, key, value)
+                elif isinstance(attr, list) and isinstance(value, list):
+                    attr.clear()
+                    attr.extend(value)
+                elif isinstance(attr, dict) and isinstance(value, dict):
+                    Serialization.load_properties(value, attr)
+                elif hasattr(attr, "__dict__") and isinstance(value, dict):
+                    Serialization.load_properties(value, attr)
+                else:
+                    setattr(target, key, value)
+        return target

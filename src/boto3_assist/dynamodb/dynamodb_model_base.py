@@ -4,11 +4,13 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
+from __future__ import annotations
 import datetime as dt
 import decimal
 import inspect
 import uuid
-from typing import Tuple, Callable, Mapping, TypeVar, Dict, List
+
+from typing import Tuple, Callable, Mapping, TypeVar, List
 from boto3.dynamodb.conditions import And, Equals
 from boto3.dynamodb.types import TypeSerializer
 from boto3_assist.utilities.serialization_utility import Serialization
@@ -93,15 +95,19 @@ class DynamoDbModelBase:
 
         return key
 
-    def map(self, item: dict) -> T | "DynamoDbModelBase":
+    def map(self, item: dict | DynamoDbModelBase) -> T | DynamoDbModelBase:
         """Map the item to the instance"""
+        if isinstance(item, DynamoDbModelBase):
+            item = item.to_resource_dictionary()
 
-        if "Item" in item:
-            item = item["Item"]
+        if isinstance(item, dict):
+            if "Item" in item:
+                item = item["Item"]
 
-        if item is None:
-            raise ValueError("Item cannot be None")
-
+            if item is None:
+                raise ValueError("Item cannot be None")
+        else:
+            raise ValueError("Item must be a dictionary or DynamoDbModelBase")
         return DynamoDbSerializer.map(source=item, target=self)
 
     def to_client_dictionary(self):
