@@ -4,12 +4,24 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import List, Any, Dict
-from boto3.dynamodb.conditions import ConditionBase, Key
+from typing import List, Any, Dict, Callable, Mapping
+
+from boto3.dynamodb.conditions import ConditionBase, Key, And, Equals
 from aws_lambda_powertools import Tracer, Logger
 
 logger = Logger()
 tracer = Tracer()
+
+
+class DynamoDbKeys:
+    """DynamoDb Key"""
+
+    def __init__(self) -> None:
+        self.index_name: str | None = None
+        self.pk_name: str | None = None
+        self.pk_value: Any = None
+        self.sk_name: str | None = None
+        self.sk_value: Any = None
 
 
 class DynamoDbHelpers:
@@ -18,27 +30,35 @@ class DynamoDbHelpers:
     def __init__(self) -> None:
         pass
 
-    def get_filter_expressions(self, key: ConditionBase) -> Dict[str, Any] | None:
+    def get_filter_expressions(
+        self, key: ConditionBase | And | Equals
+    ) -> Dict[str, Any] | None:
         """Get the filter expression"""
         value = None
         try:
+            keys: List[Dict[str, Any]] = []
             expression = {
                 "expression_format": key.expression_format,
                 "expression_operator": key.expression_operator,
-                "keys": List[Dict[str, Any]],
+                "keys": keys,  # Initialize 'keys' as an empty list helps with mypy linting
             }
 
-            count = 0
-            key_values = key.get_expression()["values"]
+            exp = key.get_expression()
+            key_values = exp["values"]
             for v in key_values:
-                kv = self.get_key_info(v)
-                k: dict[str, dict[str, Any]] = {f"key_{count}": kv}
-                keys: List[Dict[str, Any]] | Any = expression["keys"]
-                # if isinstance(keys, List):
-                if k:
-                    keys.append(k)
+                kv = self._get_key_info(v)
+                k: dict[str, dict[str, Any]] = {"key": kv}
 
+                if k:
+                    try:
+                        keys.append(k)
+                    except Exception as e:  # pylint: disable=w0718
+                        logger.error({"exception": str(e)})
+
+            if isinstance(keys, list):
                 expression["keys"] = keys
+            else:
+                expression["keys"] = []
 
             expression["sort"] = self.get_key_sort(key)
 
@@ -48,33 +68,49 @@ class DynamoDbHelpers:
 
         return value
 
-    def get_key_info(self, value: ConditionBase) -> dict[str, Any]:
+    def _get_key_info(self, value: ConditionBase | And | Key) -> dict[str, Any]:
         """
         Get Key Information.  This is helpful for logging and
         visualizing what the key looks like
         """
-        key_values = value.get_expression()["values"]
-        key: Key = key_values[0]
-        key_name = key.name
-        key_value = key_values[1]
+        key_value: Any = None
+        key_name: Any = None
         values = {}
-        try:
-            index = 0
-            sub_values = value.get_expression()["values"]
-            if sub_values:
-                for v in sub_values:  # value._values:  # pylint: disable=w0212,w0012,
-                    if index > 0:
-                        values[f"value_{index}"] = v
-                    index += 1
-        except:  # noqa e722, pylint: disable=w0702
-            pass
+        if isinstance(value, Key):
+            key_name = value.name
+        elif isinstance(value, str):
+            key_value = value
+        else:
+            key_values = value.get_expression()["values"]
+            key: Key = key_values[0]
+            key_name = key.name
+            key_value = key_values[1]
+
+            try:
+                index = 0
+                sub_values = value.get_expression()["values"]
+                if sub_values:
+                    for (
+                        v
+                    ) in sub_values:  # value._values:  # pylint: disable=w0212,w0012,
+                        if index > 0:
+                            values[f"value_{index}"] = v
+                        index += 1
+            except:  # noqa e722, pylint: disable=w0702
+                pass
 
         key_info: Dict[str, Any] = {
             "name": key_name,
             "key": key_value,
-            "expression_format": value.expression_format,
-            "expression_operator": value.expression_operator,
-            "has_grouped_values": value.has_grouped_values,
+            "expression_format": None
+            if not isinstance(value, And)
+            else value.expression_format,
+            "expression_operator": None
+            if not isinstance(value, And)
+            else value.expression_operator,
+            "has_grouped_values": None
+            if not isinstance(value, And)
+            else value.has_grouped_values,
             "values": values,
         }
 
@@ -277,3 +313,163 @@ class DynamoDbHelpers:
             return [DynamoDbHelpers.clean_null_values(i) for i in item]
         else:
             return item
+
+    @staticmethod
+    def get_key(key_configs: dict, index_name: str, key_name: str | None) -> str | None:
+        """
+        Get the partition key for a given index
+        Args:
+            key_configs (dict): _description_
+            index_name (str): _description_
+            key_name (str | None): _description_
+
+        Returns:
+            str | None: _description_
+        """
+        keys = key_configs
+
+        # should be in a list format
+        if isinstance(keys, list) and len(keys) > 0:
+            pass
+        else:
+            raise ValueError(
+                f"Could not find key_configurations for DynamoDB index {key_name} key {key_name}"
+            )
+        # get the correct key
+        value: str | Callable[[], str] | None = None
+        k: dict
+        found: bool = False
+        for k in keys:
+            if isinstance(k, dict):
+                for index, index_value in k.items():
+                    if index == index_name:
+                        if isinstance(index_value, dict):
+                            block: dict = index_value.get(key_name, None)
+                            if isinstance(block, dict):
+                                value = block.get("value", None)
+
+                        found = True
+                        break
+            if found:
+                break
+
+        if not value:
+            return None
+
+        if callable(value):
+            return value()
+        return value
+
+    def populate_keys(self, key_configs: dict, keys: DynamoDbKeys) -> DynamoDbKeys:
+        """
+        Populate a key with it's given value
+
+        Args:
+            sefl (_type_): _description_
+            key_configs (dict): _description_
+            keys (DynamoDbKeys): _description_
+
+        Raises:
+            ValueError: _description_
+
+        Returns:
+            DynamoDbKeys: _description_
+        """
+
+        # should be in a list format
+        if isinstance(key_configs, list) and len(key_configs) > 0:
+            pass
+        else:
+            raise ValueError(
+                f"Could not find key_configurations for DynamoDB index {keys.index_name}"
+            )
+        # get the correct key
+        value: str | Callable[[], str] | None = None
+        k: dict
+        found: bool = False
+        for k in key_configs:
+            if isinstance(k, dict):
+                for index, index_value in k.items():
+                    if index == keys.index_name:
+                        if isinstance(index_value, dict):
+                            pk_index_keys: dict = index_value.get("pk")
+                            if isinstance(pk_index_keys, dict):
+                                value = pk_index_keys.get("value", None)
+
+                                if callable(value):
+                                    value = value()
+                                keys.pk_value = value
+                                keys.pk_name = pk_index_keys.get("attribute", None)
+
+                            sk_index_keys: dict = index_value.get("sk")
+                            if isinstance(sk_index_keys, dict):
+                                value = sk_index_keys.get("value", None)
+
+                                if callable(value):
+                                    value = value()
+                                keys.sk_value = value
+                                keys.sk_name = sk_index_keys.get("attribute", None)
+
+                        found = True
+                        break
+            if found:
+                break
+
+        return keys
+
+    def build_keys(
+        self,
+        pk_name: str,
+        pk_value: str,
+        sk_name: str | None = None,
+        sk_value: str | None = None,
+        sk_value2: str | None = None,
+        condition: str = "begins_with",
+    ) -> And | Equals:
+        """Get the GSI index name and key"""
+
+        key: Equals | And = Key(f"{pk_name}").eq(pk_value)
+
+        if sk_name and sk_value:
+            if sk_value2:
+                match condition:
+                    case "between":
+                        key = key & Key(f"{sk_name}").between(sk_value, sk_value2)
+
+            else:
+                match condition:
+                    case "begins_with":
+                        key = key & Key(f"{sk_name}").begins_with(sk_value)
+                    case "eq":
+                        key = key & Key(f"{sk_name}").eq(sk_value)
+                    case "gt":
+                        key = key & Key(f"{sk_name}").gt(sk_value)
+                    case "gte":
+                        key = key & Key(f"{sk_name}").gte(sk_value)
+                    case "lt":
+                        key = key & Key(f"{sk_name}").lt(sk_value)
+
+        return key
+
+    def get_keys(self, key_configs: List[Dict]) -> List[DynamoDbKeys]:
+        """_summary_
+
+        Args:
+            key_configs (List[Dict]): _description_
+            index_name (str): _description_
+
+        Returns:
+            List[Dict]: _description_
+        """
+        keys = []
+        for k in key_configs:
+            if isinstance(k, dict):
+                for index, index_value in k.items():
+                    print(index, index_value)
+                    if index != "primary_key":
+                        key: DynamoDbKeys = DynamoDbKeys()
+                        key.index_name = index
+                        key = self.populate_keys(key_configs, key)
+                        keys.append(key)
+
+        return keys

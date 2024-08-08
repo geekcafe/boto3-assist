@@ -32,24 +32,56 @@ class UserPostDbModel(DynamoDbModelBase):
         self.__setup_indexes()
 
     def __setup_indexes(self):
-        key_configs = {
-            "pk_sk": {
-                "pk": lambda: f"post#{self.slug if self.slug else ''}",
-                "sk": lambda: f"post#{self.slug if self.slug else ''}",
+        key_configs = [
+            {
+                "primary_key": {
+                    "pk": {
+                        "attribute": "pk",
+                        "value": lambda: f"post#{self.slug if self.slug else ''}",
+                    },
+                    "sk": {
+                        "attribute": "sk",
+                        "value": lambda: f"post#{self.slug if self.slug else ''}",
+                    },
+                }
             },
-            "gsi0": {
-                "pk": "posts#",
-                "sk": lambda: f"title#{self.title if self.title else ''}",
+            {
+                "gsi0": {
+                    "pk": {
+                        "attribute": "gsi0_pk",
+                        "value": "posts#",
+                    },
+                    "sk": {
+                        "attribute": "gsi0_sk",
+                        "value": lambda: f"title#{self.title if self.title else ''}",
+                    },
+                }
             },
-            "gsi1": {
-                "pk": "posts#",
-                "sk": lambda: f"ts#{self.timestamp if self.timestamp else ''}",
+            {
+                "gsi1": {
+                    "pk": {
+                        "attribute": "gsi1_pk",
+                        "value": "posts#",
+                    },
+                    "sk": {
+                        "attribute": "gsi1_sk",
+                        "value": lambda: f"ts#{self.timestamp if self.timestamp else ''}",
+                    },
+                }
             },
-            "gsi2": {
-                "pk": "posts#",
-                "sk": lambda: f"slug#{self.slug if self.slug else ''}",
+            {
+                "gsi2": {
+                    "pk": {
+                        "attribute": "gsi2_pk",
+                        "value": "posts#",
+                    },
+                    "sk": {
+                        "attribute": "gsi2_sk",
+                        "value": lambda: f"slug#{self.slug if self.slug else ''}",
+                    },
+                }
             },
-        }
+        ]
 
         self.key_configs = key_configs
         self.projection_expression = (

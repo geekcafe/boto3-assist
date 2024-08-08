@@ -1,12 +1,19 @@
-# create unittest
+"""
+Geek Cafe, LLC
+Maintainers: Eric Wilson
+MIT License.  See Project Root for the license information.
+"""
 
 import unittest
+from typing import cast
 from typing import Optional
 from boto3_assist.utilities.serialization_utility import Serialization
 from boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
 
 
 class User:
+    """User Model"""
+
     def __init__(
         self,
         name: Optional[str] = None,
@@ -19,6 +26,8 @@ class User:
 
 
 class UserDbModel(User, DynamoDbModelBase):
+    """User Model"""
+
     def __init__(
         self,
         name: Optional[str] = None,
@@ -45,6 +54,13 @@ class SerializationUnitTest(unittest.TestCase):
         self.assertEqual(serialized_data.name, "John Doe")
         self.assertEqual(serialized_data.age, 30)
         self.assertEqual(serialized_data.email, "john@example.com")
+        self.assertIsInstance(serialized_data, User)
+        t = type(serialized_data)
+        print(t)
+        user: User = cast(User, serialized_data)
+        self.assertEqual(user.name, "John Doe")
+        self.assertEqual(user.age, 30)
+        self.assertEqual(user.email, "john@example.com")
 
     def test_object_serialization_map(self):
         """Test Basic Serlization"""

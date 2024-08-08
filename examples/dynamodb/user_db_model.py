@@ -29,34 +29,97 @@ class UserDbModel(DynamoDbModelBase):
         self.__setup_indexes()
 
     def __setup_indexes(self):
-        key_configs = {
-            "pk_sk": {
-                "pk": lambda: f"user#{self.id if self.id else ''}",
-                "sk": lambda: f"user#{self.id if self.id else ''}",
+        key_configs = [
+            {
+                "primary_key": {
+                    "pk": {
+                        "attribute": "pk",
+                        "value": lambda: f"user#{self.id if self.id else ''}",
+                    },
+                    "sk": {
+                        "attribute": "sk",
+                        "value": lambda: f"user#{self.id if self.id else ''}",
+                    },
+                }
             },
-            "gsi0": {
-                "pk": "users#",
-                "sk": lambda: f"email#{self.email if self.email else ''}",
+            {
+                "gsi0": {
+                    "pk": {
+                        "attribute": "gsi0_pk",
+                        "value": "users#",
+                    },
+                    "sk": {
+                        "attribute": "gsi0_sk",
+                        "value": lambda: f"email#{self.email if self.email else ''}",
+                    },
+                }
             },
-            "gsi1": {
-                "pk": "users#",
-                "sk": lambda: f"lastname#{self.last_name if self.last_name else ''}",
+            {
+                "gsi1": {
+                    "pk": {"attribute": "gsi1_pk", "value": "users#"},
+                    "sk": {
+                        "attribute": "gsi1_sk",
+                        "value": self.__get_gsi1,
+                        "meta": {
+                            "lastname#{self.last_name}": "with no first name",
+                            "lastname#{self.last_name}#firstname#{self.first_name}": "with a first name",
+                        },
+                    },
+                }
             },
-            "gsi2": {
-                "pk": "users#",
-                "sk": lambda: f"lastname#{self.first_name if self.first_name else ''}",
+            {
+                "gsi2": {
+                    "pk": {
+                        "attribute": "gsi2_pk",
+                        "value": "users#",
+                    },
+                    "sk": {
+                        "attribute": "gsi2_sk",
+                        "value": self.__get_gsi2,
+                        "meta": {
+                            "firstname#{self.first_name}": "with no last name",
+                            "firstname#{self.first_name}#lastname#{self.last_name}": "with a last name",
+                        },
+                    },
+                }
             },
-            "gsi3": {
-                "pk": "users#",
-                "sk": lambda: (
-                    f"status#{self.status if self.status else ''}"
-                    f"#email#{self.email if self.email else ''}"
-                ),
+            {
+                "gsi3": {
+                    "pk": {
+                        "attribute": "gsi3_pk",
+                        "value": "users#",
+                    },
+                    "sk": {
+                        "attribute": "gsi3_sk",
+                        "value": lambda: (
+                            f"status#{self.status if self.status else ''}"
+                            f"#email#{self.email if self.email else ''}"
+                        ),
+                    },
+                }
             },
-        }
+        ]
 
         self.key_configs = key_configs
         self.projection_expression = (
-            "id,first_name,last_name,email,modified_datetime_utc,#status"
+            "id,first_name,last_name,email,#type,#status,"
+            "company_name,modified_datetime_utc"
         )
-        self.projection_expression_attribute_names = {"#status": "status"}
+        self.projection_expression_attribute_names = {
+            "#status": "status",
+            "#type": "type",
+        }
+
+    def __get_gsi1(self) -> str:
+        index = f"lastname#{self.last_name if self.last_name else ''}"
+        if self.last_name:
+            index = f"{index}#firstname#{self.first_name}"
+
+        return index
+
+    def __get_gsi2(self) -> str:
+        index = f"firstname#{self.first_name if self.first_name else ''}"
+        if self.last_name:
+            index = f"{index}#lastname#{self.last_name}"
+
+        return index

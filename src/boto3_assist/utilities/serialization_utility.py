@@ -1,5 +1,6 @@
 """Serialization Utility"""
 
+from typing import Dict, List
 import jsons
 from aws_lambda_powertools import Logger, Tracer
 
@@ -13,12 +14,15 @@ class Serialization:
     """
 
     @staticmethod
-    def convert_object_to_dict(model) -> object:
+    def convert_object_to_dict(model: object) -> Dict | List:
         """
         Dumps an object to dictionary structure
         """
         dump = jsons.dump(model, strip_privates=True)
-        return dump
+        if isinstance(dump, dict) or isinstance(dump, List):
+            return dump
+
+        raise ValueError("Unable to convert object to dictionary")
 
     @staticmethod
     @tracer.capture_method

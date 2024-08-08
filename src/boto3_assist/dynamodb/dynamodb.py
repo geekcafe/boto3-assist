@@ -63,7 +63,8 @@ class DynamoDB(DynamoDbConnection):
             e: Any Error Raised
 
         Returns:
-            dict: The Response from DynamoDB's put_item actions
+            dict: The Response from DynamoDB's put_item actions.
+            It does not return the saved object, only the response.
         """
         response = None
 
@@ -98,7 +99,7 @@ class DynamoDB(DynamoDbConnection):
         *,
         table_name: str,
         model: DynamoDbModelBase,
-        do_projections: bool = True,
+        do_projections: bool = False,
         strongly_consistent: bool = False,
         return_consumed_capacity: Optional[str] = None,
         projection_expression: Optional[str] = None,
@@ -127,7 +128,7 @@ class DynamoDB(DynamoDbConnection):
         key: Optional[dict] = None,
         table_name: Optional[str] = None,
         model: Optional[DynamoDbModelBase] = None,
-        do_projections: bool = True,
+        do_projections: bool = False,
         strongly_consistent: bool = False,
         return_consumed_capacity: Optional[str] = None,
         projection_expression: Optional[str] = None,
@@ -218,7 +219,7 @@ class DynamoDB(DynamoDbConnection):
     def query(
         self,
         key: Key | And | Equals,
-        index_name: Optional[str] = None,
+        index_name: str,
         ascending: bool = False,
         table_name: Optional[str] = None,
         source: Optional[str] = None,
@@ -316,40 +317,6 @@ class DynamoDB(DynamoDbConnection):
 
         return table_list
 
-    def get_key(
-        self,
-        pk_name: str,
-        pk_value: str,
-        sk_name: str | None = None,
-        sk_value: str | None = None,
-        sk_value2: str | None = None,
-        condition: str = "begins_with",
-    ) -> And | Equals:
-        """Get the GSI index name and key"""
-
-        key: Equals | And = Key(f"{pk_name}").eq(pk_value)
-
-        if sk_name and sk_value:
-            if sk_value2:
-                match condition:
-                    case "between":
-                        key = key & Key(f"{sk_name}").between(sk_value, sk_value2)
-
-            else:
-                match condition:
-                    case "begins_with":
-                        key = key & Key(f"{sk_name}").begins_with(sk_value)
-                    case "eq":
-                        key = key & Key(f"{sk_name}").eq(sk_value)
-                    case "gt":
-                        key = key & Key(f"{sk_name}").gt(sk_value)
-                    case "gte":
-                        key = key & Key(f"{sk_name}").gte(sk_value)
-                    case "lt":
-                        key = key & Key(f"{sk_name}").lt(sk_value)
-
-        return key
-
     def query_by_criteria(
         self,
         *,
@@ -357,7 +324,7 @@ class DynamoDB(DynamoDbConnection):
         table_name: str,
         gsi_func: Callable[[], Tuple[str, And | Key | Equals]],
         start_key: Optional[str] = None,
-        do_projections: bool = True,
+        do_projections: bool = False,
         ascending: bool = False,
     ) -> dict:
         """Helper function to list by criteria"""
@@ -382,3 +349,13 @@ class DynamoDB(DynamoDbConnection):
         )
 
         return response
+
+    def has_more_records(self, response: dict) -> bool:
+        """Check if there are more records to process"""
+
+        return "LastEvaluatedKey" in response
+
+    def last_key(self, response: dict) -> str | None:
+        """Get the last key"""
+
+        return response.get("LastEvaluatedKey")

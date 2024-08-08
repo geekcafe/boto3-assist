@@ -4,7 +4,7 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import boto3
 from aws_lambda_powertools import Logger
