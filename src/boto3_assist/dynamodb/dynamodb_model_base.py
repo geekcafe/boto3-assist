@@ -12,7 +12,7 @@ from typing import Tuple, Callable, Mapping, TypeVar, Dict, List
 from boto3.dynamodb.conditions import And, Equals
 from boto3.dynamodb.types import TypeSerializer
 from boto3_assist.utilities.serialization_utility import Serialization
-from boto3_assist.dynamodb.dynamodb_helpers import DynamoDbHelpers, DynamoDbKeys
+from boto3_assist.dynamodb.dynamodb_helpers import DynamoDbHelpers, DynamoDbKey
 
 
 def exclude_from_serialization(method):
@@ -124,15 +124,15 @@ class DynamoDbModelBase:
         if index_name is None:
             raise ValueError("Index name cannot be None")
 
-        keys: DynamoDbKeys = DynamoDbKeys()
-        keys.index_name = index_name
-        self.helpers.populate_keys(self.key_configs, keys=keys)
+        key: DynamoDbKey = DynamoDbKey()
+        key.index_name = index_name
+        self.helpers.populate_key(self.key_configs, key=key)
 
-        key = self.helpers.build_keys(
-            pk_name=keys.pk_name,
-            pk_value=keys.pk_value,
-            sk_name=keys.sk_name,
-            sk_value=keys.sk_value,
+        key = self.helpers.build_key(
+            pk_name=key.pk_name,
+            pk_value=key.pk_value,
+            sk_name=key.sk_name,
+            sk_value=key.sk_value,
             condition=condition,
         )
 
@@ -203,7 +203,7 @@ class DynamoDbSerializer:
         return DynamoDbSerializer._serialize(instance, lambda x: x)
 
     @staticmethod
-    def _serialize(instance: object, serialize_fn):
+    def _serialize(instance: DynamoDbModelBase, serialize_fn):
         def is_primitive(value):
             """Check if the value is a primitive data type."""
             return isinstance(value, (str, int, float, bool, type(None)))
@@ -232,7 +232,7 @@ class DynamoDbSerializer:
         return instance_dict
 
     @staticmethod
-    def _add_properties(instance: object, serialize_value) -> dict:
+    def _add_properties(instance: DynamoDbModelBase, serialize_value) -> dict:
         instance_dict = {}
         # Add instance variables
         for attr, value in instance.__dict__.items():
@@ -267,8 +267,10 @@ class DynamoDbSerializer:
 
     @staticmethod
     def _add_key_attributes(instance: DynamoDbModelBase, instance_dict: dict) -> dict:
-        print(instance.key_configs)
-        keys: List[DynamoDbKeys] = instance.helpers.get_keys(instance.key_configs)
+        if not issubclass(type(instance), DynamoDbModelBase):
+            return instance_dict
+
+        keys: List[DynamoDbKey] = instance.helpers.get_keys(instance.key_configs)
         for key in keys:
             if key.pk_name is not None and key.pk_value is not None:
                 instance_dict[key.pk_name] = key.pk_value

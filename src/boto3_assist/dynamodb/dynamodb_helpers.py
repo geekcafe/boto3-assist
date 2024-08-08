@@ -13,7 +13,7 @@ logger = Logger()
 tracer = Tracer()
 
 
-class DynamoDbKeys:
+class DynamoDbKey:
     """DynamoDb Key"""
 
     def __init__(self) -> None:
@@ -360,20 +360,22 @@ class DynamoDbHelpers:
             return value()
         return value
 
-    def populate_keys(self, key_configs: dict, keys: DynamoDbKeys) -> DynamoDbKeys:
+    def populate_key(
+        self, key_configs: List[Dict[str, Any]], key: DynamoDbKey
+    ) -> DynamoDbKey:
         """
         Populate a key with it's given value
 
         Args:
             sefl (_type_): _description_
             key_configs (dict): _description_
-            keys (DynamoDbKeys): _description_
+            key (DynamoDbKey): _description_
 
         Raises:
             ValueError: _description_
 
         Returns:
-            DynamoDbKeys: _description_
+            DynamoDbKey: _description_
         """
 
         # should be in a list format
@@ -381,43 +383,49 @@ class DynamoDbHelpers:
             pass
         else:
             raise ValueError(
-                f"Could not find key_configurations for DynamoDB index {keys.index_name}"
+                f"Could not find key_configurations for DynamoDB index {key.index_name}"
             )
         # get the correct key
-        value: str | Callable[[], str] | None = None
+
         k: dict
         found: bool = False
         for k in key_configs:
             if isinstance(k, dict):
-                for index, index_value in k.items():
-                    if index == keys.index_name:
-                        if isinstance(index_value, dict):
-                            pk_index_keys: dict = index_value.get("pk")
-                            if isinstance(pk_index_keys, dict):
-                                value = pk_index_keys.get("value", None)
+                found, key = self._build_key(k, key)
+                if found:
+                    break
 
-                                if callable(value):
-                                    value = value()
-                                keys.pk_value = value
-                                keys.pk_name = pk_index_keys.get("attribute", None)
+        return key
 
-                            sk_index_keys: dict = index_value.get("sk")
-                            if isinstance(sk_index_keys, dict):
-                                value = sk_index_keys.get("value", None)
+    def _build_key(
+        self, key_config: dict, key: DynamoDbKey
+    ) -> tuple[bool, DynamoDbKey]:
+        value: str | Callable[[], str] | None = None
+        for index, index_value in key_config.items():
+            if index == key.index_name:
+                if isinstance(index_value, dict):
+                    pk_index_key: dict = index_value.get("pk", {})
+                    if isinstance(pk_index_key, dict) and len(pk_index_key) > 0:
+                        value = pk_index_key.get("value", None)
 
-                                if callable(value):
-                                    value = value()
-                                keys.sk_value = value
-                                keys.sk_name = sk_index_keys.get("attribute", None)
+                        if callable(value):
+                            value = value()
+                        key.pk_value = value
+                        key.pk_name = pk_index_key.get("attribute", None)
 
-                        found = True
-                        break
-            if found:
-                break
+                    sk_index_key: dict = index_value.get("sk", {})
+                    if isinstance(sk_index_key, dict) and len(sk_index_key) > 0:
+                        value = sk_index_key.get("value", None)
 
-        return keys
+                        if callable(value):
+                            value = value()
+                        key.sk_value = value
+                        key.sk_name = sk_index_key.get("attribute", None)
 
-    def build_keys(
+                return True, key
+        return False, key
+
+    def build_key(
         self,
         pk_name: str,
         pk_value: str,
@@ -451,7 +459,7 @@ class DynamoDbHelpers:
 
         return key
 
-    def get_keys(self, key_configs: List[Dict]) -> List[DynamoDbKeys]:
+    def get_keys(self, key_configs: List[Dict]) -> List[DynamoDbKey]:
         """_summary_
 
         Args:
@@ -461,15 +469,15 @@ class DynamoDbHelpers:
         Returns:
             List[Dict]: _description_
         """
-        keys = []
+        keys: List[DynamoDbKey] = []
         for k in key_configs:
             if isinstance(k, dict):
                 for index, index_value in k.items():
                     print(index, index_value)
                     if index != "primary_key":
-                        key: DynamoDbKeys = DynamoDbKeys()
+                        key: DynamoDbKey = DynamoDbKey()
                         key.index_name = index
-                        key = self.populate_keys(key_configs, key)
+                        key = self.populate_key(key_configs, key)
                         keys.append(key)
 
         return keys
