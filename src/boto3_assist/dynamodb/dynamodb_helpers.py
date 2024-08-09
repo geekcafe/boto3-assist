@@ -11,12 +11,56 @@ from boto3.dynamodb.conditions import (
     Key,
     And,
     Equals,
+    ComparisonCondition,
 )
 from aws_lambda_powertools import Tracer, Logger
-from boto3_assist.dynamodb.dynamodb_key import DynamoDbKey
 
 logger = Logger()
 tracer = Tracer()
+
+
+class DynamoDbKey:
+    """DynamoDb Key"""
+
+    def __init__(self) -> None:
+        self.index_name: str | None = None
+        self.pk_name: str | None = None
+        self.pk_value: str | None = None
+        self.sk_name: str | None = None
+        self.sk_value: str | None = None
+        self.sk_value_2: str | None = None
+        self.__pk: Equals | None = None
+        self.__sk: Key | ConditionBase | ComparisonCondition | None = None
+        self.__composite_key: Key | ConditionBase | ComparisonCondition | None = None
+
+    @property
+    def pk(self) -> Equals:
+        """Get the primary key"""
+        if self.__pk is None:
+            raise ValueError("Primary key not set")
+        return self.__pk
+
+    @pk.setter
+    def pk(self, value: Equals):
+        self.__pk = value
+
+    @property
+    def sk(self) -> Key | ConditionBase | ComparisonCondition | None:
+        """Get the sort key"""
+        return self.__sk
+
+    @sk.setter
+    def sk(self, value: Key | ConditionBase | ComparisonCondition):
+        self.__sk = value
+
+    @property
+    def composite_key(self) -> Key | ConditionBase | ComparisonCondition | None:
+        """Get the composite key"""
+        return self.__composite_key
+
+    @composite_key.setter
+    def composite_key(self, value: Key | ConditionBase | ComparisonCondition):
+        self.__composite_key = value
 
 
 class DynamoDbHelpers:
