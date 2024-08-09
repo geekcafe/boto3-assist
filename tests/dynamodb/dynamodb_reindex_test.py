@@ -5,9 +5,10 @@ MIT License.  See Project Root for the license information.
 """
 
 import unittest
-from typing import Optional, List, Dict
+from typing import Optional, List
 
-from src.boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
+from src.boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase, DynamoDbKey
+from src.boto3_assist.dynamodb.dynamodb_reindexer import DynamoDbReindexer
 
 
 class User(DynamoDbModelBase):
@@ -104,55 +105,11 @@ class User(DynamoDbModelBase):
         return index
 
 
-class SerializationUnitTest(unittest.TestCase):
+class ReindexTest(unittest.TestCase):
     "Serialization Tests"
 
-    def test_basic_serialization(self):
-        """Test Basic Serlization"""
-        # Arrange
-        data = {
-            "id": "123456",
-            "first_name": "John",
-            "age": 30,
-            "email": "john@example.com",
-        }
-
-        # Act
-        serialized_data: User = User().map(data)
-
-        # Assert
-
-        self.assertEqual(serialized_data.first_name, "John")
-        self.assertEqual(serialized_data.age, 30)
-        self.assertEqual(serialized_data.email, "john@example.com")
-        self.assertIsInstance(serialized_data, User)
-
-        key = serialized_data.get_primary_key()
-        self.assertIsInstance(key, dict)
-
-    def test_object_serialization_map(self):
-        """Test Basic Serlization"""
-        # Arrange
-        data = {
-            "id": "123456",
-            "first_name": "John",
-            "age": 30,
-            "email": "john@example.com",
-        }
-
-        # Act
-        serialized_data: User = User().map(data)
-
-        # Assert
-
-        self.assertEqual(serialized_data.first_name, "John")
-        self.assertEqual(serialized_data.age, 30)
-        self.assertEqual(serialized_data.email, "john@example.com")
-
-        self.assertIsInstance(serialized_data, User)
-
-    def test_new_key_design_serialization_map(self):
-        """Test Basic Serlization"""
+    def test_key_dictionary_expressions(self):
+        """Test Listing Keys"""
         # Arrange
         data = {
             "id": "123456",
@@ -163,49 +120,19 @@ class SerializationUnitTest(unittest.TestCase):
 
         # Act
         user: User = User().map(data)
+        keys: List[DynamoDbKey] = user.list_keys()
 
-        # Assert
+        reindexer: DynamoDbReindexer = DynamoDbReindexer("dummy_table")
 
-        self.assertEqual(user.first_name, "John")
-        self.assertEqual(user.age, 30)
-        self.assertEqual(user.email, "john@example.com")
+        dictionary = user.helpers.keys_to_dictionary(keys=keys)
 
-        self.assertIsInstance(user, User)
+        update_expression = reindexer.build_update_expression(dictionary)
+        expression_attribute_values = reindexer.build_expression_attribute_values(
+            dictionary
+        )
 
-        pk = user.pk
-        self.assertEqual(pk, "user#123456")
+        print(update_expression)
+        print(expression_attribute_values)
 
-        index_name, gsi_key = user.get_key_data("gsi1")
-        # this should be mapped to gsi0
-        self.assertEqual(index_name, "gsi1")
-
-        expression = user.helpers.get_filter_expressions(gsi_key)
-        print(f"expression: {expression}")
-        keys: List[Dict] = expression.get("keys")
-        key_0: Dict = keys[0].get("key")
-        self.assertEqual(key_0.get("name"), "gsi1_pk")
-        self.assertEqual(key_0.get("key"), "users#")
-
-        key_1: Dict = keys[1].get("key")
-        self.assertEqual(key_1.get("name"), "gsi1_sk")
-        # we didn't populate a last name so this is correct (based on the current logic)
-        self.assertEqual(key_1.get("key"), "lastname##firstname#John")
-
-        ### gsi3 mapped to a name of gsi2
-        index_name, gsi_key = user.get_key_data("gsi2")
-        # this should be mapped to gsi0
-        self.assertEqual(index_name, "gsi2")
-
-        expression = user.helpers.get_filter_expressions(gsi_key)
-        print(f"expression: {expression}")
-        keys: List[Dict] = expression.get("keys")
-        key_0: Dict = keys[0].get("key")
-        self.assertEqual(key_0.get("name"), "gsi2_pk")
-        self.assertEqual(key_0.get("key"), "users#")
-
-        key_1: Dict = keys[1].get("key")
-        self.assertEqual(key_1.get("name"), "gsi2_sk")
-        self.assertEqual(key_1.get("key"), "firstname#John")
-
-        resource = user.to_resource_dictionary()
-        self.assertIsNotNone(resource)
+        self.assertIsNotNone(update_expression)
+        self.assertIsNotNone(expression_attribute_values)

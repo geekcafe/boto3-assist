@@ -55,7 +55,14 @@ class Serialization:
             if hasattr(target, key):
                 attr = getattr(target, key)
                 if isinstance(attr, (int, float, str, bool, type(None))):
-                    setattr(target, key, value)
+                    try:
+                        setattr(target, key, value)
+                    except Exception as e:  # pylint: disable=w0718
+                        logger.error(
+                            f"Error setting attribute {key} with value {value}: {e}. "
+                            "This usually occurs on properties that don't have setters. "
+                            "Try adding a setter for this property or ignore this error. "
+                        )
                 elif isinstance(attr, list) and isinstance(value, list):
                     attr.clear()
                     attr.extend(value)

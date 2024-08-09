@@ -459,7 +459,9 @@ class DynamoDbHelpers:
 
         return key
 
-    def get_keys(self, key_configs: List[Dict]) -> List[DynamoDbKey]:
+    def get_keys(
+        self, key_configs: List[Dict], exclude_pk: bool = False
+    ) -> List[DynamoDbKey]:
         """_summary_
 
         Args:
@@ -472,12 +474,31 @@ class DynamoDbHelpers:
         keys: List[DynamoDbKey] = []
         for k in key_configs:
             if isinstance(k, dict):
-                for index, index_value in k.items():
-                    print(index, index_value)
-                    if index != "primary_key":
-                        key: DynamoDbKey = DynamoDbKey()
-                        key.index_name = index
-                        key = self.populate_key(key_configs, key)
-                        keys.append(key)
+                for index, _ in k.items():
+                    # print(index, index_value)
+                    if index == "primary_key" and exclude_pk:
+                        continue
+                    key: DynamoDbKey = DynamoDbKey()
+                    key.index_name = index
+                    key = self.populate_key(key_configs, key)
+                    keys.append(key)
 
         return keys
+
+    def keys_to_dictionary(self, keys: List[DynamoDbKey]) -> dict:
+        """_summary_
+
+        Args:
+            keys (List[DynamoDbKey]): _description_
+
+        Returns:
+            dict: _description_
+        """
+        key_dict: dict = {}
+        for key in keys:
+            if key.pk_name and key.pk_value:
+                key_dict[key.pk_name] = key.pk_value
+            if key.sk_name and key.sk_value:
+                key_dict[key.sk_name] = key.sk_value
+
+        return key_dict

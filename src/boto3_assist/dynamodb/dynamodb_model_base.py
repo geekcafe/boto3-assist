@@ -35,6 +35,10 @@ class DynamoDbModelBase:
         self.__projection_expression: str | None = None
         self.__projection_expression_attribute_names: dict | None = None
         self.__helpers: DynamoDbHelpers | None = None
+        self.__pk: str | None = None
+        self.__sk: str | None = None
+        self.__enable_pk_setter = False
+        self.__enable_sk_setter = False
 
     @property
     @exclude_from_serialization
@@ -68,20 +72,52 @@ class DynamoDbModelBase:
         self.__projection_expression_attribute_names = value
 
     @property
+    @exclude_from_serialization
+    def enable_pk_setter(self) -> bool:
+        """Gets the enable pk setting"""
+        return self.__enable_pk_setter
+
+    @enable_pk_setter.setter
+    def enable_pk_setter(self, value: bool):
+        self.__enable_pk_setter = value
+
+    @property
+    @exclude_from_serialization
+    def enable_sk_setter(self) -> bool:
+        """Gets the enable sk setting"""
+        return self.__enable_sk_setter
+
+    @enable_sk_setter.setter
+    def enable_sk_setter(self, value: bool):
+        self.__enable_sk_setter = value
+
+    @property
     def pk(self) -> str:
         """The primary key"""
-        pk = self.get_pk("primary_key")
-        if pk is None:
+        if self.__pk is None:
+            self.__pk = self.get_pk("primary_key")
+        if self.__pk is None:
             raise ValueError("Primary key not set")
-        return pk
+        return self.__pk
+
+    @pk.setter
+    def pk(self, value: str):
+        if self.enable_pk_setter:
+            self.__pk = value
 
     @property
     def sk(self) -> str:
         """The key"""
-        sk = self.get_sk("primary_key")
-        if sk is None:
+        if self.__sk is None:
+            self.__sk = self.get_sk("primary_key")
+        if self.__sk is None:
             raise ValueError("Sort key not set")
-        return sk
+        return self.__sk
+
+    @sk.setter
+    def sk(self, value: str):
+        if self.enable_sk_setter:
+            self.__sk = value
 
     def get_primary_key(self) -> dict:  # pylint: disable=w0622
         """Gets the key for the primay pk and sk key pair"""
@@ -101,11 +137,15 @@ class DynamoDbModelBase:
             item = item.to_resource_dictionary()
 
         if isinstance(item, dict):
-            if "Item" in item:
-                item = item["Item"]
+            # see if this is coming directly from dynamodb
+            if "ResponseMetadata" in item:
+                response: dict | None = item.get("Item")
 
-            if item is None:
-                raise ValueError("Item cannot be None")
+                if response is None:
+                    raise ValueError("Item cannot be None")
+                else:
+                    item = response
+
         else:
             raise ValueError("Item must be a dictionary or DynamoDbModelBase")
         return DynamoDbSerializer.map(source=item, target=self)
@@ -159,6 +199,10 @@ class DynamoDbModelBase:
         if self.__helpers is None:
             self.__helpers = DynamoDbHelpers()
         return self.__helpers
+
+    def list_keys(self, exclude_pk: bool = False) -> List[DynamoDbKey]:
+        """List the keys"""
+        return self.helpers.get_keys(self.key_configs, exclude_pk=exclude_pk)
 
 
 class DynamoDbSerializer:

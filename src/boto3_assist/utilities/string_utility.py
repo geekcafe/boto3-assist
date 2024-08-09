@@ -7,11 +7,50 @@ MIT License.  See Project Root for the license information.
 import hashlib
 import secrets
 import string
+from datetime import datetime
+from decimal import Decimal
 import uuid
 import json
 from aws_lambda_powertools import Logger
 
 logger = Logger()
+
+
+class JsonEncoder(json.JSONEncoder):
+    """
+    This class is used to serialize python generics which implement a __json_encode__ method
+    and where the recipient does not require type hinting for deserialization.
+    If type hinting is required, use GenericJsonEncoder
+    """
+
+    def default(self, o):
+        # First, check if the object has a custom encoding method
+        if hasattr(o, "__json_encode__"):
+            return o.__json_encode__()
+
+        # check for dictionary
+        if hasattr(o, "__dict__"):
+            return {k: v for k, v in o.__dict__.items() if not k.startswith("_")}
+
+        # Handling datetime.datetime objects specifically
+        elif isinstance(o, datetime):
+            return o.isoformat()
+        # handle decimal wrappers
+        elif isinstance(o, Decimal):
+            return float(o)
+
+        logger.info(f"AplosJsonEncoder failing back: ${type(o)}")
+
+        # Fallback to the base class implementation for other types
+
+        try:
+            return super().default(o)
+        except TypeError:
+            # If an object does not have a __dict__ attribute, you might want to handle it differently.
+            # For example, you could choose to return str(o) or implement other specific cases.
+            return str(
+                o
+            )  # Or any other way you wish to serialize objects without __dict__
 
 
 class StringUtility:
@@ -183,7 +222,7 @@ class StringUtility:
             int: The size of the input string in kilobytes.
         """
         if isinstance(input_string, dict):
-            input_string = json.dumps(input_string)
+            input_string = json.dumps(input_string, cls=JsonEncoder)
         # encodes the string to bytes, which is necessary because the length of a string
         # can differ from the length of its byte representation,
         # especially for non-ASCII characters.

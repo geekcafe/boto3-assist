@@ -47,14 +47,19 @@ class DynamoDB(DynamoDbConnection):
         self.log_dynamodb_item_size = (
             str(os.getenv("LOG_DYNAMODB_ITEM_SIZE", "false")).lower() == "true"
         )
-        # self.tabel_name: str | None = None
+        logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
     @tracer.capture_method
-    def save(self, item: dict, table_name: str, source: Optional[str] = None) -> dict:
+    def save(
+        self,
+        item: dict | DynamoDbModelBase,
+        table_name: str,
+        source: Optional[str] = None,
+    ) -> dict:
         """
         Save an item to the database
         Args:
-            item (dict): DynamoDB Dictionay Object.  Supports the "client" or
+            item (dict): DynamoDB Dictionay Object or DynamoDbModelBase.  Supports the "client" or
             "resource" syntax
             table_name (str): The DyamoDb Table Name
             source (str, optional): The source of the call, used for logging. Defaults to None.
@@ -69,12 +74,16 @@ class DynamoDB(DynamoDbConnection):
         response = None
 
         try:
-            if self.log_dynamodb_item_size:
-                size_bytes: int = StringUtility.get_size_in_bytes(item)
-                size_kb: int = StringUtility.get_size_in_kb(item)
+            if not isinstance(item, dict):
+                # attemp to convert it
+                try:
+                    item = item.to_resource_dictionary()
+                except Exception as e:  # pylint: disable=w0718
+                    logger.exception(e)
+                    raise ValueError("Unsupported item or module was passed.") from e
 
-                print(f"Size of item: {size_bytes}bytes")
-                print(f"Size of item: {size_kb:.2f}kb")
+            self.__log_item_size(item=item)
+
             if isinstance(next(iter(item.values())), dict):
                 # Use boto3.client syntax
                 response = self.dynamodb_client.put_item(
@@ -92,6 +101,30 @@ class DynamoDB(DynamoDbConnection):
             raise e
 
         return response
+
+    def __log_item_size(self, item: dict):
+        if not isinstance(item, dict):
+            warning = f"Item is not a dictionary. Type: {type(item).__name__}"
+            logger.warning(warning)
+            return
+
+        if self.log_dynamodb_item_size:
+            size_bytes: int = StringUtility.get_size_in_bytes(item)
+            size_kb: int = StringUtility.get_size_in_kb(item)
+            logger.info({"item_size": {"bytes": size_bytes, "kb": f"{size_kb:.2f}kb"}})
+
+            # print(f"Size of item: {size_bytes}bytes")
+            # print(f"Size of item: {size_kb:.2f}kb")
+            if size_kb > 390:
+                logger.warning(
+                    {
+                        "item_size": {
+                            "bytes": size_bytes,
+                            "kb": f"{size_kb:.2f}kb",
+                        },
+                        "warning": "approaching limit",
+                    }
+                )
 
     @overload
     def get(
@@ -227,6 +260,7 @@ class DynamoDB(DynamoDbConnection):
         projection_expression: Optional[str] = None,
         expression_attribute_names: Optional[dict] = None,
         start_key: Optional[str] = None,
+        limit: Optional[int] = None,
     ) -> dict:
         """
         Run a query and return a list of items
@@ -260,18 +294,16 @@ class DynamoDB(DynamoDbConnection):
         if start_key:
             kwargs["ExclusiveStartKey"] = start_key
 
+        if limit:
+            kwargs["Limit"] = limit
+
         table = self.dynamodb_resource.Table(table_name)
         response = table.query(**kwargs)
 
         return response
 
     @overload
-    def delete(
-        self,
-        *,
-        table_name: str,
-        model: DynamoDbModelBase,
-    ) -> dict:
+    def delete(self, *, table_name: str, model: DynamoDbModelBase) -> dict:
         pass
 
     @overload
