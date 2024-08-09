@@ -148,10 +148,12 @@ class UserService:
         key: Any = {}
 
         if status is None:
-            index_name, key = um.get_key_data("gsi0")
+            index_name = "gsi0"
+            key = um.get_key(index_name)
         if status is not None:
             um.status = status
-            index_name, key = um.get_key_data("gsi3")
+            index_name = "gsi3"
+            key = um.get_key(index_name)
 
         projections_ex = um.projection_expression
         ex_attributes_names = um.projection_expression_attribute_names

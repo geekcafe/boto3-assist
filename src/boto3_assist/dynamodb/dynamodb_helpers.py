@@ -315,7 +315,9 @@ class DynamoDbHelpers:
             return item
 
     @staticmethod
-    def get_key(key_configs: dict, index_name: str, key_name: str | None) -> str | None:
+    def get_key_value(
+        key_configs: dict, index_name: str, key_name: str | None
+    ) -> str | None:
         """
         Get the partition key for a given index
         Args:

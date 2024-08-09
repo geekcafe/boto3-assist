@@ -8,7 +8,13 @@ import os
 from typing import List, Optional, Callable, Tuple, overload
 
 from aws_lambda_powertools import Tracer, Logger
-from boto3.dynamodb.conditions import Key, And, Equals
+from boto3.dynamodb.conditions import (
+    Key,
+    And,
+    Equals,
+    ComparisonCondition,
+    ConditionBase,
+)
 from boto3_assist.dynamodb.dynamodb_connection import DynamoDbConnection
 from boto3_assist.dynamodb.dynamodb_helpers import DynamoDbHelpers
 from boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
@@ -251,7 +257,7 @@ class DynamoDB(DynamoDbConnection):
 
     def query(
         self,
-        key: Key | And | Equals,
+        key: Key | ConditionBase | ComparisonCondition,
         index_name: str,
         ascending: bool = False,
         table_name: Optional[str] = None,
@@ -354,14 +360,13 @@ class DynamoDB(DynamoDbConnection):
         *,
         model: DynamoDbModelBase,
         table_name: str,
-        gsi_func: Callable[[], Tuple[str, And | Key | Equals]],
+        index_name: str,
+        key: Key | ConditionBase | ComparisonCondition,
         start_key: Optional[str] = None,
         do_projections: bool = False,
         ascending: bool = False,
     ) -> dict:
         """Helper function to list by criteria"""
-
-        index, key = gsi_func()
 
         projection_expression: str | None = None
         expression_attribute_names: dict | None = None
@@ -372,7 +377,7 @@ class DynamoDB(DynamoDbConnection):
 
         response = self.query(
             key=key,
-            index_name=index,
+            index_name=index_name,
             table_name=table_name,
             start_key=start_key,
             projection_expression=projection_expression,

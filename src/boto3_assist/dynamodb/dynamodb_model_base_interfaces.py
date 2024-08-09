@@ -5,7 +5,20 @@ MIT License.  See Project Root for the license information.
 """
 
 from typing import Protocol, Optional, Tuple
-from boto3.dynamodb.conditions import And
+from boto3.dynamodb.conditions import (
+    And,
+    Equals,
+    NotEquals,
+    Or,
+    GreaterThan,
+    GreaterThanEquals,
+    LessThan,
+    LessThanEquals,
+    In,
+    Between,
+    Contains,
+    BeginsWith,
+)
 
 
 class HasKeys(Protocol):
@@ -17,5 +30,5 @@ class HasKeys(Protocol):
     def get_sk(self, index_name: str) -> Optional[str]:
         """Inteface to get_sk"""
 
-    def get_key_data(self, index_name: str) -> Tuple[str, And]:
+    def get_key(self, index_name: str) -> And | Equals:
         """Get the index name and key"""

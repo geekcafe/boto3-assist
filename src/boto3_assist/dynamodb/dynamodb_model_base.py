@@ -11,7 +11,13 @@ import inspect
 import uuid
 
 from typing import Tuple, Callable, Mapping, TypeVar, List
-from boto3.dynamodb.conditions import And, Equals
+from boto3.dynamodb.conditions import (
+    And,
+    Equals,
+    ConditionBase,
+    ComparisonCondition,
+    Key,
+)
 from boto3.dynamodb.types import TypeSerializer
 from boto3_assist.utilities.serialization_utility import Serialization
 from boto3_assist.dynamodb.dynamodb_helpers import DynamoDbHelpers, DynamoDbKey
@@ -119,6 +125,14 @@ class DynamoDbModelBase:
         if self.enable_sk_setter:
             self.__sk = value
 
+    def get_pk(self, index_name: str) -> str | None:
+        """Get the partition key for a given GSI index"""
+        return DynamoDbHelpers.get_key_value(self.key_configs, index_name, "pk")
+
+    def get_sk(self, index_name: str) -> str | None:
+        """Get the sort key for a given GSI index"""
+        return DynamoDbHelpers.get_key_value(self.key_configs, index_name, "sk")
+
     def get_primary_key(self) -> dict:  # pylint: disable=w0622
         """Gets the key for the primay pk and sk key pair"""
         pk = self.pk
@@ -162,9 +176,9 @@ class DynamoDbModelBase:
         """
         return DynamoDbSerializer.to_resource_dictionary(self)
 
-    def get_key_data(
+    def get_key(
         self, index_name: str, condition: str = "begins_with"
-    ) -> Tuple[str, And | Equals]:
+    ) -> Key | ConditionBase | ComparisonCondition:
         """Get the index name and key"""
 
         if index_name is None:
@@ -182,15 +196,7 @@ class DynamoDbModelBase:
             condition=condition,
         )
 
-        return index_name, key
-
-    def get_pk(self, index_name: str) -> str | None:
-        """Get the partition key for a given GSI index"""
-        return DynamoDbHelpers.get_key(self.key_configs, index_name, "pk")
-
-    def get_sk(self, index_name: str) -> str | None:
-        """Get the sort key for a given GSI index"""
-        return DynamoDbHelpers.get_key(self.key_configs, index_name, "sk")
+        return key
 
     @property
     @exclude_from_serialization

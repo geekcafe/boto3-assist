@@ -174,10 +174,8 @@ class DynamoDbModelUnitTest(unittest.TestCase):
 
         pk = user.pk
         self.assertEqual(pk, "user#123456")
-
-        index_name, gsi_key = user.get_key_data("gsi1")
-        # this should be mapped to gsi0
-        self.assertEqual(index_name, "gsi1")
+        index_name = "gsi"
+        gsi_key = user.get_key(index_name)
 
         expression = user.helpers.get_filter_expressions(gsi_key)
         print(f"expression: {expression}")
@@ -192,7 +190,8 @@ class DynamoDbModelUnitTest(unittest.TestCase):
         self.assertEqual(key_1.get("key"), "lastname##firstname#John")
 
         ### gsi3 mapped to a name of gsi2
-        index_name, gsi_key = user.get_key_data("gsi2")
+        index_name = "gsi2"
+        gsi_key = user.get_key("index_name")
         # this should be mapped to gsi0
         self.assertEqual(index_name, "gsi2")
 
