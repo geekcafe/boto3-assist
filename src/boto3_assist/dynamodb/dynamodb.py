@@ -5,13 +5,13 @@ MIT License.  See Project Root for the license information.
 """
 
 import os
-from typing import List, Optional, Callable, Tuple, overload
+from typing import List, Optional, overload
 
 from aws_lambda_powertools import Tracer, Logger
 from boto3.dynamodb.conditions import (
     Key,
-    And,
-    Equals,
+    # And,
+    # Equals,
     ComparisonCondition,
     ConditionBase,
 )
@@ -265,7 +265,7 @@ class DynamoDB(DynamoDbConnection):
         strongly_consistent: bool = False,
         projection_expression: Optional[str] = None,
         expression_attribute_names: Optional[dict] = None,
-        start_key: Optional[str] = None,
+        start_key: Optional[dict] = None,
         limit: Optional[int] = None,
     ) -> dict:
         """
@@ -362,7 +362,7 @@ class DynamoDB(DynamoDbConnection):
         table_name: str,
         index_name: str,
         key: Key | ConditionBase | ComparisonCondition,
-        start_key: Optional[str] = None,
+        start_key: Optional[dict] = None,
         do_projections: bool = False,
         ascending: bool = False,
     ) -> dict:

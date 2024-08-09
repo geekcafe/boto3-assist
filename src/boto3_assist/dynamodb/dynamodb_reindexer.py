@@ -5,7 +5,7 @@ MIT License.  See Project Root for the license information.
 """
 
 import json
-from typing import Any, Callable, Dict, Optional, List
+from typing import Any, Dict, Optional, List
 
 from boto3_assist.dynamodb.dynamodb import DynamoDB
 from boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase, DynamoDbKey

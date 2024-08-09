@@ -4,24 +4,19 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import List, Any, Dict, Callable, Mapping
+from typing import List, Any, Dict, Callable
 
-from boto3.dynamodb.conditions import ConditionBase, Key, And, Equals
+from boto3.dynamodb.conditions import (
+    ConditionBase,
+    Key,
+    And,
+    Equals,
+)
 from aws_lambda_powertools import Tracer, Logger
+from boto3_assist.dynamodb.dynamodb_key import DynamoDbKey
 
 logger = Logger()
 tracer = Tracer()
-
-
-class DynamoDbKey:
-    """DynamoDb Key"""
-
-    def __init__(self) -> None:
-        self.index_name: str | None = None
-        self.pk_name: str | None = None
-        self.pk_value: Any = None
-        self.sk_name: str | None = None
-        self.sk_value: Any = None
 
 
 class DynamoDbHelpers:
@@ -429,35 +424,43 @@ class DynamoDbHelpers:
 
     def build_key(
         self,
-        pk_name: str,
-        pk_value: str,
-        sk_name: str | None = None,
-        sk_value: str | None = None,
-        sk_value2: str | None = None,
+        key: DynamoDbKey,
         condition: str = "begins_with",
-    ) -> And | Equals:
+    ) -> DynamoDbKey:
         """Get the GSI index name and key"""
 
-        key: Equals | And = Key(f"{pk_name}").eq(pk_value)
+        key.pk = Key(f"{key.pk_name}").eq(key.pk_value)
 
-        if sk_name and sk_value:
-            if sk_value2:
+        if key.sk_name and key.sk_value:
+            if key.sk_value_2:
                 match condition:
                     case "between":
-                        key = key & Key(f"{sk_name}").between(sk_value, sk_value2)
+                        key.composite_key = key.pk & Key(f"{key.sk_name}").between(
+                            key.sk_value, key.sk_value_2
+                        )
 
             else:
                 match condition:
                     case "begins_with":
-                        key = key & Key(f"{sk_name}").begins_with(sk_value)
+                        key.composite_key = key.pk & Key(f"{key.sk_name}").begins_with(
+                            key.sk_value
+                        )
                     case "eq":
-                        key = key & Key(f"{sk_name}").eq(sk_value)
+                        key.composite_key = key.pk & Key(f"{key.sk_name}").eq(
+                            key.sk_value
+                        )
                     case "gt":
-                        key = key & Key(f"{sk_name}").gt(sk_value)
+                        key.composite_key = key.pk & Key(f"{key.sk_name}").gt(
+                            key.sk_value
+                        )
                     case "gte":
-                        key = key & Key(f"{sk_name}").gte(sk_value)
+                        key.composite_key = key.pk & Key(f"{key.sk_name}").gte(
+                            key.sk_value
+                        )
                     case "lt":
-                        key = key & Key(f"{sk_name}").lt(sk_value)
+                        key.composite_key = key.pk & Key(f"{key.sk_name}").lt(
+                            key.sk_value
+                        )
 
         return key
 

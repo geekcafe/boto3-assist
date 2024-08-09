@@ -4,20 +4,20 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import Protocol, Optional, Tuple
+from typing import Protocol, Optional
 from boto3.dynamodb.conditions import (
     And,
     Equals,
-    NotEquals,
-    Or,
-    GreaterThan,
-    GreaterThanEquals,
-    LessThan,
-    LessThanEquals,
-    In,
-    Between,
-    Contains,
-    BeginsWith,
+    # NotEquals,
+    # Or,
+    # GreaterThan,
+    # GreaterThanEquals,
+    # LessThan,
+    # LessThanEquals,
+    # In,
+    # Between,
+    # Contains,
+    # BeginsWith,
 )
 
 

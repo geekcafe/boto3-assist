@@ -10,17 +10,11 @@ import decimal
 import inspect
 import uuid
 
-from typing import Tuple, Callable, Mapping, TypeVar, List
-from boto3.dynamodb.conditions import (
-    And,
-    Equals,
-    ConditionBase,
-    ComparisonCondition,
-    Key,
-)
+from typing import Callable, Mapping, TypeVar, List
 from boto3.dynamodb.types import TypeSerializer
 from boto3_assist.utilities.serialization_utility import Serialization
-from boto3_assist.dynamodb.dynamodb_helpers import DynamoDbHelpers, DynamoDbKey
+from boto3_assist.dynamodb.dynamodb_helpers import DynamoDbHelpers
+from boto3_assist.dynamodb.dynamodb_key import DynamoDbKey
 
 
 def exclude_from_serialization(method):
@@ -145,7 +139,7 @@ class DynamoDbModelBase:
 
         return key
 
-    def map(self, item: dict | DynamoDbModelBase) -> T | DynamoDbModelBase:
+    def map(self: T, item: dict | DynamoDbModelBase) -> T:
         """Map the item to the instance"""
         if isinstance(item, DynamoDbModelBase):
             item = item.to_resource_dictionary()
@@ -176,9 +170,7 @@ class DynamoDbModelBase:
         """
         return DynamoDbSerializer.to_resource_dictionary(self)
 
-    def get_key(
-        self, index_name: str, condition: str = "begins_with"
-    ) -> Key | ConditionBase | ComparisonCondition:
+    def get_key(self, index_name: str, condition: str = "begins_with") -> DynamoDbKey:
         """Get the index name and key"""
 
         if index_name is None:
@@ -186,13 +178,10 @@ class DynamoDbModelBase:
 
         key: DynamoDbKey = DynamoDbKey()
         key.index_name = index_name
-        self.helpers.populate_key(self.key_configs, key=key)
+        key.populate_key(self.key_configs, key=key)
 
         key = self.helpers.build_key(
-            pk_name=key.pk_name,
-            pk_value=key.pk_value,
-            sk_name=key.sk_name,
-            sk_value=key.sk_value,
+            key=key,
             condition=condition,
         )
 
