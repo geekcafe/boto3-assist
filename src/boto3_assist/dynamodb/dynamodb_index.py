@@ -102,8 +102,11 @@ class DynamoDbIndex:
     def sort_key(self, value: DynamoDbKey | None):
         self.__sk = value
 
-    @property
-    def key(self) -> dict | Key | ConditionBase | ComparisonCondition | Equals:
+    def key(
+        self,
+        condition: str = "begins_with",
+        sk_value_2: Optional[str | int | float] = None,
+    ) -> dict | Key | ConditionBase | ComparisonCondition | Equals:
         """Get the key for a given index"""
         key: dict | Key | ConditionBase | ComparisonCondition | Equals
         if self.name == DynamoDbIndexes.PRIMARY_INDEX:
@@ -115,12 +118,13 @@ class DynamoDbIndex:
 
             return key
         else:
-            key = self._build_key()
+            key = self._build_key(condition=condition, sk_value_2=sk_value_2)
             return key
 
     def _build_key(
         self,
         condition: str = "begins_with",
+        sk_value_2: Optional[str | int | float] = None,
     ) -> And | Equals:
         """Get the GSI index name and key"""
 
@@ -130,12 +134,12 @@ class DynamoDbIndex:
 
         if self.sort_key.attribute_name and self.sort_key.value:
             # if self.sk_value_2:
-            if False:
+            if sk_value_2:
                 match condition:
                     case "between":
-                        key.composite_key = key.partition_key & Key(
-                            f"{key.sk_name}"
-                        ).between(key.sk_value, key.sk_value_2)
+                        key = key & Key(f"{self.sort_key.attribute_name}").between(
+                            self.sort_key.value, sk_value_2
+                        )
 
             else:
                 match condition:

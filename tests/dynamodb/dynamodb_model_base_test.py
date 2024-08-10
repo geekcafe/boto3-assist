@@ -173,7 +173,7 @@ class DynamoDbModelUnitTest(unittest.TestCase):
         self.assertEqual(serialized_data.email, "john@example.com")
         self.assertIsInstance(serialized_data, User)
 
-        key = serialized_data.indexes.primary.key
+        key = serialized_data.indexes.primary.key()
         self.assertIsInstance(key, dict)
 
     def test_object_serialization_map(self):
@@ -221,7 +221,7 @@ class DynamoDbModelUnitTest(unittest.TestCase):
         pk = user.indexes.primary.partition_key.value
         self.assertEqual(pk, "user#123456")
         index_name = "gsi1"
-        gsi_key = user.get_key(index_name).key
+        gsi_key = user.get_key(index_name).key()
 
         expression = user.helpers.get_filter_expressions(gsi_key)
         print(f"expression: {expression}")
@@ -237,7 +237,7 @@ class DynamoDbModelUnitTest(unittest.TestCase):
 
         ### gsi3 mapped to a name of gsi2
         index_name = "gsi2"
-        gsi_key = user.get_key(index_name).key
+        gsi_key = user.get_key(index_name).key()
         # this should be mapped to gsi0
         self.assertEqual(index_name, "gsi2")
 

@@ -52,7 +52,7 @@ class UserPostService:
         """
         model = UserPostDbModel()
         index_name = "gsi0"
-        key = model.indexes.get(index_name).key
+        key = model.indexes.get(index_name).key()
         projections_ex = model.projection_expression
         ex_attributes_names = model.projection_expression_attribute_names
         user_list = self.db.query(
@@ -79,7 +79,7 @@ class UserPostService:
         """
 
         model = UserPostDbModel(slug=slug)
-        key = model.indexes.primary.key
+        key = model.indexes.primary.key()
         p = model.projection_expression
         e = model.projection_expression_attribute_names
         response = self.db.get(
