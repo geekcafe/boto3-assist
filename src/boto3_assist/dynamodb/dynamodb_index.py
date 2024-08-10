@@ -105,7 +105,7 @@ class DynamoDbIndex:
     @property
     def key(self) -> dict | Key | ConditionBase | ComparisonCondition | Equals:
         """Get the key for a given index"""
-
+        key: dict | Key | ConditionBase | ComparisonCondition | Equals
         if self.name == DynamoDbIndexes.PRIMARY_INDEX:
             key = {}
             key[self.partition_key.attribute_name] = self.partition_key.value
@@ -124,7 +124,9 @@ class DynamoDbIndex:
     ) -> And | Equals:
         """Get the GSI index name and key"""
 
-        key = Key(f"{self.partition_key.attribute_name}").eq(self.partition_key.value)
+        key: And | Equals = Key(f"{self.partition_key.attribute_name}").eq(
+            self.partition_key.value
+        )
 
         if self.sort_key.attribute_name and self.sort_key.value:
             # if self.sk_value_2:
