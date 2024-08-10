@@ -8,7 +8,7 @@ from typing import List, Any, Dict, Callable
 
 from boto3.dynamodb.conditions import ConditionBase, Key, And, Equals
 from aws_lambda_powertools import Tracer, Logger
-from boto3_assist.dynamodb.dynamodb_key_v2 import DynamoDbKey
+from boto3_assist.dynamodb.dynamodb_key import DynamoDbKey
 
 logger = Logger()
 tracer = Tracer()

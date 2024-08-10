@@ -14,7 +14,7 @@ from boto3.dynamodb.conditions import (
     ComparisonCondition,
     And,
 )
-from boto3_assist.dynamodb.dynamodb_key_v2 import DynamoDbKey
+from boto3_assist.dynamodb.dynamodb_key import DynamoDbKey
 
 
 class DynamoDbIndexes:
@@ -62,6 +62,10 @@ class DynamoDbIndexes:
 
         return indexes
 
+    def values(self) -> list[DynamoDbIndex]:
+        """Get the values of the indexes"""
+        return list(self.__indexes.values())
+
 
 class DynamoDbIndex:
     """A DynamoDb Index"""
@@ -69,10 +73,6 @@ class DynamoDbIndex:
     def __init__(
         self,
         index_name: Optional[str] = None,
-        # pk_attribute_name: Optional[str] = None,
-        # pk_value: Optional[Mapping[str, Callable[[], str]]] = None,
-        # sk_attribute_name: Optional[str] = None,
-        # sk_value: Optional[Mapping[str, Callable[[], str]]] = None,
         partition_key: Optional[DynamoDbKey] = None,
         sort_key: Optional[DynamoDbKey] = None,
     ):
