@@ -6,7 +6,7 @@ https://github.com/geekcafe/boto3-assist
 """
 
 from __future__ import annotations
-from typing import List, Dict, Any, Callable, Optional, Mapping
+from typing import Callable, Optional, Mapping
 
 
 class DynamoDbKey:

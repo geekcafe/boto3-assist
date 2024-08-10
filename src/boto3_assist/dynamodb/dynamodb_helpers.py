@@ -8,7 +8,7 @@ from typing import List, Any, Dict, Callable
 
 from boto3.dynamodb.conditions import ConditionBase, Key, And, Equals
 from aws_lambda_powertools import Tracer, Logger
-from boto3_assist.dynamodb.dynamodb_key import DynamoDbKey
+from boto3_assist.dynamodb.dynamodb_index import DynamoDbIndex
 
 logger = Logger()
 tracer = Tracer()
@@ -378,7 +378,7 @@ class DynamoDbHelpers:
 
     #     return keys
 
-    def keys_to_dictionary(self, keys: List[DynamoDbKey]) -> dict:
+    def keys_to_dictionary(self, keys: List[DynamoDbIndex]) -> dict:
         """_summary_
 
         Args:
@@ -389,9 +389,9 @@ class DynamoDbHelpers:
         """
         key_dict: dict = {}
         for key in keys:
-            if key.pk_name and key.pk_value:
-                key_dict[key.pk_name] = key.pk_value
-            if key.sk_name and key.sk_value:
-                key_dict[key.sk_name] = key.sk_value
+            if key.partition_key and key.partition_key.value:
+                key_dict[key.partition_key.attribute_name] = key.partition_key.value
+            if key.sort_key.attribute_name and key.sort_key.value:
+                key_dict[key.sort_key.attribute_name] = key.sort_key.value
 
         return key_dict

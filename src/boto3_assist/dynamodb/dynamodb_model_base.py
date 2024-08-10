@@ -125,6 +125,8 @@ class DynamoDbModelBase:
     def list_keys(self, exclude_pk: bool = False) -> List[DynamoDbIndex]:
         """List the keys"""
         values = self.indexes.values()
+        if exclude_pk:
+            values = [v for v in values if not v.name == DynamoDbIndexes.PRIMARY_INDEX]
         # print(value)
         # return self.helpers.get_keys(self.key_configs, exclude_pk=exclude_pk)
         return values

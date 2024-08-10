@@ -267,33 +267,35 @@ class DynamoDbModelUnitTest(unittest.TestCase):
 
         # Act
         user: User = User().map(data)
-        keys: List[DynamoDbKey] = user.list_keys()
+        keys: List[DynamoDbIndex] = user.list_keys()
         print("")
         for key in keys:
-            print(f"key: {key.pk_name} value: {key.pk_value}")
-            print(f"key: {key.sk_name} value: {key.sk_value}")
+            print(
+                f"key: {key.partition_key.attribute_name} value: {key.partition_key.value}"
+            )
+            print(f"key: {key.sort_key.attribute_name} value: {key.sort_key.value}")
 
         self.assertEqual(len(keys), 4)
 
-        self.assertEqual(keys[0].pk_name, "pk")
-        self.assertEqual(keys[0].pk_value, "user#123456")
-        self.assertEqual(keys[0].sk_name, "sk")
-        self.assertEqual(keys[0].sk_value, "user#123456")
+        self.assertEqual(keys[0].partition_key.attribute_name, "pk")
+        self.assertEqual(keys[0].partition_key.value, "user#123456")
+        self.assertEqual(keys[0].sort_key.attribute_name, "sk")
+        self.assertEqual(keys[0].sort_key.value, "user#123456")
 
-        self.assertEqual(keys[1].pk_name, "gsi0_pk")
-        self.assertEqual(keys[1].pk_value, "users#")
-        self.assertEqual(keys[1].sk_name, "gsi0_sk")
-        self.assertEqual(keys[1].sk_value, "email#john@example.com")
+        self.assertEqual(keys[1].partition_key.attribute_name, "gsi0_pk")
+        self.assertEqual(keys[1].partition_key.value, "users#")
+        self.assertEqual(keys[1].sort_key.attribute_name, "gsi0_sk")
+        self.assertEqual(keys[1].sort_key.value, "email#john@example.com")
 
-        self.assertEqual(keys[2].pk_name, "gsi1_pk")
-        self.assertEqual(keys[2].pk_value, "users#")
-        self.assertEqual(keys[2].sk_name, "gsi1_sk")
-        self.assertEqual(keys[2].sk_value, "lastname##firstname#John")
+        self.assertEqual(keys[2].partition_key.attribute_name, "gsi1_pk")
+        self.assertEqual(keys[2].partition_key.value, "users#")
+        self.assertEqual(keys[2].sort_key.attribute_name, "gsi1_sk")
+        self.assertEqual(keys[2].sort_key.value, "lastname##firstname#John")
 
-        self.assertEqual(keys[3].pk_name, "gsi2_pk")
-        self.assertEqual(keys[3].pk_value, "users#")
-        self.assertEqual(keys[3].sk_name, "gsi2_sk")
-        self.assertEqual(keys[3].sk_value, "firstname#John")
+        self.assertEqual(keys[3].partition_key.attribute_name, "gsi2_pk")
+        self.assertEqual(keys[3].partition_key.value, "users#")
+        self.assertEqual(keys[3].sort_key.attribute_name, "gsi2_sk")
+        self.assertEqual(keys[3].sort_key.value, "firstname#John")
 
         print("stop")
 
