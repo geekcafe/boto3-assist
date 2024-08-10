@@ -8,6 +8,7 @@ import unittest
 from typing import Optional, List, Dict
 
 from src.boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase, DynamoDbKey
+from boto3_assist.dynamodb.dynamodb_index import DynamoDbIndex
 
 
 class User(DynamoDbModelBase):
@@ -27,66 +28,111 @@ class User(DynamoDbModelBase):
         self.__setup_indexes()
 
     def __setup_indexes(self):
-        key_configs = [
-            {
-                "primary_key": {
-                    "pk": {
-                        "attribute": "pk",
-                        "value": lambda: f"user#{self.id if self.id else ''}",
-                    },
-                    "sk": {
-                        "attribute": "sk",
-                        "value": lambda: f"user#{self.id if self.id else ''}",
-                    },
-                }
-            },
-            {
-                "gsi0": {
-                    "pk": {
-                        "attribute": "gsi0_pk",
-                        "value": "users#",
-                    },
-                    "sk": {
-                        "attribute": "gsi0_sk",
-                        "value": lambda: f"email#{self.email if self.email else ''}",
-                    },
-                }
-            },
-            {
-                "gsi1": {
-                    "pk": {"attribute": "gsi1_pk", "value": "users#"},
-                    "sk": {
-                        "attribute": "gsi1_sk",
-                        "value": lambda: (
-                            f"lastname#{self.last_name if self.last_name else ''}"
-                            + (
-                                f"#firstname#{self.first_name}"
-                                if self.first_name
-                                else ""
-                            )
-                        ),
-                    },
-                }
-            },
-            {
-                "gsi2": {
-                    "pk": {
-                        "attribute": "gsi2_pk",
-                        "value": "users#",
-                    },
-                    "sk": {
-                        "attribute": "gsi2_sk",
-                        "value": self.__get_gsi2,
-                        "results": {
-                            "firstname#{self.first_name}": "with no last name",
-                            "firstname#{self.first_name}#lastname#{self.lastname}": "with a last name",
-                        },
-                    },
-                }
-            },
-        ]
+        primary_key: DynamoDbIndex = DynamoDbIndex(
+            index_name="primary_key",
+            partition_key=DynamoDbKey(
+                attribute_name="pk", value=lambda: f"user#{self.id if self.id else ''}"
+            ),
+            sort_key=DynamoDbKey(
+                attribute_name="sk", value=lambda: f"user#{self.id if self.id else ''}"
+            ),
+        )
+        self.indexes.add_primary(primary_key)
 
-        self.key_configs = key_configs
+        gsi0: DynamoDbIndex = DynamoDbIndex(
+            index_name="gsi0",
+            partition_key=DynamoDbKey(attribute_name="gsi0_pk", value="users#"),
+            sort_key=DynamoDbKey(
+                attribute_name="gsi0_sk",
+                value=lambda: f"email#{self.email if self.email else ''}",
+            ),
+        )
+        self.indexes.add_secondary(gsi0)
+
+        gsi1: DynamoDbIndex = DynamoDbIndex(
+            index_name="gsi1",
+            partition_key=DynamoDbKey(attribute_name="gsi1_pk", value="users#"),
+            sort_key=DynamoDbKey(
+                attribute_name="gsi1_sk",
+                value=lambda: (
+                    f"lastname#{self.last_name if self.last_name else ''}"
+                    + (f"#firstname#{self.first_name}" if self.first_name else "")
+                ),
+            ),
+        )
+        self.indexes.add_secondary(gsi1)
+
+        gsi2: DynamoDbIndex = DynamoDbIndex(
+            index_name="gsi2",
+            partition_key=DynamoDbKey(attribute_name="gsi2_pk", value="users#"),
+            sort_key=DynamoDbKey(
+                attribute_name="gsi2_sk",
+                value=self.__get_gsi2,
+            ),
+        )
+
+        self.indexes.add_secondary(gsi2)
+
+        # key_configs = [
+        #     {
+        #         "primary_key": {
+        #             "pk": {
+        #                 "attribute": "pk",
+        #                 "value": lambda: f"user#{self.id if self.id else ''}",
+        #             },
+        #             "sk": {
+        #                 "attribute": "sk",
+        #                 "value": lambda: f"user#{self.id if self.id else ''}",
+        #             },
+        #         }
+        #     },
+        #     {
+        #         "gsi0": {
+        #             "pk": {
+        #                 "attribute": "gsi0_pk",
+        #                 "value": "users#",
+        #             },
+        #             "sk": {
+        #                 "attribute": "gsi0_sk",
+        #                 "value": lambda: f"email#{self.email if self.email else ''}",
+        #             },
+        #         }
+        #     },
+        #     {
+        #         "gsi1": {
+        #             "pk": {"attribute": "gsi1_pk", "value": "users#"},
+        #             "sk": {
+        #                 "attribute": "gsi1_sk",
+        #                 "value": lambda: (
+        #                     f"lastname#{self.last_name if self.last_name else ''}"
+        #                     + (
+        #                         f"#firstname#{self.first_name}"
+        #                         if self.first_name
+        #                         else ""
+        #                     )
+        #                 ),
+        #             },
+        #         }
+        #     },
+        #     {
+        #         "gsi2": {
+        #             "pk": {
+        #                 "attribute": "gsi2_pk",
+        #                 "value": "users#",
+        #             },
+        #             "sk": {
+        #                 "attribute": "gsi2_sk",
+        #                 "value": self.__get_gsi2,
+        #                 "results": {
+        #                     "firstname#{self.first_name}": "with no last name",
+        #                     "firstname#{self.first_name}#lastname#{self.lastname}": "with a last name",
+        #                 },
+        #             },
+        #         }
+        #     },
+        # ]
+
+        # self.key_configs = key_configs
         self.projection_expression = (
             "id,first_name,last_name,email,tenant_id,#type,#status,"
             "company_name,authorization,modified_datetime_utc"
@@ -127,7 +173,7 @@ class DynamoDbModelUnitTest(unittest.TestCase):
         self.assertEqual(serialized_data.email, "john@example.com")
         self.assertIsInstance(serialized_data, User)
 
-        key = serialized_data.get_primary_key()
+        key = serialized_data.indexes.primary.key
         self.assertIsInstance(key, dict)
 
     def test_object_serialization_map(self):
@@ -175,9 +221,9 @@ class DynamoDbModelUnitTest(unittest.TestCase):
         pk = user.pk
         self.assertEqual(pk, "user#123456")
         index_name = "gsi1"
-        gsi_key = user.get_key(index_name)
+        gsi_key = user.get_key(index_name).composite_key
 
-        expression = user.helpers.get_filter_expressions(gsi_key.composite_key)
+        expression = user.helpers.get_filter_expressions(gsi_key)
         print(f"expression: {expression}")
         keys: List[Dict] = expression.get("keys")
         key_0: Dict = keys[0].get("key")
@@ -191,11 +237,11 @@ class DynamoDbModelUnitTest(unittest.TestCase):
 
         ### gsi3 mapped to a name of gsi2
         index_name = "gsi2"
-        gsi_key = user.get_key(index_name)
+        gsi_key = user.get_key(index_name).composite_key
         # this should be mapped to gsi0
         self.assertEqual(index_name, "gsi2")
 
-        expression = user.helpers.get_filter_expressions(gsi_key.composite_key)
+        expression = user.helpers.get_filter_expressions(gsi_key)
         print(f"expression: {expression}")
         keys: List[Dict] = expression.get("keys")
         key_0: Dict = keys[0].get("key")

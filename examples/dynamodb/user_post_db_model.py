@@ -8,6 +8,7 @@ import datetime
 from typing import Optional
 
 from boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
+from boto3_assist.dynamodb.dynamodb_index import DynamoDbIndex, DynamoDbKey
 
 
 class UserPostDbModel(DynamoDbModelBase):
@@ -32,58 +33,51 @@ class UserPostDbModel(DynamoDbModelBase):
         self.__setup_indexes()
 
     def __setup_indexes(self):
-        key_configs = [
-            {
-                "primary_key": {
-                    "pk": {
-                        "attribute": "pk",
-                        "value": lambda: f"post#{self.slug if self.slug else ''}",
-                    },
-                    "sk": {
-                        "attribute": "sk",
-                        "value": lambda: f"post#{self.slug if self.slug else ''}",
-                    },
-                }
-            },
-            {
-                "gsi0": {
-                    "pk": {
-                        "attribute": "gsi0_pk",
-                        "value": "posts#",
-                    },
-                    "sk": {
-                        "attribute": "gsi0_sk",
-                        "value": lambda: f"title#{self.title if self.title else ''}",
-                    },
-                }
-            },
-            {
-                "gsi1": {
-                    "pk": {
-                        "attribute": "gsi1_pk",
-                        "value": "posts#",
-                    },
-                    "sk": {
-                        "attribute": "gsi1_sk",
-                        "value": lambda: f"ts#{self.timestamp if self.timestamp else ''}",
-                    },
-                }
-            },
-            {
-                "gsi2": {
-                    "pk": {
-                        "attribute": "gsi2_pk",
-                        "value": "posts#",
-                    },
-                    "sk": {
-                        "attribute": "gsi2_sk",
-                        "value": lambda: f"slug#{self.slug if self.slug else ''}",
-                    },
-                }
-            },
-        ]
+        primay: DynamoDbIndex = DynamoDbIndex(
+            index_name="primary",
+            partition_key=DynamoDbKey(
+                attribute_name="pk",
+                value=lambda: f"post#{self.slug if self.slug else ''}",
+            ),
+            sort_key=DynamoDbKey(
+                attribute_name="sk",
+                value=lambda: f"post#{self.slug if self.slug else ''}",
+            ),
+        )
+        self.indexes.add_primary(primay)
 
-        self.key_configs = key_configs
+        gsi0: DynamoDbIndex = DynamoDbIndex(
+            index_name="gsi0",
+            partition_key=DynamoDbKey(attribute_name="gsi0_pk", value="posts#"),
+            sort_key=DynamoDbKey(
+                attribute_name="gsi0_sk",
+                value=lambda: f"title#{self.title if self.title else ''}",
+            ),
+        )
+
+        self.indexes.add_secondary(gsi0)
+
+        gsi1: DynamoDbIndex = DynamoDbIndex(
+            index_name="gsi1",
+            partition_key=DynamoDbKey(attribute_name="gsi1_pk", value="posts#"),
+            sort_key=DynamoDbKey(
+                attribute_name="gsi1_sk",
+                value=lambda: f"ts#{self.timestamp if self.timestamp else ''}",
+            ),
+        )
+        self.indexes.add_secondary(gsi1)
+
+        gsi2: DynamoDbIndex = DynamoDbIndex(
+            index_name="gsi2",
+            partition_key=DynamoDbKey(attribute_name="gsi2_pk", value="posts#"),
+            sort_key=DynamoDbKey(
+                attribute_name="gsi2_sk",
+                value=lambda: f"slug#{self.slug if self.slug else ''}",
+            ),
+        )
+
+        self.indexes.add_secondary(gsi2)
+
         self.projection_expression = (
             "id,user_id,title,data,timestamp,modified_datetime_utc,#status,#type"
         )

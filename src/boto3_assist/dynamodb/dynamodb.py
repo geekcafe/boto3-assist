@@ -188,7 +188,7 @@ class DynamoDB(DynamoDbConnection):
                 raise ValueError("table_name must be provided when model is used.")
             if key is not None:
                 raise ValueError("key cannot be provided when model is used.")
-            key = model.get_primary_key()
+            key = model.indexes.primary.key
             if do_projections:
                 projection_expression = model.projection_expression
                 expression_attribute_names = model.projection_expression_attribute_names
@@ -336,7 +336,7 @@ class DynamoDB(DynamoDbConnection):
                 raise ValueError("table_name must be provided when model is used.")
             if primary_key is not None:
                 raise ValueError("primary_key cannot be provided when model is used.")
-            primary_key = model.get_primary_key()
+            primary_key = model.indexes.primary.key
 
         response = None
 

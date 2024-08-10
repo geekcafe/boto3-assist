@@ -14,7 +14,11 @@ from typing import Callable, Mapping, TypeVar, List
 from boto3.dynamodb.types import TypeSerializer
 from boto3_assist.utilities.serialization_utility import Serialization
 from boto3_assist.dynamodb.dynamodb_helpers import DynamoDbHelpers
-from boto3_assist.dynamodb.dynamodb_key import DynamoDbKey
+from boto3_assist.dynamodb.dynamodb_key_v2 import DynamoDbKey
+from boto3_assist.dynamodb.dynamodb_index import (
+    DynamoDbIndexes,
+    DynamoDbIndex,
+)
 
 
 def exclude_from_serialization(method):
@@ -31,25 +35,36 @@ class DynamoDbModelBase:
     T = TypeVar("T", bound="DynamoDbModelBase")
 
     def __init__(self) -> None:
-        self.__key_configs: Mapping[str, Mapping[str, Callable[[], str]]] | str = {}
+        # self.__key_configs: Mapping[str, Mapping[str, Callable[[], str]]] | str = {}
         self.__projection_expression: str | None = None
         self.__projection_expression_attribute_names: dict | None = None
         self.__helpers: DynamoDbHelpers | None = None
-        self.__pk: str | None = None
-        self.__sk: str | None = None
-        self.__enable_pk_setter = False
-        self.__enable_sk_setter = False
+        # self.__pk: str | None = None
+        # self.__sk: str | None = None
+        # self.__enable_pk_setter = False
+        # self.__enable_sk_setter = False
+        self.__indexes: DynamoDbIndexes | None = None
 
     @property
     @exclude_from_serialization
-    def key_configs(self) -> Mapping[str, Mapping[str, Callable[[], str]]] | str:
-        """Gets the key configs"""
-        keys = self.__key_configs or {}
-        return keys
+    def indexes(self) -> DynamoDbIndexes:
+        """Gets the indexes"""
+        # although this is marked as excluded, the indexes are add
+        # but in a more specialized way
+        if self.__indexes is None:
+            self.__indexes = DynamoDbIndexes()
+        return self.__indexes
 
-    @key_configs.setter
-    def key_configs(self, value: Mapping[str, Mapping[str, Callable[[], str]]] | str):
-        self.__key_configs = value
+    # @property
+    # @exclude_from_serialization
+    # def key_configs(self) -> Mapping[str, Mapping[str, Callable[[], str]]] | str:
+    #     """Gets the key configs"""
+    #     keys = self.__key_configs or {}
+    #     return keys
+
+    # @key_configs.setter
+    # def key_configs(self, value: Mapping[str, Mapping[str, Callable[[], str]]] | str):
+    #     self.__key_configs = value
 
     @property
     @exclude_from_serialization
@@ -71,73 +86,73 @@ class DynamoDbModelBase:
     def projection_expression_attribute_names(self, value: dict | None):
         self.__projection_expression_attribute_names = value
 
-    @property
-    @exclude_from_serialization
-    def enable_pk_setter(self) -> bool:
-        """Gets the enable pk setting"""
-        return self.__enable_pk_setter
+    # @property
+    # @exclude_from_serialization
+    # def enable_pk_setter(self) -> bool:
+    #     """Gets the enable pk setting"""
+    #     return self.__enable_pk_setter
 
-    @enable_pk_setter.setter
-    def enable_pk_setter(self, value: bool):
-        self.__enable_pk_setter = value
+    # @enable_pk_setter.setter
+    # def enable_pk_setter(self, value: bool):
+    #     self.__enable_pk_setter = value
 
-    @property
-    @exclude_from_serialization
-    def enable_sk_setter(self) -> bool:
-        """Gets the enable sk setting"""
-        return self.__enable_sk_setter
+    # @property
+    # @exclude_from_serialization
+    # def enable_sk_setter(self) -> bool:
+    #     """Gets the enable sk setting"""
+    #     return self.__enable_sk_setter
 
-    @enable_sk_setter.setter
-    def enable_sk_setter(self, value: bool):
-        self.__enable_sk_setter = value
+    # @enable_sk_setter.setter
+    # def enable_sk_setter(self, value: bool):
+    #     self.__enable_sk_setter = value
 
-    @property
-    def pk(self) -> str:
-        """The primary key"""
-        if self.__pk is None:
-            self.__pk = self.get_pk("primary_key")
-        if self.__pk is None:
-            raise ValueError("Primary key not set")
-        return self.__pk
+    # @property
+    # def pk(self) -> str:
+    #     """The primary key"""
+    #     if self.__pk is None:
+    #         self.__pk = self.get_pk("primary_key")
+    #     if self.__pk is None:
+    #         raise ValueError("Primary key not set")
+    #     return self.__pk
 
-    @pk.setter
-    def pk(self, value: str):
-        if self.enable_pk_setter:
-            self.__pk = value
+    # @pk.setter
+    # def pk(self, value: str):
+    #     if self.enable_pk_setter:
+    #         self.__pk = value
 
-    @property
-    def sk(self) -> str:
-        """The key"""
-        if self.__sk is None:
-            self.__sk = self.get_sk("primary_key")
-        if self.__sk is None:
-            raise ValueError("Sort key not set")
-        return self.__sk
+    # @property
+    # def sk(self) -> str:
+    #     """The key"""
+    #     if self.__sk is None:
+    #         self.__sk = self.get_sk("primary_key")
+    #     if self.__sk is None:
+    #         raise ValueError("Sort key not set")
+    #     return self.__sk
 
-    @sk.setter
-    def sk(self, value: str):
-        if self.enable_sk_setter:
-            self.__sk = value
+    # @sk.setter
+    # def sk(self, value: str):
+    #     if self.enable_sk_setter:
+    #         self.__sk = value
 
-    def get_pk(self, index_name: str) -> str | None:
-        """Get the partition key for a given GSI index"""
-        return DynamoDbHelpers.get_key_value(self.key_configs, index_name, "pk")
+    # def get_pk(self, index_name: str) -> str | None:
+    #     """Get the partition key for a given GSI index"""
+    #     return DynamoDbHelpers.get_key_value(self.key_configs, index_name, "pk")
 
-    def get_sk(self, index_name: str) -> str | None:
-        """Get the sort key for a given GSI index"""
-        return DynamoDbHelpers.get_key_value(self.key_configs, index_name, "sk")
+    # def get_sk(self, index_name: str) -> str | None:
+    #     """Get the sort key for a given GSI index"""
+    #     return DynamoDbHelpers.get_key_value(self.key_configs, index_name, "sk")
 
-    def get_primary_key(self) -> dict:  # pylint: disable=w0622
-        """Gets the key for the primay pk and sk key pair"""
-        pk = self.pk
-        sk = self.sk
+    # def get_primary_key(self) -> dict:  # pylint: disable=w0622
+    #     """Gets the key for the primay pk and sk key pair"""
+    #     pk = self.pk
+    #     sk = self.sk
 
-        key = {
-            "pk": pk,
-            "sk": sk,
-        }
+    #     key = {
+    #         "pk": pk,
+    #         "sk": sk,
+    #     }
 
-        return key
+    #     return key
 
     def map(self: T, item: dict | DynamoDbModelBase) -> T:
         """Map the item to the instance"""
@@ -170,22 +185,13 @@ class DynamoDbModelBase:
         """
         return DynamoDbSerializer.to_resource_dictionary(self)
 
-    def get_key(self, index_name: str, condition: str = "begins_with") -> DynamoDbKey:
+    def get_key(self, index_name: str, condition: str = "begins_with") -> DynamoDbIndex:
         """Get the index name and key"""
 
         if index_name is None:
             raise ValueError("Index name cannot be None")
 
-        key: DynamoDbKey = DynamoDbKey()
-        key.index_name = index_name
-        key.populate_key(self.key_configs, key=key)
-
-        key = self.helpers.build_key(
-            key=key,
-            condition=condition,
-        )
-
-        return key
+        return self.indexes.get(index_name)
 
     @property
     @exclude_from_serialization
@@ -197,7 +203,8 @@ class DynamoDbModelBase:
 
     def list_keys(self, exclude_pk: bool = False) -> List[DynamoDbKey]:
         """List the keys"""
-        return self.helpers.get_keys(self.key_configs, exclude_pk=exclude_pk)
+        # return self.helpers.get_keys(self.key_configs, exclude_pk=exclude_pk)
+        return []
 
 
 class DynamoDbSerializer:
@@ -273,7 +280,8 @@ class DynamoDbSerializer:
                 return serialize_fn(DynamoDbSerializer._serialize(value, serialize_fn))
 
         instance_dict = DynamoDbSerializer._add_properties(instance, serialize_value)
-        instance_dict = DynamoDbSerializer._add_key_attributes(instance, instance_dict)
+        # instance_dict = DynamoDbSerializer._add_key_attributes(instance, instance_dict)
+        instance_dict = DynamoDbSerializer._add_indexes(instance, instance_dict)
         return instance_dict
 
     @staticmethod
@@ -310,16 +318,53 @@ class DynamoDbSerializer:
 
         return instance_dict
 
+    # @staticmethod
+    # def _add_key_attributes(instance: DynamoDbModelBase, instance_dict: dict) -> dict:
+    #     if not issubclass(type(instance), DynamoDbModelBase):
+    #         return instance_dict
+
+    #     keys: List[DynamoDbKey] = instance.helpers.get_keys(instance.key_configs)
+    #     for key in keys:
+    #         if key.pk_name is not None and key.pk_value is not None:
+    #             instance_dict[key.pk_name] = key.pk_value
+    #         if key.sk_name is not None and key.sk_value is not None:
+    #             instance_dict[key.sk_name] = key.sk_value
+
+    #     return instance_dict
+
     @staticmethod
-    def _add_key_attributes(instance: DynamoDbModelBase, instance_dict: dict) -> dict:
+    def _add_indexes(instance: DynamoDbModelBase, instance_dict: dict) -> dict:
         if not issubclass(type(instance), DynamoDbModelBase):
             return instance_dict
 
-        keys: List[DynamoDbKey] = instance.helpers.get_keys(instance.key_configs)
-        for key in keys:
-            if key.pk_name is not None and key.pk_value is not None:
-                instance_dict[key.pk_name] = key.pk_value
-            if key.sk_name is not None and key.sk_value is not None:
-                instance_dict[key.sk_name] = key.sk_value
+        if instance.indexes is None:
+            return instance_dict
+
+        primary = instance.indexes.primary
+
+        if primary:
+            instance_dict[primary.partition_key.attribute_name] = (
+                primary.partition_key.value
+            )
+            if (
+                primary.sort_key.attribute_name is not None
+                and primary.sort_key.value is not None
+            ):
+                instance_dict[primary.sort_key.attribute_name] = primary.sort_key.value
+
+        secondaries = instance.indexes.secondaries
+
+        key: DynamoDbIndex
+        for index_name, key in secondaries.items():
+            print(f"index_name: {index_name}, key: {key}")
+            if (
+                key.partition_key.attribute_name is not None
+                and key.partition_key.value is not None
+            ):
+                instance_dict[key.partition_key.attribute_name] = (
+                    key.partition_key.value
+                )
+            if key.sort_key.value is not None and key.sort_key.value is not None:
+                instance_dict[key.sort_key.attribute_name] = key.sort_key.value
 
         return instance_dict

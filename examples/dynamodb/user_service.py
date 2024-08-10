@@ -149,11 +149,11 @@ class UserService:
 
         if status is None:
             index_name = "gsi0"
-            key = um.get_key(index_name)
+            key = um.get_key(index_name).key
         if status is not None:
             um.status = status
             index_name = "gsi3"
-            key = um.get_key(index_name)
+            key = um.get_key(index_name).key
 
         projections_ex = um.projection_expression
         ex_attributes_names = um.projection_expression_attribute_names
@@ -187,7 +187,7 @@ class UserService:
         # Alternative way to get the key from the model
         u: UserDbModel = UserDbModel(id=user_id)
 
-        key = u.get_primary_key()
+        key = u.indexes.primary.key
         # p, e = UserDbModel.get_projection_expressions()
         p = u.projection_expression
         e = u.projection_expression_attribute_names
