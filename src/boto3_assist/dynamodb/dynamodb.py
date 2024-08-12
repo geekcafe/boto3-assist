@@ -119,8 +119,6 @@ class DynamoDB(DynamoDbConnection):
             size_kb: int = StringUtility.get_size_in_kb(item)
             logger.info({"item_size": {"bytes": size_bytes, "kb": f"{size_kb:.2f}kb"}})
 
-            # print(f"Size of item: {size_bytes}bytes")
-            # print(f"Size of item: {size_kb:.2f}kb")
             if size_kb > 390:
                 logger.warning(
                     {

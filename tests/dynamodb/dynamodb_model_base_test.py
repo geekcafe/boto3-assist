@@ -7,8 +7,9 @@ MIT License.  See Project Root for the license information.
 import unittest
 from typing import Optional, List, Dict
 
-from src.boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase, DynamoDbKey
+from src.boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
 from boto3_assist.dynamodb.dynamodb_index import DynamoDbIndex
+from src.boto3_assist.dynamodb.dynamodb_key import DynamoDbKey
 
 
 class User(DynamoDbModelBase):

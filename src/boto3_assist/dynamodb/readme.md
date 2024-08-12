@@ -55,3 +55,14 @@ dynamodb = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')
 ```
 - 
 
+
+
+```sh
+docker run -d --name scylla-dynamodb \
+  -p 8000:8000 \
+  scylladb/scylla --alternator-port=8000 \
+  --alternator-write-isolation=always_use_lwt \
+  --developer-mode 1
+
+
+```

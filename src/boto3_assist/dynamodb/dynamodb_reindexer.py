@@ -8,8 +8,9 @@ import json
 from typing import Any, Dict, Optional, List
 
 from boto3_assist.dynamodb.dynamodb import DynamoDB
-from boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase, DynamoDbKey
+from boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
 from boto3_assist.utilities.serialization_utility import Serialization
+from src.boto3_assist.dynamodb.dynamodb_key import DynamoDbKey
 
 
 class DynamoDbReindexer(DynamoDB):
@@ -37,27 +38,39 @@ class DynamoDbReindexer(DynamoDB):
 
     def reindex_item(
         self,
-        original_pk: dict,
+        original_primary_key: dict,
         model: DynamoDbModelBase,
         *,
         dry_run: bool = False,
-        migrate_pk: bool = False,
-        on_migrate_pk_leave_original_record: bool = False,
+        inplace: bool = False,
+        leave_original_record: bool = False,
     ):
-        """_summary_
+        """
+        Reindex the record
 
         Args:
-            original_pk (dict): _description_
-            keys (List[DynamoDbKey]): List of new keys
-            dry_run (bool, optional): _description_. Defaults to False.
+            original_primary_key (dict): The original primary key of the record to be reindexed.
+                This is either the partition_key or a composite key (partition_key, sort_key)
+            model (DynamoDbModelBase): A model instance that will be used to serialize the new keys
+                into a dictionary. It must inherit from DynamoDbModelBase
+
+            dry_run (bool, optional): Ability to log the actions without executing them. Defaults to False.
+            inplace (bool, optional): Ability to just update the indexes only.
+                No other fields will be updated, however you can't update the primary_key (partition/sort key)
+                with this action since they are immutable.
+                Defaults to False.
+            leave_original_record (bool, optional): _description_. Defaults to False.
         """
 
-        if not migrate_pk:
-            keys: List[DynamoDbKey] = model.list_keys(exclude_pk=True)
+        if not inplace:
+            keys: List[DynamoDbKey] = model.list_keys()
             # Update the item in DynamoDB with new keys
             self.update_item_in_dynamodb(
-                original_pk=original_pk, keys=keys, dry_run=dry_run
+                original_primary_key=original_primary_key, keys=keys, dry_run=dry_run
             )
+            # todo: add some additional error handling here and throw a more
+            # descriptive error if they try to use a different primary
+            # pk or sk, which you can't do.  If that's the case
         else:
             # add the new one first and optionally delete the older one
             # once we are succesfull
@@ -66,8 +79,10 @@ class DynamoDbReindexer(DynamoDB):
                 self.save(item=model, table_name=self.table_name, source="reindex")
 
                 # then delete the old on
-                if not on_migrate_pk_leave_original_record:
-                    self.delete(table_name=self.table_name, primary_key=original_pk)
+                if not leave_original_record:
+                    self.delete(
+                        table_name=self.table_name, primary_key=original_primary_key
+                    )
             except Exception as e:  # pylint: disable=broad-except
                 print(e)
             # this gets a little more trick as we need to delete the item
@@ -80,20 +95,8 @@ class DynamoDbReindexer(DynamoDB):
         base_model = Serialization.map(db_item, db_model)
         return base_model
 
-    # def update_keys(
-    #     self, key_configs: Dict[str, Dict[str, Callable[[], str]]]
-    # ) -> Dict[str, Any]:
-    #     """Update key values"""
-    #     updated_keys: Dict[str, Any] = {}
-    #     for index_name, index_config in key_configs.items():
-    #         updated_keys[index_name] = {}
-    #         for key_type, key_value_lambda in index_config.items():
-    #             updated_keys[index_name][key_type] = key_value_lambda()
-
-    #     return updated_keys
-
     def update_item_in_dynamodb(
-        self, original_pk: dict, keys: List[DynamoDbKey], dry_run: bool = False
+        self, original_primary_key: dict, keys: List[DynamoDbKey], dry_run: bool = False
     ):
         """Update the dynamodb item"""
         dictionary = self.helpers.keys_to_dictionary(keys=keys)
@@ -104,13 +107,13 @@ class DynamoDbReindexer(DynamoDB):
         if not dry_run:
             self.update_item(
                 table_name=self.table_name,
-                key=original_pk,
+                key=original_primary_key,
                 update_expression=update_expression,
                 expression_attribute_values=expression_attribute_values,
             )
         else:
             print("Dry run: Skipping Update item")
-            print(f"{json.dumps(original_pk, indent=4)}")
+            print(f"{json.dumps(original_primary_key, indent=4)}")
             print(f"{update_expression}")
             print(f"{json.dumps(expression_attribute_values, indent=4)}")
 

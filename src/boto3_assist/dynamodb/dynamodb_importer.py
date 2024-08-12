@@ -47,7 +47,7 @@ class DynamoDbImporter:
         for item in data:
             try:
                 item = DynamoDbHelpers.clean_null_values(item=item)
-                # print(f"Trying to insert item: {item}")
+
                 self.db.save(item=item, table_name=self.table_name)
                 # batch.put_item(Item=item)
 

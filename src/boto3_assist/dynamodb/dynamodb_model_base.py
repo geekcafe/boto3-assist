@@ -10,11 +10,10 @@ import decimal
 import inspect
 import uuid
 
-from typing import Callable, Mapping, TypeVar, List
+from typing import TypeVar, List
 from boto3.dynamodb.types import TypeSerializer
 from boto3_assist.utilities.serialization_utility import Serialization
 from boto3_assist.dynamodb.dynamodb_helpers import DynamoDbHelpers
-from boto3_assist.dynamodb.dynamodb_key import DynamoDbKey
 from boto3_assist.dynamodb.dynamodb_index import (
     DynamoDbIndexes,
     DynamoDbIndex,
@@ -35,14 +34,9 @@ class DynamoDbModelBase:
     T = TypeVar("T", bound="DynamoDbModelBase")
 
     def __init__(self) -> None:
-        # self.__key_configs: Mapping[str, Mapping[str, Callable[[], str]]] | str = {}
         self.__projection_expression: str | None = None
         self.__projection_expression_attribute_names: dict | None = None
         self.__helpers: DynamoDbHelpers | None = None
-        # self.__pk: str | None = None
-        # self.__sk: str | None = None
-        # self.__enable_pk_setter = False
-        # self.__enable_sk_setter = False
         self.__indexes: DynamoDbIndexes | None = None
 
     @property
@@ -183,14 +177,16 @@ class DynamoDbSerializer:
     def _serialize(instance: DynamoDbModelBase, serialize_fn):
         def is_primitive(value):
             """Check if the value is a primitive data type."""
-            return isinstance(value, (str, int, float, bool, type(None)))
+            return isinstance(value, (str, int, bool, type(None)))
 
         def serialize_value(value):
             """Serialize the value using the provided function."""
             if isinstance(value, dt.datetime):
                 return serialize_fn(value.isoformat())
+            elif isinstance(value, float):
+                return serialize_fn(decimal.Decimal(value))
             elif isinstance(value, decimal.Decimal):
-                return serialize_fn(str(value))
+                return serialize_fn(value)
             elif isinstance(value, uuid.UUID):
                 return serialize_fn(str(value))
             elif isinstance(value, (bytes, bytearray)):
@@ -266,8 +262,7 @@ class DynamoDbSerializer:
         secondaries = instance.indexes.secondaries
 
         key: DynamoDbIndex
-        for index_name, key in secondaries.items():
-            print(f"index_name: {index_name}, key: {key}")
+        for _, key in secondaries.items():
             if (
                 key.partition_key.attribute_name is not None
                 and key.partition_key.value is not None
