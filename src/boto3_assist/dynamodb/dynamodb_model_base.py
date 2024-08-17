@@ -28,6 +28,14 @@ def exclude_from_serialization(method):
     return method
 
 
+def exclude_indexes_from_serialization(method):
+    """
+    Decorator to mark methods or properties to be excluded from serialization.
+    """
+    method.exclude_indexes_from_serialization = True
+    return method
+
+
 class DynamoDbModelBase:
     """DyanmoDb Model Base"""
 
@@ -69,8 +77,22 @@ class DynamoDbModelBase:
     def projection_expression_attribute_names(self, value: dict | None):
         self.__projection_expression_attribute_names = value
 
-    def map(self: T, item: dict | DynamoDbModelBase) -> T:
-        """Map the item to the instance"""
+    def map(self: T, item: dict | DynamoDbModelBase) -> T | None:
+        """
+        Map the item to the instance.  If the item is a DynamoDbModelBase,
+        it will be converted to a dictionary first and then mapped.
+
+        Args:
+            self (T): The Type of object you are converting it to.
+            item (dict | DynamoDbModelBase): _description_
+
+        Raises:
+            ValueError: If the object is not a dictionary or DynamoDbModelBase
+
+        Returns:
+            T | None: An object of type T with properties set matching
+            that of the dictionary object or None
+        """
         if isinstance(item, DynamoDbModelBase):
             item = item.to_resource_dictionary()
 
@@ -80,27 +102,32 @@ class DynamoDbModelBase:
                 response: dict | None = item.get("Item")
 
                 if response is None:
-                    raise ValueError("Item cannot be None")
-                else:
-                    item = response
+                    return None
+
+                item = response
 
         else:
             raise ValueError("Item must be a dictionary or DynamoDbModelBase")
+        # attempt to map it
         return DynamoDbSerializer.map(source=item, target=self)
 
-    def to_client_dictionary(self):
+    def to_client_dictionary(self, include_indexes: bool = True):
         """
         Convert the instance to a dictionary suitable for DynamoDB client.
         """
-        return DynamoDbSerializer.to_client_dictionary(self)
+        return DynamoDbSerializer.to_client_dictionary(
+            self, include_indexes=include_indexes
+        )
 
-    def to_resource_dictionary(self):
+    def to_resource_dictionary(self, include_indexes: bool = True):
         """
         Convert the instance to a dictionary suitable for DynamoDB resource.
         """
-        return DynamoDbSerializer.to_resource_dictionary(self)
+        return DynamoDbSerializer.to_resource_dictionary(
+            self, include_indexes=include_indexes
+        )
 
-    def get_key(self, index_name: str, condition: str = "begins_with") -> DynamoDbIndex:
+    def get_key(self, index_name: str) -> DynamoDbIndex:
         """Get the index name and key"""
 
         if index_name is None:
@@ -147,7 +174,7 @@ class DynamoDbSerializer:
         return mapped
 
     @staticmethod
-    def to_client_dictionary(instance: DynamoDbModelBase):
+    def to_client_dictionary(instance: DynamoDbModelBase, include_indexes: bool = True):
         """
         Convert a Python class instance to a dictionary suitable for DynamoDB client.
 
@@ -158,10 +185,14 @@ class DynamoDbSerializer:
         - dict: A dictionary representation of the class instance suitable for DynamoDB client.
         """
         serializer = TypeSerializer()
-        return DynamoDbSerializer._serialize(instance, serializer.serialize)
+        return DynamoDbSerializer._serialize(
+            instance, serializer.serialize, include_indexes=include_indexes
+        )
 
     @staticmethod
-    def to_resource_dictionary(instance: DynamoDbModelBase):
+    def to_resource_dictionary(
+        instance: DynamoDbModelBase, include_indexes: bool = True
+    ):
         """
         Convert a Python class instance to a dictionary suitable for DynamoDB resource.
 
@@ -171,16 +202,23 @@ class DynamoDbSerializer:
         Returns:
         - dict: A dictionary representation of the class instance suitable for DynamoDB resource.
         """
-        return DynamoDbSerializer._serialize(instance, lambda x: x)
+        return DynamoDbSerializer._serialize(
+            instance, lambda x: x, include_indexes=include_indexes
+        )
 
     @staticmethod
-    def _serialize(instance: DynamoDbModelBase, serialize_fn):
+    def _serialize(
+        instance: DynamoDbModelBase, serialize_fn, include_indexes: bool = True
+    ):
         def is_primitive(value):
             """Check if the value is a primitive data type."""
             return isinstance(value, (str, int, bool, type(None)))
 
         def serialize_value(value):
             """Serialize the value using the provided function."""
+
+            if isinstance(value, DynamoDbModelBase):
+                return serialize_fn(value.to_resource_dictionary(False))
             if isinstance(value, dt.datetime):
                 return serialize_fn(value.isoformat())
             elif isinstance(value, float):
@@ -201,13 +239,15 @@ class DynamoDbSerializer:
                 return serialize_fn(DynamoDbSerializer._serialize(value, serialize_fn))
 
         instance_dict = DynamoDbSerializer._add_properties(instance, serialize_value)
-        # instance_dict = DynamoDbSerializer._add_key_attributes(instance, instance_dict)
-        instance_dict = DynamoDbSerializer._add_indexes(instance, instance_dict)
+
+        if include_indexes:
+            instance_dict = DynamoDbSerializer._add_indexes(instance, instance_dict)
         return instance_dict
 
     @staticmethod
     def _add_properties(instance: DynamoDbModelBase, serialize_value) -> dict:
         instance_dict = {}
+        include_indexes = True
         # Add instance variables
         for attr, value in instance.__dict__.items():
             # don't get the private properties

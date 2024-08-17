@@ -6,7 +6,7 @@ https://github.com/geekcafe/boto3-assist
 """
 
 from __future__ import annotations
-from typing import Optional, Mapping, Callable
+from typing import Optional
 from boto3.dynamodb.conditions import (
     ConditionBase,
     Key,
@@ -75,8 +75,11 @@ class DynamoDbIndex:
         index_name: Optional[str] = None,
         partition_key: Optional[DynamoDbKey] = None,
         sort_key: Optional[DynamoDbKey] = None,
+        description: Optional[str] = None,
     ):
         self.name: Optional[str] = index_name
+        self.description: Optional[str] = description
+        """Optional description information.  Used for self documentation."""
         self.__pk: Optional[DynamoDbKey] = partition_key
         self.__sk: Optional[DynamoDbKey] = sort_key
 

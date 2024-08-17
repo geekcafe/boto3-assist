@@ -1,4 +1,6 @@
+boto3-stubs[dynamodb]
 mypy
 mypy_boto3_dynamodb
+moto [dynamodb2] # mocks for unit tests
 types-python-dateutil
-boto3-stubs[dynamodb]
+

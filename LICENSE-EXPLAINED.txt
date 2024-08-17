@@ -3,8 +3,9 @@ including the right to use, copy, modify, merge, publish, distribute, sublicense
 and/or sell copies of the software. 
 
 However, it requires that the original copyright notice and permission notice be included 
-in all copies or substantial portions of the software, ensuring I get credit for my work.
+in all copies or substantial portions of the software, ensuring I or anyone else who works on this
+gets credit for the work.
 
-Hey, this took a lot of work, so I'd like to get some recognition for it if you use it. 😉
+Hey, this took a lot of love, so I'd / we'd like to get some recognition for it - if you use it. 😉
 
 Thanks for your understanding and support.  I hope this library is of use to you!

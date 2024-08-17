@@ -5,13 +5,19 @@ MIT License.  See Project Root for the license information.
 """
 
 import unittest
+from datetime import datetime, UTC
 from typing import cast
 from typing import Optional, List
 from boto3_assist.utilities.serialization_utility import Serialization
-from boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
+from boto3_assist.dynamodb.dynamodb_model_base import (
+    DynamoDbModelBase,
+    exclude_indexes_from_serialization,
+)
+from boto3_assist.dynamodb.dynamodb_index import DynamoDbIndex, DynamoDbKey
+from datetime import timedelta
 
 
-class UserAuthorizationModel:
+class UserAuthorizationModel(DynamoDbModelBase):
     """Defines the Use Authorization Model"""
 
     def __init__(self):
@@ -51,6 +57,7 @@ class User:
         age: Optional[int] = None,
         email: Optional[str] = None,
     ):
+        self.id: Optional[str] = None
         self.name: Optional[str] = name
         self.age: Optional[int] = age
         self.email: Optional[str] = email
@@ -70,6 +77,127 @@ class UserDbModel(User, DynamoDbModelBase):
     ):
         User.__init__(self, name, age, email)
         DynamoDbModelBase.__init__(self)
+        self.__setup_indexes()
+
+    def __setup_indexes(self):
+        self.indexes.add_primary(
+            DynamoDbIndex(
+                index_name="primary",
+                partition_key=DynamoDbKey(
+                    attribute_name="pk",
+                    value=lambda: f"user#{self.id if self.id else ''}",
+                ),
+                sort_key=DynamoDbKey(
+                    attribute_name="sk",
+                    value=lambda: f"user#{self.id if self.id else ''}",
+                ),
+            )
+        )
+
+        self.indexes.add_secondary(
+            DynamoDbIndex(
+                index_name="gsi0",
+                partition_key=DynamoDbKey(
+                    attribute_name="gsi0_pk",
+                    value="users#",
+                ),
+                sort_key=DynamoDbKey(
+                    attribute_name="gsi0_sk",
+                    value=lambda: f"email#{self.email if self.email else ''}",
+                ),
+            )
+        )
+
+
+class Subscription(DynamoDbModelBase):
+    """Subscription Model"""
+
+    def __init__(self):
+        super().__init__()
+        self.id: Optional[str] = None
+        self.name: Optional[str] = None
+        self.start_utc: Optional[datetime] = None
+        self.end_utc: Optional[datetime] = None
+        self.__setup_indexes()
+
+    def __setup_indexes(self):
+        self.indexes.add_primary(
+            DynamoDbIndex(
+                index_name="primary",
+                partition_key=DynamoDbKey(
+                    attribute_name="pk",
+                    value=lambda: f"subscription#{self.id}",
+                ),
+                sort_key=DynamoDbKey(
+                    attribute_name="sk",
+                    value=lambda: f"subscription#{self.id}",
+                ),
+            )
+        )
+
+        self.indexes.add_secondary(
+            DynamoDbIndex(
+                index_name="gsi0",
+                partition_key=DynamoDbKey(
+                    attribute_name="gsi0_pk",
+                    value="subscriptions#",
+                ),
+                sort_key=DynamoDbKey(
+                    attribute_name="gsi0_sk",
+                    value=lambda: f"subscription#{self.id}",
+                ),
+            )
+        )
+
+
+class Tenant(DynamoDbModelBase):
+    """Tenant Model"""
+
+    def __init__(self):
+        super().__init__()
+        self.id: Optional[str] = None
+        self.name: Optional[str] = None
+        self.__active_subscription: Optional[Subscription] = Subscription()
+        self.__setup_indexes()
+
+    @property
+    @exclude_indexes_from_serialization
+    def active_subscription(self) -> Subscription:
+        """Active Subscription"""
+        return self.__active_subscription
+
+    @active_subscription.setter
+    def active_subscription(self, value: Subscription) -> None:
+        self.__active_subscription = value
+
+    def __setup_indexes(self):
+        self.indexes.add_primary(
+            DynamoDbIndex(
+                index_name="primary",
+                partition_key=DynamoDbKey(
+                    attribute_name="pk",
+                    value=lambda: f"tenant#{self.id}",
+                ),
+                sort_key=DynamoDbKey(
+                    attribute_name="sk",
+                    value=lambda: f"tenant#{self.id}",
+                ),
+            )
+        )
+
+        self.indexes.add_secondary(
+            DynamoDbIndex(
+                index_name="gsi0",
+                partition_key=DynamoDbKey(
+                    attribute_name="gsi0_pk",
+                    value="tenants#",
+                ),
+                sort_key=DynamoDbKey(
+                    attribute_name="gsi0_sk",
+                    value=lambda: f"tenant#{self.id}",
+                ),
+            )
+        )
 
 
 class SerializationUnitTest(unittest.TestCase):
@@ -116,3 +244,36 @@ class SerializationUnitTest(unittest.TestCase):
         self.assertEqual(serialized_data.name, "John Doe")
         self.assertEqual(serialized_data.age, 30)
         self.assertEqual(serialized_data.email, "john@example.com")
+
+    def test_object_serialization_map_resource(self):
+        """Ensure the db properties aren't carried over to sub objects during Serlization"""
+        # Arrange
+        subscription: Subscription = Subscription()
+
+        subscription.id = "123"
+        subscription.name = "Monthly"
+        subscription.start_utc = datetime.now(tz=UTC)
+        subscription.end_utc = subscription.start_utc + timedelta(days=30)
+
+        tenant: Tenant = Tenant()
+        tenant.id = "456"
+        tenant.name = "Acme Corp"
+        tenant.active_subscription = subscription
+        # Act
+
+        # Assert
+
+        resource: dict = tenant.to_resource_dictionary()
+
+        self.assertEqual(resource.get("pk"), "tenant#456")
+        self.assertEqual(resource.get("sk"), "tenant#456")
+
+        self.assertEqual(resource.get("gsi0_pk"), "tenants#")
+        self.assertEqual(resource.get("gsi0_sk"), "tenant#456")
+
+        active_subscription: dict = resource.get("active_subscription")
+
+        self.assertIsNone(active_subscription.get("pk"))
+        self.assertIsNone(active_subscription.get("sk"))
+        self.assertIsNone(active_subscription.get("gsi0_pk"))
+        self.assertIsNone(active_subscription.get("gsi0_sk"))

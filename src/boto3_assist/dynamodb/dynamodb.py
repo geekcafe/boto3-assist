@@ -41,6 +41,7 @@ class DynamoDB(DynamoDbConnection):
         aws_end_point_url: Optional[str] = None,
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
+        setup_session: bool = True,
     ) -> None:
         super().__init__(
             aws_profile=aws_profile,
@@ -48,6 +49,7 @@ class DynamoDB(DynamoDbConnection):
             aws_end_point_url=aws_end_point_url,
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
+            setup_session=setup_session,
         )
         self.helpers: DynamoDbHelpers = DynamoDbHelpers()
         self.log_dynamodb_item_size = (
@@ -386,11 +388,50 @@ class DynamoDB(DynamoDbConnection):
         return response
 
     def has_more_records(self, response: dict) -> bool:
-        """Check if there are more records to process"""
+        """
+        Check if there are more records to process.
+        This based on the existance of the LastEvaluatedKey in the response.
+        Parameters:
+            response (dict): dynamodb response dictionary
+
+        Returns:
+            bool: True if there are more records, False otherwise
+        """
 
         return "LastEvaluatedKey" in response
 
-    def last_key(self, response: dict) -> str | None:
-        """Get the last key"""
+    def last_key(self, response: dict) -> dict | None:
+        """
+        Get the LastEvaluatedKey, which can be used to continue processing the results
+        Parameters:
+            response (dict): dynamodb response dictionary
+
+        Returns:
+            dict | None: The last key or None if not found
+        """
 
         return response.get("LastEvaluatedKey")
+
+    def items(self, response: dict) -> list:
+        """
+        Get the Items from the dynamodb response
+        Parameters:
+            response (dict): dynamodb response dictionary
+
+        Returns:
+            list: A list or empty array/list if no items found
+        """
+
+        return response.get("Items", [])
+
+    def item(self, response: dict) -> dict:
+        """
+        Get the Item from the dynamodb response
+        Parameters:
+            response (dict): dynamodb response dictionary
+
+        Returns:
+            dict: A dictionary or empty dictionary if no item found
+        """
+
+        return response.get("Item", {})

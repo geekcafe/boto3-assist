@@ -5,12 +5,26 @@ MIT License.  See Project Root for the license information.
 """
 
 import json
-from typing import Any, Dict, Optional, List
-
+from typing import Any, Dict, Optional, List, Protocol, TypeVar, Type
+from aws_lambda_powertools import Logger
 from boto3_assist.dynamodb.dynamodb import DynamoDB
 from boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
 from boto3_assist.utilities.serialization_utility import Serialization
-from src.boto3_assist.dynamodb.dynamodb_key import DynamoDbKey
+from boto3_assist.dynamodb.dynamodb_key import DynamoDbKey
+
+logger = Logger()
+
+
+class ServiceProtocol(Protocol):
+    """Define interfaces"""
+
+    def save(self, model: DynamoDbModelBase | dict) -> None:
+        """Save"""
+
+
+# Define a type variable for the model and service
+
+TService = TypeVar("TService", bound=ServiceProtocol)  # pylint: disable=c0103
 
 
 class DynamoDbReindexer(DynamoDB):
@@ -42,8 +56,9 @@ class DynamoDbReindexer(DynamoDB):
         model: DynamoDbModelBase,
         *,
         dry_run: bool = False,
-        inplace: bool = False,
+        inplace: bool = True,
         leave_original_record: bool = False,
+        service_cls: Type[TService] | None,
     ):
         """
         Reindex the record
@@ -58,11 +73,11 @@ class DynamoDbReindexer(DynamoDB):
             inplace (bool, optional): Ability to just update the indexes only.
                 No other fields will be updated, however you can't update the primary_key (partition/sort key)
                 with this action since they are immutable.
-                Defaults to False.
+                Defaults to True.
             leave_original_record (bool, optional): _description_. Defaults to False.
         """
 
-        if not inplace:
+        if inplace:
             keys: List[DynamoDbKey] = model.list_keys()
             # Update the item in DynamoDB with new keys
             self.update_item_in_dynamodb(
@@ -76,7 +91,14 @@ class DynamoDbReindexer(DynamoDB):
             # once we are succesfull
             try:
                 # save the new one first
-                self.save(item=model, table_name=self.table_name, source="reindex")
+                service_instance: Optional[TService] = (
+                    service_cls() if callable(service_cls) else None
+                )
+
+                if service_instance:
+                    service_instance.save(model=model)
+                else:
+                    self.save(item=model, table_name=self.table_name, source="reindex")
 
                 # then delete the old on
                 if not leave_original_record:
@@ -84,7 +106,8 @@ class DynamoDbReindexer(DynamoDB):
                         table_name=self.table_name, primary_key=original_primary_key
                     )
             except Exception as e:  # pylint: disable=broad-except
-                print(e)
+                logger.error(str(e))
+                raise RuntimeError(str(e)) from e
             # this gets a little more trick as we need to delete the item
 
     def load_model(

@@ -61,7 +61,9 @@ class Serialization:
                         logger.error(
                             f"Error setting attribute {key} with value {value}: {e}. "
                             "This usually occurs on properties that don't have setters. "
-                            "Try adding a setter for this property or ignore this error. "
+                            "You can add a setter (even with a pass action) for this property, "
+                            "decorate it with the @exclude_from_serialization "
+                            "or ignore this error. "
                         )
                 elif isinstance(attr, list) and isinstance(value, list):
                     attr.clear()

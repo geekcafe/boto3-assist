@@ -34,6 +34,7 @@ class DynamoDbConnection:
         aws_end_point_url: Optional[str] = None,
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
+        setup_session: bool = True,
     ) -> None:
         self.aws_profile = aws_profile or EnvironmentVariables.AWS.profile()
         self.aws_region = aws_region or EnvironmentVariables.AWS.region()
@@ -52,10 +53,10 @@ class DynamoDbConnection:
         self.__dynamodb_resource: DynamoDBServiceResource | None = None
 
         self.raise_on_error: bool = True
+        if setup_session:
+            self.setup(setup_source="DynamoDbConnection.__init__(...)")
 
-        self.setup(reset_source="__init__")
-
-    def setup(self, reset_source: Optional[str] = None):
+    def setup(self, setup_source: Optional[str] = None):
         """
         Setup the environment.  Automatically called via init.
         You can run setup at anytime with new parameters
@@ -67,7 +68,7 @@ class DynamoDbConnection:
                 "source": "DynamoDbConnection",
                 "aws_profile": self.aws_profile,
                 "aws_region": self.aws_region,
-                "setup_source": reset_source,
+                "setup_source": setup_source,
             }
         )
 
@@ -92,6 +93,10 @@ class DynamoDbConnection:
             raise RuntimeError("DynamoDB Client is not available")
         return self.__dynamodb_client
 
+    @dynamodb_client.setter
+    def dynamodb_client(self, value: DynamoDBClient):
+        self.__dynamodb_client = value
+
     @property
     def dynamodb_resource(self) -> DynamoDBServiceResource:
         """DynamoDB Resource Connection"""
@@ -102,3 +107,7 @@ class DynamoDbConnection:
             raise RuntimeError("DynamoDB Resource is not available")
 
         return self.__dynamodb_resource
+
+    @dynamodb_resource.setter
+    def dynamodb_resource(self, value: DynamoDBServiceResource):
+        self.__dynamodb_resource = value

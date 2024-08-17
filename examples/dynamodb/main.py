@@ -12,108 +12,128 @@ from boto3_assist.dynamodb.dynamodb_importer import DynamoDbImporter
 
 from examples.dynamodb.table_service import DynamoDbTableService
 from examples.dynamodb.user_post_service import UserPostDbModel, UserPostService
-from examples.dynamodb.user_service import UserService
+from examples.dynamodb.user_service import UserService, UserDbModel
+from examples.dynamodb.user_service_client_example import (
+    UserService as UserServiceClientExample,
+)
+from examples.dynamodb.user_service_resource_example import (
+    UserService as UserServiceResourceExample,
+)
 
 
 class DynamoDbExample:
     """An example of using and debuggin DynamoDB"""
 
-    def __init__(self) -> None:
+    def __init__(
+        self, user_table: str, user_post_table: str, import_table_name: str
+    ) -> None:
         self.db: DynamoDB = DynamoDB()
         self.table_service: DynamoDbTableService = DynamoDbTableService(self.db)
-        self.user_service: UserService = UserService(self.db)
-        self.user_post_service: UserPostService = UserPostService(self.db)
+        self.user_service: UserService = UserService(self.db, table_name=user_table)
+        self.user_post_service: UserPostService = UserPostService(
+            self.db, table_name=user_post_table
+        )
+        self.import_table_name = import_table_name
+        self.user_service_client: UserServiceClientExample = UserServiceClientExample(
+            self.db, table_name=user_table
+        )
 
-    def run_examples(self, table_name: str):
+        self.user_service_resource: UserServiceResourceExample = (
+            UserServiceResourceExample(self.db, table_name=user_table)
+        )
+
+    def create_tables(self):
+        tables = [
+            self.user_service.table_name,
+            self.user_post_service.table_name,
+            self.import_table_name,
+        ]
+
+        for table_name in tables:
+            if not self.table_service.table_exists(table_name):
+                self.table_service.create_a_table(table_name)
+
+    def run_examples(self):
         """Run a basic examples with some CRUD examples"""
 
         # I'm going to use a single table design pattern but you don't have to
-
-        if not self.table_service.table_exists(table_name):
-            self.table_service.create_a_table(table_name)
+        self.create_tables()
 
         # load some data
-        self.__load_users(table_name=table_name)
+        self.__generate_some_users()
 
         print("\nLIST OUR USERS")
-        users = self.user_service.list_users(table_name=table_name)
+        users = self.user_service.list_users()
         for user in users:
             print(json.dumps(user, indent=4))
 
         # use a known user id from out saving user example
         print("\nGETTING A SINGLE USER")
         user_id = "dfcad9d0-a9b3-43ff-83a6-a62965c70178"
-        user = self.user_service.get_user_simplified(
-            user_id=user_id, table_name=table_name
-        )
+        user = self.user_service.get_user_simplified(user_id=user_id)
         print(json.dumps(user, indent=5))
 
         print("\nGETTING A SUSPENDED USER")
-        users = self.user_service.list_users(table_name=table_name, status="suspended")
+        users = self.user_service.list_users(status="suspended")
         for user in users:
             print(json.dumps(user, indent=5))
 
         print("\nGETTING ACTIVE USERS")
-        users = self.user_service.list_users(table_name=table_name, status="active")
+        users = self.user_service.list_users(status="active")
         for user in users:
             print(json.dumps(user, indent=4))
 
         user = self.user_service.get_user_simplified(
-            user_id="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", table_name=table_name
+            user_id="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
         )
         print("\nGETTING A USER THAT DOESN'T EXIST")
         print(json.dumps(user, indent=4))
 
-    def __load_users(self, table_name: str):
+    def __generate_some_users(self):
         print("upserting users")
         ################################################
         ### Alice Smith
 
-        self.user_service.save_user_resource_syntax(
+        self.user_service_client.save(
             id="ed3ca6c8-7a8d-4da1-9098-27182b0fafdf",
             first_name="Alice",
             last_name="Smith",
             email="alice@example.com",
-            table_name=table_name,
         )
 
-        self.__add_user_some_posts(
-            user_id="ed3ca6c8-7a8d-4da1-9098-27182b0fafdf", table_name=table_name
-        )
+        self.__add_user_some_posts(user_id="ed3ca6c8-7a8d-4da1-9098-27182b0fafdf")
 
         ################################################
         ### Bob Smith
-        self.user_service.save_user_client_syntax(
+        self.user_service_resource.save(
             id="dfcad9d0-a9b3-43ff-83a6-a62965c70178",
             first_name="Bob",
             last_name="Smith",
             email="bob@example.com",
-            table_name=table_name,
         )
 
         ################################################
         ### Alex Smith
 
-        self.user_service.save_user_using_model(
+        self.user_service.save(
             id="031c9a9a-b835-4026-b4a0-eb49f4a151ae",
             first_name="Alex",
             last_name="Smith",
             email="alex.smith@example.com",
-            table_name=table_name,
         )
 
         ################################################
         ### Betty Smith
-        self.user_service.save_user_using_model(
-            id="98381a51-6397-40cb-b581-1ea313e76c1d",
-            first_name="Bett",
-            last_name="Smith",
-            email="betty.smith@example.com",
-            status="suspended",
-            table_name=table_name,
-        )
+        user: UserDbModel = UserDbModel()
+        user.id = "98381a51-6397-40cb-b581-1ea313e76c1d"
+        user.first_name = "Bett"
+        user.last_name = "Smith"
+        user.email = "betty.smith@example.com"
+        user.status = "suspended"
 
-    def __add_user_some_posts(self, user_id: str, table_name: str):
+        self.user_service.save(user=user)
+
+    def __add_user_some_posts(self, user_id: str):
         """Add some random posts"""
 
         print("adding posts")
@@ -130,11 +150,11 @@ class DynamoDbExample:
             </body>
             </html>
             """
-            self.user_post_service.save(user_post=model, table_name=table_name)
+            self.user_post_service.save(user_post=model)
 
-        self.__import_files(table_name=table_name)
+        self.__import_files()
 
-    def __import_files(self, table_name: str):
+    def __import_files(self):
         import_directory = os.getenv("IMPORT_DIRECTORY")
         if import_directory is not None:
             print(f"Importing files from {import_directory}")
@@ -146,7 +166,7 @@ class DynamoDbExample:
                 print(f"Importing files from {import_path}")
                 # do the import
                 importer: DynamoDbImporter = DynamoDbImporter(
-                    table_name=table_name, db=self.db
+                    table_name=self.import_table_name, db=self.db
                 )
 
                 importer.import_json_files(files)
@@ -167,9 +187,22 @@ def main():
     if not loaded:
         raise RuntimeError("Failed to load my local environment")
 
-    example: DynamoDbExample = DynamoDbExample()
     table_name = "application_table"
-    example.run_examples(table_name)
+    example: DynamoDbExample = DynamoDbExample(
+        user_table=table_name,
+        user_post_table=table_name,
+        import_table_name=table_name,
+    )
+    # load a single table design
+    example.run_examples()
+
+    example = DynamoDbExample(
+        user_table="user_table",
+        user_post_table="user_post_table",
+        import_table_name="import_table",
+    )
+    # load different table
+    example.run_examples()
 
 
 if __name__ == "__main__":
