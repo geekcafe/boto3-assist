@@ -15,9 +15,9 @@ from boto3.dynamodb.conditions import (
     ComparisonCondition,
     ConditionBase,
 )
-from boto3_assist.dynamodb.dynamodb_connection import DynamoDbConnection
-from boto3_assist.dynamodb.dynamodb_helpers import DynamoDbHelpers
-from boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
+from boto3_assist.dynamodb.dynamodb_connection import DynamoDBConnection
+from boto3_assist.dynamodb.dynamodb_helpers import DynamoDBHelpers
+from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
 from boto3_assist.utilities.string_utility import StringUtility
 
 
@@ -25,12 +25,12 @@ logger = Logger()
 tracer = Tracer()
 
 
-class DynamoDB(DynamoDbConnection):
+class DynamoDB(DynamoDBConnection):
     """
         DynamoDB. Wrapper for basic DynamoDB Connection and Actions
 
     Inherits:
-        DynamoDbConnection
+        DynamoDBConnection
     """
 
     def __init__(
@@ -41,7 +41,6 @@ class DynamoDB(DynamoDbConnection):
         aws_end_point_url: Optional[str] = None,
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
-        setup_session: bool = True,
     ) -> None:
         super().__init__(
             aws_profile=aws_profile,
@@ -49,9 +48,8 @@ class DynamoDB(DynamoDbConnection):
             aws_end_point_url=aws_end_point_url,
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
-            setup_session=setup_session,
         )
-        self.helpers: DynamoDbHelpers = DynamoDbHelpers()
+        self.helpers: DynamoDBHelpers = DynamoDBHelpers()
         self.log_dynamodb_item_size = (
             str(os.getenv("LOG_DYNAMODB_ITEM_SIZE", "false")).lower() == "true"
         )
@@ -60,14 +58,14 @@ class DynamoDB(DynamoDbConnection):
     @tracer.capture_method
     def save(
         self,
-        item: dict | DynamoDbModelBase,
+        item: dict | DynamoDBModelBase,
         table_name: str,
         source: Optional[str] = None,
     ) -> dict:
         """
         Save an item to the database
         Args:
-            item (dict): DynamoDB Dictionay Object or DynamoDbModelBase.  Supports the "client" or
+            item (dict): DynamoDB Dictionay Object or DynamoDBModelBase.  Supports the "client" or
             "resource" syntax
             table_name (str): The DyamoDb Table Name
             source (str, optional): The source of the call, used for logging. Defaults to None.
@@ -90,9 +88,10 @@ class DynamoDB(DynamoDbConnection):
                     logger.exception(e)
                     raise ValueError("Unsupported item or module was passed.") from e
 
-            self.__log_item_size(item=item)
+            if isinstance(item, dict):
+                self.__log_item_size(item=item)
 
-            if isinstance(next(iter(item.values())), dict):
+            if isinstance(item, dict) and isinstance(next(iter(item.values())), dict):
                 # Use boto3.client syntax
                 response = self.dynamodb_client.put_item(
                     TableName=table_name, Item=item
@@ -137,7 +136,7 @@ class DynamoDB(DynamoDbConnection):
         self,
         *,
         table_name: str,
-        model: DynamoDbModelBase,
+        model: DynamoDBModelBase,
         do_projections: bool = False,
         strongly_consistent: bool = False,
         return_consumed_capacity: Optional[str] = None,
@@ -166,7 +165,7 @@ class DynamoDB(DynamoDbConnection):
         self,
         key: Optional[dict] = None,
         table_name: Optional[str] = None,
-        model: Optional[DynamoDbModelBase] = None,
+        model: Optional[DynamoDBModelBase] = None,
         do_projections: bool = False,
         strongly_consistent: bool = False,
         return_consumed_capacity: Optional[str] = None,
@@ -180,7 +179,7 @@ class DynamoDB(DynamoDbConnection):
             generic get_item dynamoDb call
         Parameters:
             key: a dictionary object representing the primary key
-            model: a model instance of DynamoDbModelBase
+            model: a model instance of DynamoDBModelBase
         """
 
         if model is not None:
@@ -257,8 +256,9 @@ class DynamoDB(DynamoDbConnection):
 
     def query(
         self,
-        key: Key | ConditionBase | ComparisonCondition,
-        index_name: str,
+        key: dict | Key | ConditionBase | ComparisonCondition,
+        *,
+        index_name: Optional[str] = None,
         ascending: bool = False,
         table_name: Optional[str] = None,
         source: Optional[str] = None,
@@ -303,13 +303,16 @@ class DynamoDB(DynamoDbConnection):
         if limit:
             kwargs["Limit"] = limit
 
+        if table_name is None:
+            raise ValueError("Query failed: table_name must be provided.")
+
         table = self.dynamodb_resource.Table(table_name)
         response = table.query(**kwargs)
 
         return response
 
     @overload
-    def delete(self, *, table_name: str, model: DynamoDbModelBase) -> dict:
+    def delete(self, *, table_name: str, model: DynamoDBModelBase) -> dict:
         pass
 
     @overload
@@ -327,7 +330,7 @@ class DynamoDB(DynamoDbConnection):
         *,
         primary_key: Optional[dict] = None,
         table_name: Optional[str] = None,
-        model: Optional[DynamoDbModelBase] = None,
+        model: Optional[DynamoDBModelBase] = None,
     ):
         """deletes an item from the database"""
 
@@ -339,6 +342,9 @@ class DynamoDB(DynamoDbConnection):
             primary_key = model.indexes.primary.key()
 
         response = None
+
+        if table_name is None or primary_key is None:
+            raise ValueError("table_name and primary_key must be provided.")
 
         table = self.dynamodb_resource.Table(table_name)
         response = table.delete_item(Key=primary_key)
@@ -358,10 +364,10 @@ class DynamoDB(DynamoDbConnection):
     def query_by_criteria(
         self,
         *,
-        model: DynamoDbModelBase,
+        model: DynamoDBModelBase,
         table_name: str,
         index_name: str,
-        key: Key | ConditionBase | ComparisonCondition,
+        key: dict | Key | ConditionBase | ComparisonCondition,
         start_key: Optional[dict] = None,
         do_projections: bool = False,
         ascending: bool = False,

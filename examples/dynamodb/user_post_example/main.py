@@ -8,27 +8,27 @@ from pathlib import Path
 
 from boto3_assist.dynamodb.dynamodb import DynamoDB
 from boto3_assist.environment_services.environment_loader import EnvironmentLoader
-from boto3_assist.dynamodb.dynamodb_importer import DynamoDbImporter
+from boto3_assist.dynamodb.dynamodb_importer import DynamoDBImporter
 
-from examples.dynamodb.table_service import DynamoDbTableService
-from examples.dynamodb.user_post_service import UserPostDbModel, UserPostService
-from examples.dynamodb.user_service import UserService, UserDbModel
-from examples.dynamodb.user_service_client_example import (
+from examples.dynamodb.services.table_service import DynamoDBTableService
+from examples.dynamodb.services.user_post_service import UserPost, UserPostService
+from examples.dynamodb.services.user_service import UserService, User
+from examples.dynamodb.services.user_service_client_example import (
     UserService as UserServiceClientExample,
 )
-from examples.dynamodb.user_service_resource_example import (
+from examples.dynamodb.services.user_service_resource_example import (
     UserService as UserServiceResourceExample,
 )
 
 
-class DynamoDbExample:
+class DynamoDBExample:
     """An example of using and debuggin DynamoDB"""
 
     def __init__(
         self, user_table: str, user_post_table: str, import_table_name: str
     ) -> None:
         self.db: DynamoDB = DynamoDB()
-        self.table_service: DynamoDbTableService = DynamoDbTableService(self.db)
+        self.table_service: DynamoDBTableService = DynamoDBTableService(self.db)
         self.user_service: UserService = UserService(self.db, table_name=user_table)
         self.user_post_service: UserPostService = UserPostService(
             self.db, table_name=user_post_table
@@ -124,7 +124,7 @@ class DynamoDbExample:
 
         ################################################
         ### Betty Smith
-        user: UserDbModel = UserDbModel()
+        user: User = User()
         user.id = "98381a51-6397-40cb-b581-1ea313e76c1d"
         user.first_name = "Bett"
         user.last_name = "Smith"
@@ -139,9 +139,7 @@ class DynamoDbExample:
         print("adding posts")
 
         for i in range(5):
-            model: UserPostDbModel = UserPostDbModel(
-                title=f"Title {i}", user_id=user_id
-            )
+            model: UserPost = UserPost(title=f"Title {i}", user_id=user_id)
             model.slug = f"/coding/{i}"
             model.data = f"""
             <html>
@@ -165,7 +163,7 @@ class DynamoDbExample:
                 files = [os.path.join(import_path, f) for f in files]
                 print(f"Importing files from {import_path}")
                 # do the import
-                importer: DynamoDbImporter = DynamoDbImporter(
+                importer: DynamoDBImporter = DynamoDBImporter(
                     table_name=self.import_table_name, db=self.db
                 )
 
@@ -188,7 +186,7 @@ def main():
         raise RuntimeError("Failed to load my local environment")
 
     table_name = "application_table"
-    example: DynamoDbExample = DynamoDbExample(
+    example: DynamoDBExample = DynamoDBExample(
         user_table=table_name,
         user_post_table=table_name,
         import_table_name=table_name,
@@ -196,7 +194,7 @@ def main():
     # load a single table design
     example.run_examples()
 
-    example = DynamoDbExample(
+    example = DynamoDBExample(
         user_table="user_table",
         user_post_table="user_post_table",
         import_table_name="import_table",

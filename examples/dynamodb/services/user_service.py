@@ -6,7 +6,7 @@ MIT License.  See Project Root for the license information.
 
 from typing import Any, overload, Optional
 from boto3_assist.dynamodb.dynamodb import DynamoDB
-from examples.dynamodb.user_db_model import UserDbModel
+from examples.dynamodb.models.user_model import User
 
 
 class UserService:
@@ -44,21 +44,21 @@ class UserService:
     def save(
         self,
         *,
-        user: UserDbModel,
-    ) -> UserDbModel:
+        user: User,
+    ) -> User:
         pass
 
     def save(
         self,
         *,
-        user: Optional[UserDbModel] = None,
+        user: Optional[User] = None,
         id: Optional[str] = None,  # pylint: disable=w0622
         first_name: Optional[str] = None,
         last_name: Optional[str] = None,
         email: Optional[str] = None,
         status: Optional[str] = "active",
         db_dictionary_type: Optional[str] = "resource",
-    ) -> dict | UserDbModel:
+    ) -> dict | User:
         """
         Saves a user to the specified DynamoDB table using the user model.
 
@@ -76,7 +76,7 @@ class UserService:
         return_model: bool = user is not None
 
         if user is None:
-            user = UserDbModel(
+            user = User(
                 id=id,
                 first_name=first_name,
                 last_name=last_name,
@@ -107,7 +107,7 @@ class UserService:
         Returns:
             list: A list of users.
         """
-        um: UserDbModel = UserDbModel()
+        um: User = User()
 
         index_name: str = ""
         key: Any = {}
@@ -150,10 +150,10 @@ class UserService:
         key = {"pk": pk, "sk": sk}
 
         # Alternative way to get the key from the model
-        u: UserDbModel = UserDbModel(id=user_id)
+        u: User = User(id=user_id)
 
         key = u.indexes.primary.key()
-        # p, e = UserDbModel.get_projection_expressions()
+        # p, e = User.get_projection_expressions()
         p = u.projection_expression
         e = u.projection_expression_attribute_names
         response = self.db.get(
@@ -182,7 +182,7 @@ class UserService:
         """
 
         # Alternative way to get the key from the model
-        u: UserDbModel = UserDbModel(id=user_id)
+        u: User = User(id=user_id)
 
         response = self.db.get(model=u, table_name=self.table_name, do_projections=True)
 

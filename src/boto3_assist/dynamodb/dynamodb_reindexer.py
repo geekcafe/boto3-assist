@@ -5,35 +5,25 @@ MIT License.  See Project Root for the license information.
 """
 
 import json
-from typing import Any, Dict, Optional, List, Protocol, TypeVar, Type
+from typing import Any, Dict, Optional, List, Type
 from aws_lambda_powertools import Logger
 from boto3_assist.dynamodb.dynamodb import DynamoDB
-from boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
+from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
 from boto3_assist.utilities.serialization_utility import Serialization
-from boto3_assist.dynamodb.dynamodb_key import DynamoDbKey
+from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex
+from boto3_assist.dynamodb.dynamodb_iservice import IDynamoDBService
 
 logger = Logger()
 
 
-class ServiceProtocol(Protocol):
-    """Define interfaces"""
-
-    def save(self, model: DynamoDbModelBase | dict) -> None:
-        """Save"""
-
-
-# Define a type variable for the model and service
-
-TService = TypeVar("TService", bound=ServiceProtocol)  # pylint: disable=c0103
-
-
-class DynamoDbReindexer(DynamoDB):
+class DynamoDBReindexer:
     """Reindexing your database"""
 
     def __init__(
         self,
         table_name: str,
         *,
+        db: Optional[DynamoDB] = None,
         aws_profile: Optional[str] = None,
         aws_region: Optional[str] = None,
         aws_end_point_url: Optional[str] = None,
@@ -41,8 +31,7 @@ class DynamoDbReindexer(DynamoDB):
         aws_secret_access_key: Optional[str] = None,
     ):
         self.table_name = table_name
-
-        super().__init__(
+        self.db: DynamoDB = db or DynamoDB(
             aws_profile=aws_profile,
             aws_region=aws_region,
             aws_end_point_url=aws_end_point_url,
@@ -53,12 +42,12 @@ class DynamoDbReindexer(DynamoDB):
     def reindex_item(
         self,
         original_primary_key: dict,
-        model: DynamoDbModelBase,
+        model: DynamoDBModelBase,
         *,
         dry_run: bool = False,
         inplace: bool = True,
         leave_original_record: bool = False,
-        service_cls: Type[TService] | None,
+        service_cls: Type[IDynamoDBService] | None,
     ):
         """
         Reindex the record
@@ -66,8 +55,8 @@ class DynamoDbReindexer(DynamoDB):
         Args:
             original_primary_key (dict): The original primary key of the record to be reindexed.
                 This is either the partition_key or a composite key (partition_key, sort_key)
-            model (DynamoDbModelBase): A model instance that will be used to serialize the new keys
-                into a dictionary. It must inherit from DynamoDbModelBase
+            model (DynamoDBModelBase): A model instance that will be used to serialize the new keys
+                into a dictionary. It must inherit from DynamoDBModelBase
 
             dry_run (bool, optional): Ability to log the actions without executing them. Defaults to False.
             inplace (bool, optional): Ability to just update the indexes only.
@@ -78,7 +67,7 @@ class DynamoDbReindexer(DynamoDB):
         """
 
         if inplace:
-            keys: List[DynamoDbKey] = model.list_keys()
+            keys: List[DynamoDBIndex] = model.list_keys()
             # Update the item in DynamoDB with new keys
             self.update_item_in_dynamodb(
                 original_primary_key=original_primary_key, keys=keys, dry_run=dry_run
@@ -91,18 +80,21 @@ class DynamoDbReindexer(DynamoDB):
             # once we are succesfull
             try:
                 # save the new one first
-                service_instance: Optional[TService] = (
+                service_instance: Optional[IDynamoDBService] = (
                     service_cls() if callable(service_cls) else None
                 )
 
                 if service_instance:
+                    service_instance.db = self.db
                     service_instance.save(model=model)
                 else:
-                    self.save(item=model, table_name=self.table_name, source="reindex")
+                    self.db.save(
+                        item=model, table_name=self.table_name, source="reindex"
+                    )
 
                 # then delete the old on
                 if not leave_original_record:
-                    self.delete(
+                    self.db.delete(
                         table_name=self.table_name, primary_key=original_primary_key
                     )
             except Exception as e:  # pylint: disable=broad-except
@@ -111,24 +103,27 @@ class DynamoDbReindexer(DynamoDB):
             # this gets a little more trick as we need to delete the item
 
     def load_model(
-        self, db_item: dict, db_model: DynamoDbModelBase
-    ) -> DynamoDbModelBase:
+        self, db_item: dict, db_model: DynamoDBModelBase
+    ) -> DynamoDBModelBase | None:
         """load the model which will serialze the dynamodb dictionary to an instance of an object"""
 
         base_model = Serialization.map(db_item, db_model)
         return base_model
 
     def update_item_in_dynamodb(
-        self, original_primary_key: dict, keys: List[DynamoDbKey], dry_run: bool = False
+        self,
+        original_primary_key: dict,
+        keys: List[DynamoDBIndex],
+        dry_run: bool = False,
     ):
         """Update the dynamodb item"""
-        dictionary = self.helpers.keys_to_dictionary(keys=keys)
+        dictionary = self.db.helpers.keys_to_dictionary(keys=keys)
 
         update_expression = self.build_update_expression(dictionary)
         expression_attribute_values = self.build_expression_attribute_values(dictionary)
 
         if not dry_run:
-            self.update_item(
+            self.db.update_item(
                 table_name=self.table_name,
                 key=original_primary_key,
                 update_expression=update_expression,

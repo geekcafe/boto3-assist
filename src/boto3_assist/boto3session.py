@@ -71,6 +71,8 @@ class Boto3SessionManager:
                 self.assume_role_session_name
                 or f"AssumeRoleSessionFor{self.service_name}"
             )
+            if not self.assume_role_arn:
+                raise ValueError("assume_role_arn is required")
             assumed_role_response = sts_client.assume_role(
                 RoleArn=self.assume_role_arn,
                 RoleSessionName=session_name,

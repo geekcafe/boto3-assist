@@ -59,13 +59,7 @@
             }
         },
 
-        {
-            "name": "Artifact Login",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/devops/pip_code_artifact_setup.py",
-            "console": "integratedTerminal"
-        },
+        
         {
             "name": "Install Requirements",
             "type": "debugpy",

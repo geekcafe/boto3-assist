@@ -6,7 +6,7 @@ MIT License.  See Project Root for the license information.
 
 from typing import Any
 from boto3_assist.dynamodb.dynamodb import DynamoDB
-from examples.dynamodb.user_db_model import UserDbModel
+from examples.dynamodb.models.user_model import User
 
 
 class UserService:
@@ -35,7 +35,7 @@ class UserService:
         email: str,
     ) -> None:
         """
-        Saves a user to the specified DynamoDB table using resource syntax.
+        Saves a user to the specified DynamoDB table using client syntax.
 
         Args:
             id (str): The user ID.
@@ -46,15 +46,15 @@ class UserService:
         """
 
         user_id: str = f"user#{id}"
-        resource_syntax_item = {
-            "pk": user_id,
-            "sk": user_id,
-            "id": id,
-            "gsi0_pk": "users#",
-            "gsi0_sk": f"email#{email}",
-            "first_name": first_name,
-            "last_name": last_name,
-            "email": email,
-            "age": 30,  # Notice you can use an int here and not wrap it as a string.
+        client_syntax_item = {
+            "pk": {"S": user_id},
+            "sk": {"S": user_id},
+            "id": {"S": id},
+            "gsi0_pk": {"S": "users#"},
+            "gsi0_sk": {"S": f"email#{email}"},
+            "first_name": {"S": first_name},
+            "last_name": {"S": last_name},
+            "email": {"S": email},
+            "age": {"N": "30"},  # Need to wrap as a string or it will throw an error.
         }
-        self.db.save(item=resource_syntax_item, table_name=self.table_name)
+        self.db.save(item=client_syntax_item, table_name=self.table_name)

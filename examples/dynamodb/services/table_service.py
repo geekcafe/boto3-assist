@@ -14,7 +14,7 @@ from typing import List
 from boto3_assist.dynamodb.dynamodb import DynamoDB
 
 
-class DynamoDbTableService:
+class DynamoDBTableService:
     """
     Dynamo DB Table Service
     Use this to create and manage tables in DynamoDB
@@ -43,6 +43,10 @@ class DynamoDbTableService:
         # create table is an async call, returns quickly but the table
         # may or may not be ready.
         print(f"creating table: {table_name}")
+
+        if self.table_exists(table_name=table_name):
+            return
+
         response = self.db.dynamodb_resource.create_table(
             TableName=table_name,
             KeySchema=[

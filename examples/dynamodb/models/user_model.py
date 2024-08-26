@@ -6,11 +6,11 @@ MIT License.  See Project Root for the license information.
 
 import datetime
 from typing import Optional
-from boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
-from boto3_assist.dynamodb.dynamodb_index import DynamoDbIndex, DynamoDbKey
+from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
+from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBKey
 
 
-class UserDbModel(DynamoDbModelBase):
+class User(DynamoDBModelBase):
     """Database Model for the User Entity"""
 
     def __init__(
@@ -31,29 +31,29 @@ class UserDbModel(DynamoDbModelBase):
 
     def __setup_indexes(self):
         # user id
-        primay: DynamoDbIndex = DynamoDbIndex()
+        primay: DynamoDBIndex = DynamoDBIndex()
         primay.name = "primary"
         primay.partition_key.attribute_name = "pk"
-        primay.partition_key.value = lambda: f"user#{self.id if self.id else ''}"
+        primay.partition_key.value = lambda: DynamoDBKey.build_key(("user", self.id))
         primay.sort_key.attribute_name = "sk"
-        primay.sort_key.value = lambda: f"user#{self.id if self.id else ''}"
+        primay.sort_key.value = lambda: DynamoDBKey.build_key(("user", self.id))
         self.indexes.add_primary(primay)
 
         # find all users by email address
-        gsi0: DynamoDbIndex = DynamoDbIndex(
+        gsi0: DynamoDBIndex = DynamoDBIndex(
             index_name="gsi0",
-            partition_key=DynamoDbKey(attribute_name="gsi0_pk", value="users#"),
-            sort_key=DynamoDbKey(
+            partition_key=DynamoDBKey(attribute_name="gsi0_pk", value="users#"),
+            sort_key=DynamoDBKey(
                 attribute_name="gsi0_sk",
-                value=lambda: f"email#{self.email if self.email else ''}",
+                value=lambda: DynamoDBKey.build_key(("user", self.id)),
             ),
         )
         self.indexes.add_secondary(gsi0)
 
-        gsi1: DynamoDbIndex = DynamoDbIndex(
+        gsi1: DynamoDBIndex = DynamoDBIndex(
             index_name="gsi1",
-            partition_key=DynamoDbKey(attribute_name="gsi1_pk", value="users#"),
-            sort_key=DynamoDbKey(
+            partition_key=DynamoDBKey(attribute_name="gsi1_pk", value="users#"),
+            sort_key=DynamoDBKey(
                 attribute_name="gsi1_sk",
                 value=self.__get_gsi1,
             ),
@@ -61,18 +61,18 @@ class UserDbModel(DynamoDbModelBase):
         self.indexes.add_secondary(gsi1)
 
         # users search by last name
-        gsi2: DynamoDbIndex = DynamoDbIndex(
+        gsi2: DynamoDBIndex = DynamoDBIndex(
             index_name="gsi2",
-            partition_key=DynamoDbKey(attribute_name="gsi2_pk", value="users#"),
-            sort_key=DynamoDbKey(attribute_name="gsi2_sk", value=self.__get_gsi2),
+            partition_key=DynamoDBKey(attribute_name="gsi2_pk", value="users#"),
+            sort_key=DynamoDBKey(attribute_name="gsi2_sk", value=self.__get_gsi2),
         )
         self.indexes.add_secondary(gsi2)
 
         # users by status and email
-        gsi3: DynamoDbIndex = DynamoDbIndex(
+        gsi3: DynamoDBIndex = DynamoDBIndex(
             index_name="gsi3",
-            partition_key=DynamoDbKey(attribute_name="gsi3_pk", value="users#"),
-            sort_key=DynamoDbKey(
+            partition_key=DynamoDBKey(attribute_name="gsi3_pk", value="users#"),
+            sort_key=DynamoDBKey(
                 attribute_name="gsi3_sk",
                 value=lambda: (
                     f"status#{self.status if self.status else ''}"

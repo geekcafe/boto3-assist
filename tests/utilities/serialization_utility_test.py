@@ -6,18 +6,18 @@ MIT License.  See Project Root for the license information.
 
 import unittest
 from datetime import datetime, UTC
+from datetime import timedelta
 from typing import cast
 from typing import Optional, List
 from boto3_assist.utilities.serialization_utility import Serialization
 from boto3_assist.dynamodb.dynamodb_model_base import (
-    DynamoDbModelBase,
+    DynamoDBModelBase,
     exclude_indexes_from_serialization,
 )
-from boto3_assist.dynamodb.dynamodb_index import DynamoDbIndex, DynamoDbKey
-from datetime import timedelta
+from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBKey
 
 
-class UserAuthorizationModel(DynamoDbModelBase):
+class UserAuthorizationModel(DynamoDBModelBase):
     """Defines the Use Authorization Model"""
 
     def __init__(self):
@@ -48,7 +48,7 @@ class UserAuthorizationModel(DynamoDbModelBase):
         self.__policies = value
 
 
-class User:
+class User(DynamoDBModelBase):
     """User Model"""
 
     def __init__(
@@ -57,37 +57,24 @@ class User:
         age: Optional[int] = None,
         email: Optional[str] = None,
     ):
+        DynamoDBModelBase.__init__(self)
         self.id: Optional[str] = None
         self.name: Optional[str] = name
         self.age: Optional[int] = age
         self.email: Optional[str] = email
         self.authorization: UserAuthorizationModel = UserAuthorizationModel()
 
-        # self.authorization.groups = "Admin, Manager"
-
-
-class UserDbModel(User, DynamoDbModelBase):
-    """User Model"""
-
-    def __init__(
-        self,
-        name: Optional[str] = None,
-        age: Optional[int] = None,
-        email: Optional[str] = None,
-    ):
-        User.__init__(self, name, age, email)
-        DynamoDbModelBase.__init__(self)
         self.__setup_indexes()
 
     def __setup_indexes(self):
         self.indexes.add_primary(
-            DynamoDbIndex(
+            DynamoDBIndex(
                 index_name="primary",
-                partition_key=DynamoDbKey(
+                partition_key=DynamoDBKey(
                     attribute_name="pk",
                     value=lambda: f"user#{self.id if self.id else ''}",
                 ),
-                sort_key=DynamoDbKey(
+                sort_key=DynamoDBKey(
                     attribute_name="sk",
                     value=lambda: f"user#{self.id if self.id else ''}",
                 ),
@@ -95,13 +82,13 @@ class UserDbModel(User, DynamoDbModelBase):
         )
 
         self.indexes.add_secondary(
-            DynamoDbIndex(
+            DynamoDBIndex(
                 index_name="gsi0",
-                partition_key=DynamoDbKey(
+                partition_key=DynamoDBKey(
                     attribute_name="gsi0_pk",
                     value="users#",
                 ),
-                sort_key=DynamoDbKey(
+                sort_key=DynamoDBKey(
                     attribute_name="gsi0_sk",
                     value=lambda: f"email#{self.email if self.email else ''}",
                 ),
@@ -109,7 +96,7 @@ class UserDbModel(User, DynamoDbModelBase):
         )
 
 
-class Subscription(DynamoDbModelBase):
+class Subscription(DynamoDBModelBase):
     """Subscription Model"""
 
     def __init__(self):
@@ -122,13 +109,13 @@ class Subscription(DynamoDbModelBase):
 
     def __setup_indexes(self):
         self.indexes.add_primary(
-            DynamoDbIndex(
+            DynamoDBIndex(
                 index_name="primary",
-                partition_key=DynamoDbKey(
+                partition_key=DynamoDBKey(
                     attribute_name="pk",
                     value=lambda: f"subscription#{self.id}",
                 ),
-                sort_key=DynamoDbKey(
+                sort_key=DynamoDBKey(
                     attribute_name="sk",
                     value=lambda: f"subscription#{self.id}",
                 ),
@@ -136,13 +123,13 @@ class Subscription(DynamoDbModelBase):
         )
 
         self.indexes.add_secondary(
-            DynamoDbIndex(
+            DynamoDBIndex(
                 index_name="gsi0",
-                partition_key=DynamoDbKey(
+                partition_key=DynamoDBKey(
                     attribute_name="gsi0_pk",
                     value="subscriptions#",
                 ),
-                sort_key=DynamoDbKey(
+                sort_key=DynamoDBKey(
                     attribute_name="gsi0_sk",
                     value=lambda: f"subscription#{self.id}",
                 ),
@@ -150,7 +137,7 @@ class Subscription(DynamoDbModelBase):
         )
 
 
-class Tenant(DynamoDbModelBase):
+class Tenant(DynamoDBModelBase):
     """Tenant Model"""
 
     def __init__(self):
@@ -172,13 +159,13 @@ class Tenant(DynamoDbModelBase):
 
     def __setup_indexes(self):
         self.indexes.add_primary(
-            DynamoDbIndex(
+            DynamoDBIndex(
                 index_name="primary",
-                partition_key=DynamoDbKey(
+                partition_key=DynamoDBKey(
                     attribute_name="pk",
                     value=lambda: f"tenant#{self.id}",
                 ),
-                sort_key=DynamoDbKey(
+                sort_key=DynamoDBKey(
                     attribute_name="sk",
                     value=lambda: f"tenant#{self.id}",
                 ),
@@ -186,13 +173,13 @@ class Tenant(DynamoDbModelBase):
         )
 
         self.indexes.add_secondary(
-            DynamoDbIndex(
+            DynamoDBIndex(
                 index_name="gsi0",
-                partition_key=DynamoDbKey(
+                partition_key=DynamoDBKey(
                     attribute_name="gsi0_pk",
                     value="tenants#",
                 ),
-                sort_key=DynamoDbKey(
+                sort_key=DynamoDBKey(
                     attribute_name="gsi0_sk",
                     value=lambda: f"tenant#{self.id}",
                 ),
@@ -237,7 +224,7 @@ class SerializationUnitTest(unittest.TestCase):
         data = {"name": "John Doe", "age": 30, "email": "john@example.com"}
 
         # Act
-        serialized_data: UserDbModel = UserDbModel().map(data)
+        serialized_data: User = User().map(data)
 
         # Assert
 

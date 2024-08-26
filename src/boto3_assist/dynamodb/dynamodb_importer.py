@@ -11,12 +11,12 @@ from typing import List
 from aws_lambda_powertools import Logger
 from botocore.exceptions import ClientError
 from boto3_assist.dynamodb.dynamodb import DynamoDB
-from boto3_assist.dynamodb.dynamodb_helpers import DynamoDbHelpers
+from boto3_assist.dynamodb.dynamodb_helpers import DynamoDBHelpers
 
 logger = Logger()
 
 
-class DynamoDbImporter:
+class DynamoDBImporter:
     """
     Import files to your database
     Currently supports json files
@@ -46,7 +46,7 @@ class DynamoDbImporter:
         # with table.batch_writer() as batch:
         for item in data:
             try:
-                item = DynamoDbHelpers.clean_null_values(item=item)
+                item = DynamoDBHelpers.clean_null_values(item=item)
 
                 self.db.save(item=item, table_name=self.table_name)
                 # batch.put_item(Item=item)

@@ -6,19 +6,19 @@ https://github.com/geekcafe/boto3-assist
 """
 
 from __future__ import annotations
-from typing import Callable, Optional, Mapping
+from typing import Callable, Optional, Tuple
 
 
-class DynamoDbKey:
-    """DynamoDb Key"""
+class DynamoDBKey:
+    """DynamoDB Key"""
 
     def __init__(
         self,
         attribute_name: Optional[str] = None,
-        value: Optional[Mapping[str, Callable[[], str]]] = None,
+        value: Optional[str | Callable[[], str]] = None,
     ) -> None:
         self.__attribute_name: Optional[str] = attribute_name
-        self.__value: Optional[Mapping[str, Callable[[], str]]] = value
+        self.__value: Optional[str | Callable[[], str]] = value
 
     @property
     def attribute_name(self) -> str:
@@ -32,8 +32,9 @@ class DynamoDbKey:
         self.__attribute_name = value
 
     @property
-    def value(self) -> Mapping[str, Callable[[], str]]:
+    def value(self) -> Optional[str | Callable[[], str]]:
         """Get the value"""
+
         if self.__value is None:
             raise ValueError("Value is not set")
         if callable(self.__value):
@@ -41,5 +42,20 @@ class DynamoDbKey:
         return self.__value
 
     @value.setter
-    def value(self, value: Mapping[str, Callable[[], str]]):
+    def value(self, value: Optional[str | Callable[[], str]]):
         self.__value = value
+
+    @staticmethod
+    def build_key(*key_value_pairs) -> str:
+        """
+        Static method to build a key based on provided key-value pairs.
+        Stops appending if any value is None.
+        """
+        parts = []
+        for key, value in key_value_pairs:
+            if value is None:
+                parts.append(f"{key}#")
+                break
+            else:
+                parts.append(f"{key}#{value}")
+        return "#".join(parts)

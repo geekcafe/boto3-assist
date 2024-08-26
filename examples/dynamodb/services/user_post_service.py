@@ -5,7 +5,7 @@ MIT License.  See Project Root for the license information.
 """
 
 from boto3_assist.dynamodb.dynamodb import DynamoDB
-from examples.dynamodb.user_post_db_model import UserPostDbModel
+from examples.dynamodb.models.user_post_model import UserPost
 
 
 class UserPostService:
@@ -26,12 +26,12 @@ class UserPostService:
         self.db: DynamoDB = db
         self.table_name: str = table_name
 
-    def save(self, user_post: UserPostDbModel) -> dict:
+    def save(self, user_post: UserPost) -> dict:
         """
         Saves a user post to the specified DynamoDB table.
 
         Args:
-            user_post (UserPostDbModel): The user post model to save.
+            user_post (UserPost): The user post model to save.
             table_name (str): The name of the DynamoDB table.
 
         Returns:
@@ -51,7 +51,7 @@ class UserPostService:
         Returns:
             list: A list of user posts.
         """
-        model = UserPostDbModel()
+        model = UserPost()
         index_name = "gsi0"
         key = model.indexes.get(index_name).key()
         projections_ex = model.projection_expression
@@ -85,7 +85,7 @@ class UserPostService:
             dict: The retrieved post as a dictionary.
         """
 
-        model = UserPostDbModel(slug=slug)
+        model = UserPost(slug=slug)
         key = model.indexes.primary.key()
         p = model.projection_expression
         e = model.projection_expression_attribute_names

@@ -7,20 +7,20 @@ MIT License.  See Project Root for the license information.
 import unittest
 from typing import Optional, List
 
-from src.boto3_assist.dynamodb.dynamodb_model_base import DynamoDbModelBase
-from src.boto3_assist.dynamodb.dynamodb_reindexer import DynamoDbReindexer
-from src.boto3_assist.dynamodb.dynamodb_key import DynamoDbKey
-from src.boto3_assist.dynamodb.dynamodb_index import DynamoDbIndex
+from src.boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
+from src.boto3_assist.dynamodb.dynamodb_reindexer import DynamoDBReindexer
+from src.boto3_assist.dynamodb.dynamodb_key import DynamoDBKey
+from src.boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex
 
 
-class User(DynamoDbModelBase):
+class User(DynamoDBModelBase):
     """User Model"""
 
     def __init__(
         self,
         id: Optional[str] = None,  # pylint: disable=redefined-builtin
     ):
-        DynamoDbModelBase.__init__(self)
+        DynamoDBModelBase.__init__(self)
         self.id: Optional[str] = id
         self.first_name: Optional[str] = None
         self.last_name: Optional[str] = None
@@ -31,13 +31,13 @@ class User(DynamoDbModelBase):
 
     def __setup_indexes(self):
         self.indexes.add_primary(
-            index=DynamoDbIndex(
+            index=DynamoDBIndex(
                 index_name="primary",
-                partition_key=DynamoDbKey(
+                partition_key=DynamoDBKey(
                     "pk",
                     value=lambda: f"user#{self.id if self.id else ''}",
                 ),
-                sort_key=DynamoDbKey(
+                sort_key=DynamoDBKey(
                     "sk",
                     value=lambda: f"user#{self.id if self.id else ''}",
                 ),
@@ -45,13 +45,13 @@ class User(DynamoDbModelBase):
         )
 
         self.indexes.add_secondary(
-            index=DynamoDbIndex(
+            index=DynamoDBIndex(
                 index_name="gsi0",
-                partition_key=DynamoDbKey(
+                partition_key=DynamoDBKey(
                     "gsi0_pk",
                     value="users#",
                 ),
-                sort_key=DynamoDbKey(
+                sort_key=DynamoDBKey(
                     "gsi0_sk",
                     value=lambda: f"email#{self.email if self.email else ''}",
                 ),
@@ -59,13 +59,13 @@ class User(DynamoDbModelBase):
         )
 
         self.indexes.add_secondary(
-            index=DynamoDbIndex(
+            index=DynamoDBIndex(
                 index_name="gsi1",
-                partition_key=DynamoDbKey(
+                partition_key=DynamoDBKey(
                     "gsi1_pk",
                     value="users#",
                 ),
-                sort_key=DynamoDbKey(
+                sort_key=DynamoDBKey(
                     "gsi1_sk",
                     value=lambda: (
                         f"lastname#{self.last_name if self.last_name else ''}"
@@ -76,13 +76,13 @@ class User(DynamoDbModelBase):
         )
 
         self.indexes.add_secondary(
-            index=DynamoDbIndex(
+            index=DynamoDBIndex(
                 index_name="gsi2",
-                partition_key=DynamoDbKey(
+                partition_key=DynamoDBKey(
                     "gsi2_pk",
                     value=lambda: self.__get_gsi2(),
                 ),
-                sort_key=DynamoDbKey("gsi2_sk", value=self.__get_gsi2),
+                sort_key=DynamoDBKey("gsi2_sk", value=self.__get_gsi2),
             ),
         )
 
@@ -118,9 +118,9 @@ class ReindexTest(unittest.TestCase):
 
         # Act
         user: User = User().map(data)
-        keys: List[DynamoDbKey] = user.list_keys()
+        keys: List[DynamoDBKey] = user.list_keys()
 
-        reindexer: DynamoDbReindexer = DynamoDbReindexer("dummy_table")
+        reindexer: DynamoDBReindexer = DynamoDBReindexer("dummy_table")
 
         dictionary = user.helpers.keys_to_dictionary(keys=keys)
 

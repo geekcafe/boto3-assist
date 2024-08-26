@@ -4,17 +4,17 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import List, Any, Dict, Callable
+from typing import List, Any, Dict
 
 from boto3.dynamodb.conditions import ConditionBase, Key, And, Equals
 from aws_lambda_powertools import Tracer, Logger
-from boto3_assist.dynamodb.dynamodb_index import DynamoDbIndex
+from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex
 
 logger = Logger()
 tracer = Tracer()
 
 
-class DynamoDbHelpers:
+class DynamoDBHelpers:
     """Dynamo DB Helper Functions"""
 
     def __init__(self) -> None:
@@ -142,23 +142,36 @@ class DynamoDbHelpers:
         Wraps Up Some usefull information when dealing with
 
         """
-        response: dict[str, List] = {"Items": [], "Batches": []}
+        response: dict[str, Any] = {"Items": [], "Batches": []}
         record_start: int = 0
+        total_count = 0
+        total_scanned_count = 0
+        record_end = 0
         for item in collection:
             record_start += 1
-            record_end = record_start + len(collection)
+            record_end = record_end + len(item["Items"])
             response["Items"].extend(item["Items"])
-            response["Batches"].append(
-                {
-                    "LastKey": item["LastKey"],
-                    "Count": item["Count"],
-                    "Scanned": item["Scanned"],
-                    "MoreRecords": item["MoreRecords"],
-                    "Records": {"start": record_start, "end": record_end},
-                }
-            )
+
+            batch: dict[str, Any] = {}
+            if "LastEvaluatedKey" in item:
+                batch["LastKey"] = item["LastEvaluatedKey"]
+
+            if "Count" in item:
+                batch["Count"] = item["Count"]
+                total_count += item["Count"]
+
+            if "ScannedCount" in item:
+                batch["ScannedCount"] = item["ScannedCount"]
+                total_scanned_count += item["ScannedCount"]
+
+            batch["Records"] = {"start": record_start, "end": record_end}
+
+            response["Batches"].append(batch)
 
             record_start = record_end
+
+        response["Count"] = total_count
+        response["ScannedCount"] = total_scanned_count
 
         return response
 
@@ -295,94 +308,20 @@ class DynamoDbHelpers:
                     print(f"Found 'null' value at key: {k}, replacing with None")
                     cleaned[k] = ""  # Or handle it as you see fit
                 elif isinstance(v, (dict, list)):
-                    cleaned[k] = DynamoDbHelpers.clean_null_values(v)
+                    cleaned[k] = DynamoDBHelpers.clean_null_values(v)
                 else:
                     cleaned[k] = v
             return cleaned
         elif isinstance(item, list):
-            return [DynamoDbHelpers.clean_null_values(i) for i in item]
+            return [DynamoDBHelpers.clean_null_values(i) for i in item]
         else:
             return item
 
-    @staticmethod
-    def get_key_value(
-        key_configs: dict, index_name: str, key_name: str | None
-    ) -> str | None:
-        """
-        Get the partition key for a given index
-        Args:
-            key_configs (dict): _description_
-            index_name (str): _description_
-            key_name (str | None): _description_
-
-        Returns:
-            str | None: _description_
-        """
-        keys = key_configs
-
-        # should be in a list format
-        if isinstance(keys, list) and len(keys) > 0:
-            pass
-        else:
-            raise ValueError(
-                f"Could not find key_configurations for DynamoDB index {key_name} key {key_name}"
-            )
-        # get the correct key
-        value: str | Callable[[], str] | None = None
-        k: dict
-        found: bool = False
-        for k in keys:
-            if isinstance(k, dict):
-                for index, index_value in k.items():
-                    if index == index_name:
-                        if isinstance(index_value, dict):
-                            block: dict = index_value.get(key_name, None)
-                            if isinstance(block, dict):
-                                value = block.get("value", None)
-
-                        found = True
-                        break
-            if found:
-                break
-
-        if not value:
-            return None
-
-        if callable(value):
-            return value()
-        return value
-
-    # def get_keys(
-    #     self, key_configs: List[Dict], exclude_pk: bool = False
-    # ) -> List[DynamoDbKey]:
-    #     """_summary_
-
-    #     Args:
-    #         key_configs (List[Dict]): _description_
-    #         index_name (str): _description_
-
-    #     Returns:
-    #         List[Dict]: _description_
-    #     """
-    #     keys: List[DynamoDbKey] = []
-    #     for k in key_configs:
-    #         if isinstance(k, dict):
-    #             for index, _ in k.items():
-    #                 # print(index, index_value)
-    #                 if index == "primary_key" and exclude_pk:
-    #                     continue
-    #                 key: DynamoDbKey = DynamoDbKey()
-    #                 key.index_name = index
-    #                 key = key.populate_key(key_configs, key)
-    #                 keys.append(key)
-
-    #     return keys
-
-    def keys_to_dictionary(self, keys: List[DynamoDbIndex]) -> dict:
+    def keys_to_dictionary(self, keys: List[DynamoDBIndex]) -> dict:
         """_summary_
 
         Args:
-            keys (List[DynamoDbKey]): _description_
+            keys (List[DynamoDBKey]): _description_
 
         Returns:
             dict: _description_
