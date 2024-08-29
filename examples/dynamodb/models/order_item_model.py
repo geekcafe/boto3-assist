@@ -8,6 +8,7 @@ import datetime
 from typing import Optional
 from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBKey
+from examples.dynamodb.models.product_model import Product
 
 
 class OrderItem(DynamoDBModelBase):
@@ -17,12 +18,12 @@ class OrderItem(DynamoDBModelBase):
         super().__init__()
         self.id: Optional[str] = None
         self.order_id: Optional[str] = None
-
-        self.product_id: Optional[str] = None
-        self.product_name: Optional[str] = None
+        self.product: Optional[Product] = None
+        # self.product_id: Optional[str] = None
+        # self.product_name: Optional[str] = None
         self.quantity: Optional[int] = 0
-        self.price: Optional[float] = 0.0
-        self.is_taxable: bool = False
+        # self.price: Optional[float] = 0.0
+        # self.is_taxable: bool = False
         self.is_discounted: bool = False
         self.created_utc: Optional[datetime.datetime] = None
         self.modified_utc: Optional[datetime.datetime] = None

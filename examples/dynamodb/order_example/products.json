@@ -1,0 +1,352 @@
+[
+    {
+        "id": "1",
+        "name": "Mjolnir (Thor's Hammer)",
+        "description": "Wield the power of the Thunder God with this faithful replica of Thor's mighty hammer. Made from enchanted Uru metal, it's nearly impossible to lift unless you're worthy.",
+        "price": 9999.99,
+        "sku": "THOR001"
+    },
+    {
+        "id": "2",
+        "name": "Tesseract (Space Stone)",
+        "description": "Harness the power of the cosmos with the Space Stone, encased within the Tesseract. Instantly transport yourself to any location in the universe.",
+        "price": 14999.99,
+        "sku": "TSR002"
+    },
+    {
+        "id": "3",
+        "name": "Eye of Agamotto",
+        "description": "The mystical amulet worn by Doctor Strange, capable of manipulating time itself. Comes with a cautionary warning about potential time loops.",
+        "price": 7999.99,
+        "sku": "STRANGE003"
+    },
+    {
+        "id": "4",
+        "name": "Infinity Gauntlet",
+        "description": "The ultimate weapon, designed to hold all six Infinity Stones. Wear this gauntlet and control the very fabric of reality. Stones not included.",
+        "price": 19999.99,
+        "sku": "GAUNTLET004"
+    },
+    {
+        "id": "5",
+        "name": "Arc Reactor",
+        "description": "A fully functional Arc Reactor, just like the one that powers Tony Stark's Iron Man suits. Compact, clean energy for all your needs.",
+        "price": 8999.99,
+        "sku": "STARK005"
+    },
+    {
+        "id": "6",
+        "name": "Captain America's Shield",
+        "description": "The iconic vibranium shield, a symbol of freedom and justice. Nearly indestructible, perfect for both defense and offense.",
+        "price": 5999.99,
+        "sku": "CAP006"
+    },
+    {
+        "id": "7",
+        "name": "Loki's Scepter",
+        "description": "A powerful weapon wielded by Loki, containing the Mind Stone. Use it to influence the minds of others and bend them to your will.",
+        "price": 10999.99,
+        "sku": "LOKI007"
+    },
+    {
+        "id": "8",
+        "name": "Black Panther's Suit",
+        "description": "A full-body suit made from vibranium, providing enhanced strength, agility, and protection. Perfect for blending into the night.",
+        "price": 12999.99,
+        "sku": "PANTHER008"
+    },
+    {
+        "id": "9",
+        "name": "Nano Gauntlet",
+        "description": "Tony Stark's version of the Infinity Gauntlet, designed to harness the power of the Infinity Stones. Sleek, modern, and lethal.",
+        "price": 18999.99,
+        "sku": "NANO009"
+    },
+    {
+        "id": "10",
+        "name": "Ant-Man's Suit",
+        "description": "Shrink down to the size of an ant or grow to gigantic proportions with this advanced Pym-tech suit. Comes with a built-in communication system.",
+        "price": 13999.99,
+        "sku": "ANT010"
+    },
+    {
+        "id": "11",
+        "name": "Stormbreaker (Thor's Axe)",
+        "description": "The legendary weapon forged in the heart of a dying star. Capable of summoning the Bifrost and slaying even the mightiest foes.",
+        "price": 9999.99,
+        "sku": "STORM011"
+    },
+    {
+        "id": "12",
+        "name": "Spider-Man's Web-Shooters",
+        "description": "Custom-built web-shooters by Peter Parker, perfect for swinging between skyscrapers or capturing criminals. Web fluid sold separately.",
+        "price": 2999.99,
+        "sku": "SPIDER012"
+    },
+    {
+        "id": "13",
+        "name": "Iron Man Mark L Suit",
+        "description": "The cutting-edge Iron Man suit, made from nanotechnology. Instant deployment and self-repair capabilities make this the ultimate armor.",
+        "price": 19999.99,
+        "sku": "IRON013"
+    },
+    {
+        "id": "14",
+        "name": "Wakandan Kimoyo Beads",
+        "description": "High-tech beads from Wakanda, used for communication, health monitoring, and more. A versatile tool for any situation.",
+        "price": 4999.99,
+        "sku": "WAKANDA014"
+    },
+    {
+        "id": "15",
+        "name": "Star-Lord's Element Guns",
+        "description": "Dual-wielded blasters capable of firing all four classical elements: fire, water, air, and earth. Just don't lose them like Peter Quill.",
+        "price": 7999.99,
+        "sku": "QUILL015"
+    },
+    {
+        "id": "16",
+        "name": "Yondu's Yaka Arrow",
+        "description": "A single arrow controlled by whistling, with deadly precision. Made from Yaka metal, this weapon is both unique and lethal.",
+        "price": 5999.99,
+        "sku": "YONDU016"
+    },
+    {
+        "id": "17",
+        "name": "Doctor Strange's Cloak of Levitation",
+        "description": "A sentient cloak that grants the wearer the ability to fly. It also has a mind of its own, so be prepared for some sass.",
+        "price": 7999.99,
+        "sku": "CLOAK017"
+    },
+    {
+        "id": "18",
+        "name": "Winter Soldier's Vibranium Arm",
+        "description": "A powerful prosthetic arm made of vibranium, designed for enhanced strength and durability. Comes with built-in weaponry.",
+        "price": 7499.99,
+        "sku": "WINTER018"
+    },
+    {
+        "id": "19",
+        "name": "Scarlet Witch's Tiara",
+        "description": "A mystical tiara that amplifies the wearer's magical abilities. Perfect for chaos magic practitioners.",
+        "price": 6499.99,
+        "sku": "SCARLET019"
+    },
+    {
+        "id": "20",
+        "name": "Hawkeye's Trick Arrows",
+        "description": "A set of high-tech arrows with various functions, from explosive tips to grappling hooks. Perfect for any sharpshooter.",
+        "price": 3999.99,
+        "sku": "HAWKEYE020"
+    },
+    {
+        "id": "21",
+        "name": "Gamora's Godslayer Sword",
+        "description": "A weapon of unparalleled sharpness, capable of cutting through almost anything. Wielded by the deadliest woman in the galaxy.",
+        "price": 8999.99,
+        "sku": "GAMORA021"
+    },
+    {
+        "id": "22",
+        "name": "Nebula's Cybernetic Upgrades",
+        "description": "A set of cybernetic enhancements that improve strength, reflexes, and durability. Optional upgrades include built-in weaponry.",
+        "price": 10999.99,
+        "sku": "NEBULA022"
+    },
+    {
+        "id": "23",
+        "name": "Black Widow's Widow's Bite",
+        "description": "A pair of wrist-mounted electric shock devices used by Natasha Romanoff. Perfect for taking down opponents silently.",
+        "price": 2999.99,
+        "sku": "WIDOW023"
+    },
+    {
+        "id": "24",
+        "name": "Vision's Mind Stone",
+        "description": "The powerful Mind Stone, embedded in Vision's forehead. Control minds, create illusions, or unleash devastating energy blasts.",
+        "price": 14999.99,
+        "sku": "VISION024"
+    },
+    {
+        "id": "25",
+        "name": "Hulk's Gamma Radiation",
+        "description": "A vial of concentrated gamma radiation, the source of the Hulk's immense strength. Handle with extreme caution.",
+        "price": 9999.99,
+        "sku": "HULK025"
+    },
+    {
+        "id": "26",
+        "name": "Captain Marvel's Photon Blasters",
+        "description": "Powerful energy weapons capable of firing photonic blasts. Inspired by the weaponry of the Kree Starforce.",
+        "price": 8499.99,
+        "sku": "MARVEL026"
+    },
+    {
+        "id": "27",
+        "name": "Thanos' Double-Edged Sword",
+        "description": "A massive, double-edged sword used by Thanos. Capable of cutting through nearly anything, it symbolizes his relentless pursuit of power.",
+        "price": 12999.99,
+        "sku": "THANOS027"
+    },
+    {
+        "id": "28",
+        "name": "Shuri's Vibranium Gauntlets",
+        "description": "High-tech gauntlets designed by Shuri, capable of firing powerful energy blasts. Perfect for any tech-savvy warrior.",
+        "price": 6499.99,
+        "sku": "SHURI028"
+    },
+    {
+        "id": "29",
+        "name": "Valkyrie's Dragonfang Sword",
+        "description": "The legendary sword once wielded by the Valkyrie, capable of cutting through the strongest of foes. A weapon of true Asgardian craftsmanship.",
+        "price": 9499.99,
+        "sku": "VALKYRIE029"
+    },
+    {
+        "id": "30",
+        "name": "Red Skull's Tesseract Holder",
+        "description": "A special containment unit designed to hold the Tesseract. Keeps the Space Stone secure and stable, even under extreme conditions.",
+        "price": 4999.99,
+        "sku": "SKULL030"
+    },
+    {
+        "id": "31",
+        "name": "Drax's Dual Daggers",
+        "description": "A pair of matching daggers wielded by the fearsome Drax the Destroyer. Razor-sharp and perfectly balanced for combat.",
+        "price": 7999.99,
+        "sku": "DRAX031"
+    },
+    {
+        "id": "32",
+        "name": "Rocket's Custom Blaster",
+        "description": "A high-powered blaster designed and modified by Rocket Raccoon. Features adjustable settings for maximum destruction.",
+        "price": 6999.99,
+        "sku": "ROCKET032"
+    },
+    {
+        "id": "33",
+        "name": "Groot's Regrowth Serum",
+        "description": "A vial of serum capable of accelerating plant growth, specifically designed for Flora colossi like Groot. Perfect for regrowing limbs or other wooden appendages.",
+        "price": 4999.99,
+        "sku": "GROOT033"
+    },
+    {
+        "id": "34",
+        "name": "The Aether (Reality Stone)",
+        "description": "The powerful Aether, containing the Reality Stone. Bend reality to your will, turning your wildest dreams into reality—or your worst nightmares.",
+        "price": 15999.99,
+        "sku": "AETHER034"
+    },
+    {
+        "id": "35",
+        "name": "The Collector's Cosmic Vault",
+        "description": "A secure storage vault capable of holding the universe's rarest treasures. Designed by the Collector himself, this vault is impenetrable.",
+        "price": 9999.99,
+        "sku": "COLLECTOR035"
+    },
+    {
+        "id": "36",
+        "name": "Quake's Gauntlets",
+        "description": "Specially designed gauntlets that allow the wearer to control seismic energy. Inspired by the Inhuman Quake, also known as Daisy Johnson.",
+        "price": 5999.99,
+        "sku": "QUAKE036"
+    },
+    {
+        "id": "37",
+        "name": "The Darkhold",
+        "description": "An ancient book of dark magic, containing spells and secrets too powerful for most to handle. Use at your own risk.",
+        "price": 12999.99,
+        "sku": "DARKHOLD037"
+    },
+    {
+        "id": "38",
+        "name": "Red Wing Drone",
+        "description": "A drone used by Falcon for reconnaissance and combat support. Fully autonomous and capable of high-speed flight.",
+        "price": 8999.99,
+        "sku": "FALCON038"
+    },
+    {
+        "id": "39",
+        "name": "E.D.I.T.H. Glasses",
+        "description": "Tony Stark's final gift to Peter Parker, these AI-powered glasses provide access to a global defense network. Only for responsible users.",
+        "price": 14999.99,
+        "sku": "EDITH039"
+    },
+    {
+        "id": "40",
+        "name": "Shuri's Vibranium Sneakers",
+        "description": "Silent, high-tech sneakers designed by Shuri. Made from vibranium, these shoes absorb sound and provide unmatched comfort.",
+        "price": 3999.99,
+        "sku": "SHURI040"
+    },
+    {
+        "id": "41",
+        "name": "The Ten Rings",
+        "description": "A set of ten mystical rings wielded by Wenwu, each possessing unique powers. Wield them all for ultimate control over your enemies.",
+        "price": 15999.99,
+        "sku": "TENRINGS041"
+    },
+    {
+        "id": "42",
+        "name": "Korg's Mace",
+        "description": "A massive stone mace wielded by Korg, made from the finest rock in the universe. Perfect for smashing opponents in gladiatorial combat.",
+        "price": 7499.99,
+        "sku": "KORG042"
+    },
+    {
+        "id": "43",
+        "name": "The Milano Spaceship",
+        "description": "Peter Quill's beloved spaceship, the Milano. A fast and agile vessel, perfect for intergalactic travel and evading the law.",
+        "price": 999999.99,
+        "sku": "MILANO043"
+    },
+    {
+        "id": "44",
+        "name": "Ultron's Vibranium Shell",
+        "description": "The indestructible vibranium body used by Ultron. Stronger than steel, more durable than any other material.",
+        "price": 12999.99,
+        "sku": "ULTRON044"
+    },
+    {
+        "id": "45",
+        "name": "Pym Particles",
+        "description": "A vial of Pym Particles, capable of shrinking or enlarging objects to incredible sizes. Handle with care, and remember: size matters.",
+        "price": 9999.99,
+        "sku": "PYM045"
+    },
+    {
+        "id": "46",
+        "name": "The Necrosword",
+        "description": "A powerful and ancient weapon capable of killing gods. Once wielded by Gorr the God Butcher, this sword is the embodiment of darkness.",
+        "price": 13999.99,
+        "sku": "NECROSWORD046"
+    },
+    {
+        "id": "47",
+        "name": "The Quantum Tunnel",
+        "description": "A portable Quantum Tunnel, designed for safe travel to and from the Quantum Realm. Perfect for time heists or alternate dimension exploration.",
+        "price": 199999.99,
+        "sku": "QUANTUM047"
+    },
+    {
+        "id": "48",
+        "name": "The Grandmaster's Melt Stick",
+        "description": "The ultimate tool of punishment from the Grandmaster. Use it to melt down any disobedient underlings. No batteries required.",
+        "price": 4999.99,
+        "sku": "MELTSTICK048"
+    },
+    {
+        "id": "49",
+        "name": "Hela's Helm",
+        "description": "The powerful and intimidating helm worn by Hela, Goddess of Death. Provides immense strength and conjures weapons from thin air.",
+        "price": 12999.99,
+        "sku": "HELA049"
+    },
+    {
+        "id": "50",
+        "name": "Doomsday Protocol",
+        "description": "A classified SHIELD protocol for dealing with catastrophic threats. Contains instructions and plans for surviving the unthinkable.",
+        "price": 9999.99,
+        "sku": "DOOMSDAY050"
+    }
+]

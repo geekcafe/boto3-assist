@@ -53,9 +53,10 @@ class DynamoDBKey:
         """
         parts = []
         for key, value in key_value_pairs:
+            prefix = f"{key}#" if key else ""
             if value is None:
-                parts.append(f"{key}#")
+                parts.append(f"{prefix}")
                 break
             else:
-                parts.append(f"{key}#{value}")
+                parts.append(f"{prefix}{value}")
         return "#".join(parts)

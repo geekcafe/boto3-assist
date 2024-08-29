@@ -6,7 +6,7 @@ https://github.com/geekcafe/boto3-assist
 """
 
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, Any
 from boto3.dynamodb.conditions import (
     ConditionBase,
     Key,
@@ -110,7 +110,8 @@ class DynamoDBIndex:
         *,
         include_sort_key: bool = True,
         condition: str = "begins_with",
-        high_value: Optional[DynamoDBKey] = None,
+        low_value: Any = None,
+        high_value: Any = None,
         # sk_value_2: Optional[str | int | float] = None,
     ) -> dict | Key | ConditionBase | ComparisonCondition | Equals:
         """Get the key for a given index"""
@@ -129,6 +130,7 @@ class DynamoDBIndex:
             key = self._build_query_key(
                 include_sort_key=include_sort_key,
                 condition=condition,
+                low_value=low_value,
                 high_value=high_value,
             )
             return key
@@ -138,7 +140,8 @@ class DynamoDBIndex:
         *,
         include_sort_key: bool = True,
         condition: str = "begins_with",
-        high_value: Optional[DynamoDBKey] = None,
+        low_value: Any = None,
+        high_value: Any = None,
     ) -> And | Equals:
         """Get the GSI index name and key"""
 
@@ -146,13 +149,22 @@ class DynamoDBIndex:
             self.partition_key.value
         )
 
-        if include_sort_key and self.sort_key.attribute_name and self.sort_key.value:
+        if (
+            include_sort_key
+            and self.sort_key.attribute_name
+            and (
+                self.sort_key.value
+                or (low_value is not None and high_value is not None)
+            )
+        ):
             # if self.sk_value_2:
-            if high_value:
+            if low_value is not None and high_value is not None:
                 match condition:
                     case "between":
+                        low = f"{self.sort_key.value}{low_value}"
+                        high = f"{self.sort_key.value}{high_value}"
                         key = key & Key(f"{self.sort_key.attribute_name}").between(
-                            self.sort_key.value, high_value.value
+                            low, high
                         )
 
             else:
