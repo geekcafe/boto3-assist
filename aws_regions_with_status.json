@@ -1,0 +1,122 @@
+[
+    {
+        "RegionName": "af-south-1",
+        "OptInStatus": "not-opted-in"
+    },
+    {
+        "RegionName": "ap-east-1",
+        "OptInStatus": "not-opted-in"
+    },
+    {
+        "RegionName": "ap-northeast-1",
+        "OptInStatus": "opt-in-not-required"
+    },
+    {
+        "RegionName": "ap-northeast-2",
+        "OptInStatus": "opt-in-not-required"
+    },
+    {
+        "RegionName": "ap-northeast-3",
+        "OptInStatus": "opt-in-not-required"
+    },
+    {
+        "RegionName": "ap-south-1",
+        "OptInStatus": "opt-in-not-required"
+    },
+    {
+        "RegionName": "ap-south-2",
+        "OptInStatus": "not-opted-in"
+    },
+    {
+        "RegionName": "ap-southeast-1",
+        "OptInStatus": "opt-in-not-required"
+    },
+    {
+        "RegionName": "ap-southeast-2",
+        "OptInStatus": "opt-in-not-required"
+    },
+    {
+        "RegionName": "ap-southeast-3",
+        "OptInStatus": "not-opted-in"
+    },
+    {
+        "RegionName": "ap-southeast-4",
+        "OptInStatus": "not-opted-in"
+    },
+    {
+        "RegionName": "ap-southeast-5",
+        "OptInStatus": "not-opted-in"
+    },
+    {
+        "RegionName": "ca-central-1",
+        "OptInStatus": "opt-in-not-required"
+    },
+    {
+        "RegionName": "ca-west-1",
+        "OptInStatus": "not-opted-in"
+    },
+    {
+        "RegionName": "eu-central-1",
+        "OptInStatus": "opt-in-not-required"
+    },
+    {
+        "RegionName": "eu-central-2",
+        "OptInStatus": "not-opted-in"
+    },
+    {
+        "RegionName": "eu-north-1",
+        "OptInStatus": "opt-in-not-required"
+    },
+    {
+        "RegionName": "eu-south-1",
+        "OptInStatus": "not-opted-in"
+    },
+    {
+        "RegionName": "eu-south-2",
+        "OptInStatus": "not-opted-in"
+    },
+    {
+        "RegionName": "eu-west-1",
+        "OptInStatus": "opt-in-not-required"
+    },
+    {
+        "RegionName": "eu-west-2",
+        "OptInStatus": "opt-in-not-required"
+    },
+    {
+        "RegionName": "eu-west-3",
+        "OptInStatus": "opt-in-not-required"
+    },
+    {
+        "RegionName": "il-central-1",
+        "OptInStatus": "not-opted-in"
+    },
+    {
+        "RegionName": "me-central-1",
+        "OptInStatus": "not-opted-in"
+    },
+    {
+        "RegionName": "me-south-1",
+        "OptInStatus": "not-opted-in"
+    },
+    {
+        "RegionName": "sa-east-1",
+        "OptInStatus": "opt-in-not-required"
+    },
+    {
+        "RegionName": "us-east-1",
+        "OptInStatus": "opt-in-not-required"
+    },
+    {
+        "RegionName": "us-east-2",
+        "OptInStatus": "opt-in-not-required"
+    },
+    {
+        "RegionName": "us-west-1",
+        "OptInStatus": "opt-in-not-required"
+    },
+    {
+        "RegionName": "us-west-2",
+        "OptInStatus": "opt-in-not-required"
+    }
+]

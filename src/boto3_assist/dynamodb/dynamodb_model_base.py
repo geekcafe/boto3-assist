@@ -18,6 +18,7 @@ from boto3_assist.dynamodb.dynamodb_index import (
     DynamoDBIndexes,
     DynamoDBIndex,
 )
+from boto3_assist.dynamodb.dynamodb_reserved_words import DynamoDBReservedWords
 
 
 def exclude_from_serialization(method):
@@ -41,11 +42,13 @@ class DynamoDBModelBase:
 
     T = TypeVar("T", bound="DynamoDBModelBase")
 
-    def __init__(self) -> None:
+    def __init__(self, auto_generate_projections: bool = True) -> None:
         self.__projection_expression: str | None = None
         self.__projection_expression_attribute_names: dict | None = None
         self.__helpers: DynamoDBHelpers | None = None
         self.__indexes: DynamoDBIndexes | None = None
+        self.__reserved_words: DynamoDBReservedWords = DynamoDBReservedWords()
+        self.auto_generate_projections: bool = auto_generate_projections
 
     @property
     @exclude_from_serialization
@@ -61,6 +64,14 @@ class DynamoDBModelBase:
     @exclude_from_serialization
     def projection_expression(self) -> str | None:
         """Gets the projection expression"""
+        if self.__projection_expression is None and self.auto_generate_projections:
+            props = self.to_dictionary()
+            # turn props to a list[str]
+            prop_list = list(props.keys())
+
+            transformed_list = self.__reserved_words.tranform_projections(prop_list)
+            self.projection_expression = ",".join(transformed_list)
+
         return self.__projection_expression
 
     @projection_expression.setter
@@ -70,7 +81,21 @@ class DynamoDBModelBase:
     @property
     @exclude_from_serialization
     def projection_expression_attribute_names(self) -> dict | None:
-        """Gets the projection expression attribute names"""
+        """
+        Gets the projection expression attribute names
+
+        """
+        if (
+            self.__projection_expression_attribute_names is None
+            and self.auto_generate_projections
+        ):
+            props = self.to_dictionary()
+            # turn props to a list[str]
+            prop_list = list(props.keys())
+            self.projection_expression_attribute_names = (
+                self.__reserved_words.transform_attributes(prop_list)
+            )
+
         return self.__projection_expression_attribute_names
 
     @projection_expression_attribute_names.setter
@@ -129,6 +154,14 @@ class DynamoDBModelBase:
         return DynamoDBSerializer.to_resource_dictionary(
             self, include_indexes=include_indexes
         )
+
+    def to_dictionary(self):
+        """
+        Convert the instance to a dictionary without an indexes/keys.
+        Usefull for turning an object into a dictionary for serialization.
+        This is the same as to_resource_dictionary(include_indexes=False)
+        """
+        return DynamoDBSerializer.to_resource_dictionary(self, include_indexes=False)
 
     def get_key(self, index_name: str) -> DynamoDBIndex:
         """Get the index name and key"""

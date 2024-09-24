@@ -2,6 +2,7 @@ boto3-stubs[dynamodb]
 build
 mypy
 mypy_boto3_dynamodb
+mypy_boto3_ec2
 moto [dynamodb2] # mocks for unit tests
 # setuptools
 types-python-dateutil

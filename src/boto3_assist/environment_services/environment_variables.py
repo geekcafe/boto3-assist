@@ -83,6 +83,22 @@ class EnvironmentVariables:
             )
             return value
 
+        @staticmethod
+        def aws_access_key_id() -> str | None:
+            """
+            The aws_access_key_id.  Often used for local development.
+            """
+            value = os.getenv("ACCESS_KEY_ID")
+            return value
+
+        @staticmethod
+        def aws_secret_access_key() -> str | None:
+            """
+            The aws_secret_access_key.  Often used for local development.
+            """
+            value = os.getenv("SECRET_ACCESS_KEY")
+            return value
+
         class SES:
             """SES Settings"""
 

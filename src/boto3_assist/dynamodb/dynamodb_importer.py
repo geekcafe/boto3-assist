@@ -38,9 +38,11 @@ class DynamoDBImporter:
             raise FileNotFoundError(f"File not found: {json_file_path}")
         if json_file_path.endswith(".gz"):
             data = self.read_gzip_file(json_file_path)
-        else:
+        elif json_file_path.endswith(".json"):
             with open(json_file_path, "r", encoding="utf-8") as json_file:
                 data = json.load(json_file)
+        else:
+            raise ValueError(f"Unsupported file type: {json_file_path}")
 
         # table = self.db.dynamodb_resource.Table(self.table_name)
         # with table.batch_writer() as batch:
@@ -58,7 +60,22 @@ class DynamoDBImporter:
     def import_json_files(self, json_file_paths: list[str]) -> None:
         """Import multiple json files into the database"""
         for json_file_path in json_file_paths:
-            self.import_json_file(json_file_path)
+            if os.path.exists(json_file_path) is False:
+                raise FileNotFoundError(f"File not found: {json_file_path}")
+            else:
+                if json_file_path.endswith(".gz") or json_file_path.endswith(".json"):
+                    self.import_json_file(json_file_path)
+                else:
+                    if os.path.isdir(json_file_path):
+                        logger.warning(
+                            f"Unsupported sub directory import {json_file_path}. "
+                            "Skipping import on this file."
+                        )
+                    else:
+                        logger.warning(
+                            f"Unsupported file type: {json_file_path}. "
+                            "Skipping import on this file.  Files should end with .gz or .json"
+                        )
 
     def read_gzip_file(self, file_path: str) -> List[dict]:
         """

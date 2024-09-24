@@ -372,6 +372,7 @@ class DynamoDB(DynamoDBConnection):
         do_projections: bool = False,
         ascending: bool = False,
         strongly_consistent: bool = False,
+        limit: Optional[int] = None,
     ) -> dict:
         """Helper function to list by criteria"""
 
@@ -391,6 +392,7 @@ class DynamoDB(DynamoDBConnection):
             expression_attribute_names=expression_attribute_names,
             ascending=ascending,
             strongly_consistent=strongly_consistent,
+            limit=limit,
         )
 
         return response

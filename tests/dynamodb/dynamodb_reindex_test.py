@@ -80,7 +80,7 @@ class User(DynamoDBModelBase):
                 index_name="gsi2",
                 partition_key=DynamoDBKey(
                     "gsi2_pk",
-                    value=lambda: self.__get_gsi2(),
+                    value=self.__get_gsi2,
                 ),
                 sort_key=DynamoDBKey("gsi2_sk", value=self.__get_gsi2),
             ),
