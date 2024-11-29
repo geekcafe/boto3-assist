@@ -4,11 +4,11 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import Optional, List, Dict
+from typing import Optional
 
-from src.boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
+from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex
-from src.boto3_assist.dynamodb.dynamodb_key import DynamoDBKey
+from boto3_assist.dynamodb.dynamodb_key import DynamoDBKey
 
 
 class User(DynamoDBModelBase):
@@ -18,7 +18,7 @@ class User(DynamoDBModelBase):
         self,
         id: Optional[str] = None,  # pylint: disable=redefined-builtin
     ):
-        DynamoDBModelBase.__init__(self)
+        super().__init__(self)
         self.id: Optional[str] = id
         self.first_name: Optional[str] = None
         self.last_name: Optional[str] = None
@@ -77,13 +77,3 @@ class User(DynamoDBModelBase):
         )
 
         self.indexes.add_secondary(gsi2)
-
-        # self.key_configs = key_configs
-        self.projection_expression = (
-            "id,first_name,last_name,email,tenant_id,#type,#status,"
-            "company_name,authorization,modified_datetime_utc"
-        )
-        self.projection_expression_attribute_names = {
-            "#status": "status",
-            "#type": "type",
-        }

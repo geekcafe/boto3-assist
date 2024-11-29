@@ -8,6 +8,7 @@ import unittest
 
 
 from tests.dynamodb.models.user_model import User
+from tests.dynamodb.models.simple_model import Simple
 
 
 class DynamoDBModeProjectionlUnitTest(unittest.TestCase):
@@ -40,17 +41,91 @@ class DynamoDBModeProjectionlUnitTest(unittest.TestCase):
         expressions = model.projection_expression
         self.assertIsInstance(expressions, str)
 
-        # #type is in expression
-        self.assertIn("#type", expressions)
         self.assertIn("#status", expressions)
 
         print(expressions)
 
         attribute_names = model.projection_expression_attribute_names
         self.assertIsInstance(attribute_names, dict)
-        self.assertIn("#type", attribute_names)
+
         self.assertIn("#status", attribute_names)
 
-        # "#type": "type" is in the  dictionary
-        self.assertIn("type", attribute_names["#type"])
         self.assertIn("status", attribute_names["#status"])
+
+    def test_simple_model(self):
+        """Test Basic Serlization"""
+        # Arrange
+        data = {
+            "id": "123456",
+        }
+
+        # Act
+        model: Simple = Simple().map(data)
+
+        # Assert
+
+        self.assertEqual(model.id, "123456")
+
+        self.assertIsInstance(model, Simple)
+
+        key = model.indexes.primary.key()
+        self.assertIsInstance(key, dict)
+
+        expressions = model.projection_expression
+        self.assertIsInstance(expressions, str)
+
+        self.assertIn("id", expressions)
+
+        print(expressions)
+
+        attribute_names = model.projection_expression_attribute_names
+        self.assertIsNone(attribute_names)
+
+    def test_user_model_and_nulls(self):
+        """Test nulls"""
+        model: User = User()
+        model.first_name = "John"
+
+        expressions = model.projection_expression
+        self.assertIsInstance(expressions, str)
+
+        self.assertIn("id", expressions)
+
+    def test_user_limited_projections(self):
+        """Test limited projections"""
+        model: User = User()
+        model.first_name = "John"
+
+        model.projection_expression = "id"
+        model.projection_expression_attribute_names = None
+        model.auto_generate_projections = False
+        expressions = model.projection_expression
+        attributes = model.projection_expression_attribute_names
+        self.assertIsInstance(expressions, str)
+
+        self.assertIn("id", expressions)
+        self.assertNotIn("first_name", expressions)
+        self.assertNotIn("age", expressions)
+        self.assertNotIn("email", expressions)
+        self.assertNotIn("status", expressions)
+        self.assertIsNone(attributes)
+
+    def test_user_limited_reserved_projections(self):
+        """Test reserved word addition."""
+        model: User = User()
+        model.first_name = "John"
+
+        model.projection_expression = "id,status"
+        # model.projection_expression_attribute_names = None
+        model.auto_generate_projections = False
+        expressions = model.projection_expression
+        attributes = model.projection_expression_attribute_names
+        self.assertIsInstance(expressions, str)
+
+        self.assertIn("id", expressions)
+        self.assertNotIn("first_name", expressions)
+        self.assertNotIn("age", expressions)
+        self.assertNotIn("email", expressions)
+        self.assertIn("#status", expressions)
+        # self.assertIsNone(attributes)
+        self.assertIn("#status", attributes)

@@ -155,6 +155,8 @@ class DynamoDBModelUnitTest(unittest.TestCase):
         self.assertEqual(keys[2].partition_key.value, "users#")
         self.assertEqual(keys[2].sort_key.attribute_name, "gsi1_sk")
         self.assertEqual(keys[2].sort_key.value, "lastname#")
+        expression = user.helpers.get_filter_expressions(keys[2].key())
+        print(f"expression: {expression}")
 
         self.assertEqual(keys[3].partition_key.attribute_name, "gsi2_pk")
         self.assertEqual(keys[3].partition_key.value, "users#")
@@ -193,5 +195,37 @@ class DynamoDBModelUnitTest(unittest.TestCase):
 
         self.assertEqual(dictionary.get("gsi2_pk"), "users#")
         self.assertEqual(dictionary.get("gsi2_sk"), "firstname#John#lastname#Smith")
+
+        print("stop")
+
+    def test_key_dictionary_key_gen(self):
+        """Test Listing Keys"""
+        # Arrange
+        data = {
+            "id": "123456",
+            "first_name": "John",
+            "age": 30,
+            "email": "john@example.com",
+        }
+
+        # Act
+        user: User = User().map(data)
+        keys: List[DynamoDBKey] = user.list_keys()
+
+        self.assertEqual(len(keys), 4)
+
+        dictionary = user.helpers.keys_to_dictionary(keys=keys)
+
+        self.assertEqual(dictionary.get("pk"), "user#123456")
+        self.assertEqual(dictionary.get("sk"), "user#123456")
+
+        self.assertEqual(dictionary.get("gsi0_pk"), "users#")
+        self.assertEqual(dictionary.get("gsi0_sk"), "email#john@example.com")
+
+        self.assertEqual(dictionary.get("gsi1_pk"), "users#")
+        self.assertEqual(dictionary.get("gsi1_sk"), "lastname#")
+
+        self.assertEqual(dictionary.get("gsi2_pk"), "users#")
+        self.assertEqual(dictionary.get("gsi2_sk"), "firstname#John#lastname#")
 
         print("stop")
