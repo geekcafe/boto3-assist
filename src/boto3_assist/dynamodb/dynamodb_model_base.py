@@ -48,7 +48,7 @@ class DynamoDBModelBase:
         self.__helpers: DynamoDBHelpers | None = None
         self.__indexes: DynamoDBIndexes | None = None
         self.__reserved_words: DynamoDBReservedWords = DynamoDBReservedWords()
-        self.auto_generate_projections: bool = auto_generate_projections
+        self.__auto_generate_projections: bool = auto_generate_projections
 
     @property
     @exclude_from_serialization
@@ -64,15 +64,33 @@ class DynamoDBModelBase:
     @exclude_from_serialization
     def projection_expression(self) -> str | None:
         """Gets the projection expression"""
+        prop_list: List[str] = []
         if self.__projection_expression is None and self.auto_generate_projections:
             props = self.to_dictionary()
             # turn props to a list[str]
             prop_list = list(props.keys())
+        else:
+            if self.__projection_expression:
+                prop_list = self.__projection_expression.split(",")
+                prop_list = [p.strip() for p in prop_list]
 
-            transformed_list = self.__reserved_words.tranform_projections(prop_list)
-            self.projection_expression = ",".join(transformed_list)
+        if len(prop_list) == 0:
+            return None
+
+        transformed_list = self.__reserved_words.tranform_projections(prop_list)
+        self.projection_expression = ",".join(transformed_list)
 
         return self.__projection_expression
+
+    @property
+    @exclude_from_serialization
+    def auto_generate_projections(self) -> bool:
+        """Gets the auto generate projections"""
+        return self.__auto_generate_projections
+
+    @auto_generate_projections.setter
+    def auto_generate_projections(self, value: bool):
+        self.__auto_generate_projections = value
 
     @projection_expression.setter
     def projection_expression(self, value: str | None):
@@ -95,6 +113,12 @@ class DynamoDBModelBase:
             self.projection_expression_attribute_names = (
                 self.__reserved_words.transform_attributes(prop_list)
             )
+        else:
+            if self.projection_expression:
+                expression_list = self.projection_expression.replace("#", "").split(",")
+                self.projection_expression_attribute_names = (
+                    self.__reserved_words.transform_attributes(expression_list)
+                )
 
         return self.__projection_expression_attribute_names
 
@@ -147,21 +171,25 @@ class DynamoDBModelBase:
             self, include_indexes=include_indexes
         )
 
-    def to_resource_dictionary(self, include_indexes: bool = True):
+    def to_resource_dictionary(
+        self, include_indexes: bool = True, include_none: bool = False
+    ):
         """
         Convert the instance to a dictionary suitable for DynamoDB resource.
         """
         return DynamoDBSerializer.to_resource_dictionary(
-            self, include_indexes=include_indexes
+            self, include_indexes=include_indexes, include_none=include_none
         )
 
-    def to_dictionary(self):
+    def to_dictionary(self, include_none: bool = True):
         """
         Convert the instance to a dictionary without an indexes/keys.
         Usefull for turning an object into a dictionary for serialization.
         This is the same as to_resource_dictionary(include_indexes=False)
         """
-        return DynamoDBSerializer.to_resource_dictionary(self, include_indexes=False)
+        return DynamoDBSerializer.to_resource_dictionary(
+            self, include_indexes=False, include_none=include_none
+        )
 
     def get_key(self, index_name: str) -> DynamoDBIndex:
         """Get the index name and key"""
@@ -226,7 +254,9 @@ class DynamoDBSerializer:
 
     @staticmethod
     def to_resource_dictionary(
-        instance: DynamoDBModelBase, include_indexes: bool = True
+        instance: DynamoDBModelBase,
+        include_indexes: bool = True,
+        include_none: bool = False,
     ):
         """
         Convert a Python class instance to a dictionary suitable for DynamoDB resource.
@@ -238,12 +268,18 @@ class DynamoDBSerializer:
         - dict: A dictionary representation of the class instance suitable for DynamoDB resource.
         """
         return DynamoDBSerializer._serialize(
-            instance, lambda x: x, include_indexes=include_indexes
+            instance,
+            lambda x: x,
+            include_indexes=include_indexes,
+            include_none=include_none,
         )
 
     @staticmethod
     def _serialize(
-        instance: DynamoDBModelBase, serialize_fn, include_indexes: bool = True
+        instance: DynamoDBModelBase,
+        serialize_fn,
+        include_indexes: bool = True,
+        include_none: bool = True,
     ):
         def is_primitive(value):
             """Check if the value is a primitive data type."""
@@ -253,7 +289,11 @@ class DynamoDBSerializer:
             """Serialize the value using the provided function."""
 
             if isinstance(value, DynamoDBModelBase):
-                return serialize_fn(value.to_resource_dictionary(False))
+                return serialize_fn(
+                    value.to_resource_dictionary(
+                        include_indexes=False, include_none=include_none
+                    )
+                )
             if isinstance(value, dt.datetime):
                 return serialize_fn(value.isoformat())
             elif isinstance(value, float):
@@ -272,23 +312,38 @@ class DynamoDBSerializer:
             elif isinstance(value, dict):
                 return serialize_fn({k: serialize_value(v) for k, v in value.items()})
             else:
-                return serialize_fn(DynamoDBSerializer._serialize(value, serialize_fn))
+                return serialize_fn(
+                    DynamoDBSerializer._serialize(
+                        value,
+                        serialize_fn,
+                        include_indexes=include_indexes,
+                        include_none=include_none,
+                    )
+                )
 
-        instance_dict = DynamoDBSerializer._add_properties(instance, serialize_value)
+        instance_dict = DynamoDBSerializer._add_properties(
+            instance, serialize_value, include_none=include_none
+        )
 
         if include_indexes:
             instance_dict = DynamoDBSerializer._add_indexes(instance, instance_dict)
         return instance_dict
 
     @staticmethod
-    def _add_properties(instance: DynamoDBModelBase, serialize_value) -> dict:
+    def _add_properties(
+        instance: DynamoDBModelBase,
+        serialize_value,
+        include_none: bool = True,
+    ) -> dict:
         instance_dict = {}
 
         # Add instance variables
         for attr, value in instance.__dict__.items():
+            if str(attr) == "T":
+                continue
             # don't get the private properties
             if not str(attr).startswith("_"):
-                if value is not None:
+                if value is not None or include_none:
                     instance_dict[attr] = serialize_value(value)
 
         # Add properties
@@ -307,10 +362,14 @@ class DynamoDBSerializer:
                 if exclude:
                     continue
 
+                # Skip TypeVar T or instances of DynamoDBModelBase
+                if str(name) == "T":
+                    continue
+
                 # don't get the private properties
                 if not str(name).startswith("_"):
                     value = getattr(instance, name)
-                    if value is not None:
+                    if value is not None or include_none:
                         instance_dict[name] = serialize_value(value)
 
         return instance_dict

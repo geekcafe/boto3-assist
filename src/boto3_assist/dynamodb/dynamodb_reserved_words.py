@@ -31,15 +31,19 @@ class DynamoDBReservedWords:
         if isinstance(projections, str):
             projections = projections.split(",")
 
-        # any project that exists add a # infront of it
+        # any projection that exists add a # infront of it
         projections = ["#" + p if self.is_reserved_word(p) else p for p in projections]
         return projections
 
-    def transform_attributes(self, attributes: dict) -> dict:
+    def transform_attributes(self, projections: List[str] | str) -> dict:
         """Transforms a dict of attributes to remove reserved words"""
         transformed_attributes: dict | None = {}
-        for k, v in attributes.items():
-            if self.is_reserved_word(k):
-                transformed_attributes["#" + k] = v
+        if isinstance(projections, str):
+            projections = projections.split(",")
+        for item in projections:
+            if self.is_reserved_word(item):
+                transformed_attributes["#" + item] = item
 
-        return transformed_attributes
+        if len(transformed_attributes) > 0:
+            return transformed_attributes
+        return None

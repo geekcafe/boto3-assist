@@ -59,4 +59,6 @@ class DynamoDBKey:
                 break
             else:
                 parts.append(f"{prefix}{value}")
-        return "#".join(parts)
+        key_str = "#".join(parts)
+
+        return key_str

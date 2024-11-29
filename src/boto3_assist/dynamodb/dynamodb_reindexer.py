@@ -81,11 +81,10 @@ class DynamoDBReindexer:
             try:
                 # save the new one first
                 service_instance: Optional[IDynamoDBService] = (
-                    service_cls() if callable(service_cls) else None
+                    service_cls(db=self.db) if callable(service_cls) else None
                 )
 
                 if service_instance:
-                    service_instance.db = self.db
                     service_instance.save(model=model)
                 else:
                     self.db.save(
