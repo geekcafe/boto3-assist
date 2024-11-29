@@ -1,3 +1,9 @@
+"""
+Geek Cafe, LLC
+Maintainers: Eric Wilson
+MIT License.  See Project Root for the license information.
+"""
+
 import os
 from typing import IO, Optional, Union
 from dotenv import load_dotenv
@@ -6,6 +12,8 @@ StrPath = Union[str, "os.PathLike[str]"]
 
 
 class EnvironmentLoader:
+    """Environment Loader"""
+
     def __init__(self) -> None:
         pass
 

@@ -3,6 +3,7 @@ build
 mypy
 mypy_boto3_dynamodb
 mypy_boto3_ec2
+mypy_boto3_cloudwatch
 moto [dynamodb2] # mocks for unit tests
 # setuptools
 types-python-dateutil
