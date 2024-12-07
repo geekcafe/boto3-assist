@@ -27,6 +27,8 @@ class EnvironmentVariables:
             gets the aws region from an environment var
             """
             value = os.getenv("AWS_REGION")
+            if not value:
+                value = None
             return value
 
         @staticmethod
@@ -36,6 +38,8 @@ class EnvironmentVariables:
             This should only be set with temporty creds and only for development purposes
             """
             value = os.getenv("AWS_PROFILE")
+            if not value:
+                value = None
             return value
 
         @staticmethod

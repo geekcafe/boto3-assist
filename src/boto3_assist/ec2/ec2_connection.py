@@ -84,6 +84,9 @@ class EC2Connection:
         """Session"""
         if self.__session is None:
             self.setup(setup_source="session init")
+
+        if self.__session is None:
+            raise RuntimeError("Session is not available")
         return self.__session
 
     @property

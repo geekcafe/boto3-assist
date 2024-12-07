@@ -34,6 +34,29 @@ class DynamoDBIndexes:
         """Add a GSI/LSI index"""
         if index.name is None:
             raise ValueError("Index name cannot be None")
+
+        # if the index already exists, raise an exception
+        if index.name in self.__indexes:
+            raise ValueError(f"Index {index.name} already exists")
+        if index.name == DynamoDBIndexes.PRIMARY_INDEX:
+            raise ValueError(f"Index {index.name} is reserved for the primary index")
+        if index.partition_key is None:
+            raise ValueError("Index must have a partition key")
+
+        # check if the index.partition_key.attribute_name is already in the index
+        for _, v in self.__indexes.items():
+            if v.partition_key.attribute_name == index.partition_key.attribute_name:
+                raise ValueError(
+                    f"Index {index.name} already exists with partition key {index.partition_key.attribute_name}"
+                )
+        # check if the gsi1.sort_key.attribute_name exists
+        if index.sort_key is not None:
+            for _, v in self.__indexes.items():
+                if v.sort_key.attribute_name == index.sort_key.attribute_name:
+                    raise ValueError(
+                        f"Index {index.name} already exists with sort key {index.sort_key.attribute_name}"
+                    )
+
         self.__indexes[index.name] = index
 
     def get(self, index_name: str) -> DynamoDBIndex:

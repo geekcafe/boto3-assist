@@ -5,7 +5,6 @@ MIT License.  See Project Root for the license information.
 """
 
 import unittest
-from typing import List, Dict
 
 
 from tests.dynamodb.models.user_model import User

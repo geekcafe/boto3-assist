@@ -181,7 +181,7 @@ def main():
     el: EnvironmentLoader = EnvironmentLoader()
     if not os.path.exists(path=path):
         raise FileNotFoundError("Failed to find the environmetn file")
-    loaded: bool = el.load_environment_file(path)
+    loaded: bool = el.load_environment_file(path=path)
     if not loaded:
         raise RuntimeError("Failed to load my local environment")
 

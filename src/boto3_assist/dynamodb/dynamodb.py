@@ -5,7 +5,7 @@ MIT License.  See Project Root for the license information.
 """
 
 import os
-from typing import List, Optional, overload
+from typing import List, Optional, overload, Dict, Any
 
 from aws_lambda_powertools import Tracer, Logger
 from boto3.dynamodb.conditions import (
@@ -77,7 +77,7 @@ class DynamoDB(DynamoDBConnection):
             dict: The Response from DynamoDB's put_item actions.
             It does not return the saved object, only the response.
         """
-        response = None
+        response: Dict[str, Any] = {}
 
         try:
             if not isinstance(item, dict):
@@ -93,13 +93,13 @@ class DynamoDB(DynamoDBConnection):
 
             if isinstance(item, dict) and isinstance(next(iter(item.values())), dict):
                 # Use boto3.client syntax
-                response = self.dynamodb_client.put_item(
-                    TableName=table_name, Item=item
+                response = dict(
+                    self.dynamodb_client.put_item(TableName=table_name, Item=item)
                 )
             else:
                 # Use boto3.resource syntax
                 table = self.dynamodb_resource.Table(table_name)
-                response = table.put_item(Item=item)
+                response = dict(table.put_item(Item=item))  # type: ignore[arg-type]
 
         except Exception as e:  # pylint: disable=w0718
             logger.exception(
@@ -117,7 +117,7 @@ class DynamoDB(DynamoDBConnection):
 
         if self.log_dynamodb_item_size:
             size_bytes: int = StringUtility.get_size_in_bytes(item)
-            size_kb: int = StringUtility.get_size_in_kb(item)
+            size_kb: float = StringUtility.get_size_in_kb(item)
             logger.info({"item_size": {"bytes": size_bytes, "kb": f"{size_kb:.2f}kb"}})
 
             if size_kb > 390:
@@ -173,7 +173,7 @@ class DynamoDB(DynamoDBConnection):
         expression_attribute_names: Optional[dict] = None,
         source: Optional[str] = None,
         call_type: str = "resource",
-    ) -> dict:
+    ) -> Dict[str, Any]:
         """
         Description:
             generic get_item dynamoDb call
@@ -186,12 +186,15 @@ class DynamoDB(DynamoDBConnection):
             if table_name is None:
                 raise ValueError("table_name must be provided when model is used.")
             if key is not None:
-                raise ValueError("key cannot be provided when model is used.")
+                raise ValueError(
+                    "key cannot be provided when model is used. "
+                    "When using the model, we'll automatically use the key defined."
+                )
             key = model.indexes.primary.key()
             if do_projections:
                 projection_expression = model.projection_expression
                 expression_attribute_names = model.projection_expression_attribute_names
-        elif key is None or table_name is None:
+        elif key is None and model is None:
             raise ValueError("Either 'key'  or 'model'  must be provided.")
 
         response = None
@@ -205,12 +208,18 @@ class DynamoDB(DynamoDBConnection):
             # only pass in args that aren't none
             valid_kwargs = {k: v for k, v in kwargs.items() if v is not None}
 
+            if table_name is None:
+                raise ValueError("table_name must be provided.")
             if call_type == "resource":
                 table = self.dynamodb_resource.Table(table_name)
-                response = table.get_item(Key=key, **valid_kwargs)
+                response = dict(table.get_item(Key=key, **valid_kwargs))  # type: ignore[arg-type]
             elif call_type == "client":
-                response = self.dynamodb_client.get_item(
-                    Key=key, TableName=table_name, **valid_kwargs
+                response = dict(
+                    self.dynamodb_client.get_item(
+                        Key=key,
+                        TableName=table_name,
+                        **valid_kwargs,  # type: ignore[arg-type]
+                    )
                 )
             else:
                 raise ValueError(
@@ -246,10 +255,12 @@ class DynamoDB(DynamoDBConnection):
             dict: dynamodb response dictionary
         """
         table = self.dynamodb_resource.Table(table_name)
-        response = table.update_item(
-            Key=key,
-            UpdateExpression=update_expression,
-            ExpressionAttributeValues=expression_attribute_values,
+        response = dict(
+            table.update_item(
+                Key=key,
+                UpdateExpression=update_expression,
+                ExpressionAttributeValues=expression_attribute_values,
+            )
         )
 
         return response
@@ -307,7 +318,7 @@ class DynamoDB(DynamoDBConnection):
             raise ValueError("Query failed: table_name must be provided.")
 
         table = self.dynamodb_resource.Table(table_name)
-        response = table.query(**kwargs)
+        response = dict(table.query(**kwargs))
 
         return response
 

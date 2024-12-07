@@ -4,7 +4,7 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from boto3_assist.cloudwatch.cloudwatch_log_connection import CloudWatchConnection
 
 
@@ -26,10 +26,10 @@ class CloudWatchLogs(CloudWatchConnection):
 
     def list_log_groups(self):
         """Retrieve all log groups in the AWS account."""
-        log_groups = []
+        log_groups: List[Dict[str, Any]] = []
         paginator = self.client.get_paginator("describe_log_groups")
         for page in paginator.paginate():
-            log_groups.extend(page["logGroups"])
+            log_groups.extend(page["logGroups"])  # type: ignore[arg-type]
         return log_groups
 
 

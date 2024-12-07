@@ -45,6 +45,7 @@ class Boto3SessionManager:
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
         self.aws_session_token = aws_session_token
+
         self.__session: Any = None
         self.__client: Any = None
         self.__resource: Any = None
@@ -90,7 +91,7 @@ class Boto3SessionManager:
 
     def __get_aws_session(
         self, aws_profile: Optional[str] = None, aws_region: Optional[str] = None
-    ) -> boto3.Session:
+    ) -> boto3.Session | None:
         """Get a boto3 session for AWS."""
         logger.debug({"profile": aws_profile, "region": aws_region})
         try:
@@ -153,7 +154,7 @@ class Boto3SessionManager:
             )
         return self.__resource
 
-    def __create_boto3_session(self) -> boto3.Session:
+    def __create_boto3_session(self) -> boto3.Session | None:
         try:
             session = boto3.Session(
                 profile_name=self.aws_profile,

@@ -40,7 +40,7 @@ class OrderItemService:
 
     def list(self, order_id: str) -> list:
         """
-        Lists users using a global secondary index.
+        Lists using a global secondary index.
 
         Args:
             user_id (str): Gets orders by a user id.

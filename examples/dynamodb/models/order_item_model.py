@@ -33,14 +33,18 @@ class OrderItem(DynamoDBModelBase):
         self.__setup_indexes()
 
     def __setup_indexes(self):
-        # user id
+        # the primary key will be made off of the
+        # order.id and this item.id
+        # this will allow for a 1 to many search on the items related to an order
         primay: DynamoDBIndex = DynamoDBIndex()
         primay.name = "primary"
+        # create a partition key off of the order key
         primay.partition_key.attribute_name = "pk"
         primay.partition_key.value = lambda: DynamoDBKey.build_key(
             ("order", self.order_id)
         )
 
+        # create the sort key off of this items id
         primay.sort_key.attribute_name = "sk"
         primay.sort_key.value = lambda: DynamoDBKey.build_key(("item", self.id))
         self.indexes.add_primary(primay)

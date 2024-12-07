@@ -6,7 +6,7 @@ MIT License.  See Project Root for the license information.
 
 import os
 from datetime import datetime, timedelta, UTC
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from boto3_assist.cloudwatch.cloudwatch_connection import CloudWatchConnection
 from boto3_assist.cloudwatch.cloudwatch_logs import CloudWatchLogs
 
@@ -93,7 +93,7 @@ class CloudWatchQuery(CloudWatchConnection):
 
         size_mb = size / (1024 * 1024)
         size_gb = size_mb / 1024
-        response = {
+        resp: Dict[str, Any] = {
             "LogGroupName": log_group_name,
             "Size": {
                 "Bytes": size,
@@ -104,7 +104,7 @@ class CloudWatchQuery(CloudWatchConnection):
             "EndDate": end_time.isoformat(),
         }
 
-        return response
+        return resp
 
     def get_log_sizes(
         self,
@@ -112,7 +112,7 @@ class CloudWatchQuery(CloudWatchConnection):
         end_date_time: datetime | None = None,
         days: int | None = 7,
         top: int = 0,
-    ) -> list:
+    ) -> List[Dict[str, Any]]:
         """
         Gets the log sizes for all log groups
 
@@ -128,7 +128,8 @@ class CloudWatchQuery(CloudWatchConnection):
         Returns:
             list: _description_
         """
-
+        if not days:
+            days = 7
         start_time = start_date_time or (datetime.now(UTC) - timedelta(days=days))
         end_time = end_date_time or datetime.now(UTC)
 
@@ -170,12 +171,12 @@ def main():
     top_log_groups = cw_query.get_log_sizes(top=top, days=days)
     print(f"Top {top} log groups by size for the last week:")
 
-    for log_group in top_log_groups:
-        log_group_name = log_group["LogGroupName"]
-        size_in_bytes = log_group.get("Size", {}).get("Bytes", 0)
-        size_in_megs = log_group.get("Size", {}).get("MB", 0)
-        size_in_gigs = log_group.get("Size", {}).get("GB", 0)
-        size = 0
+    for top_log_group in top_log_groups:
+        log_group_name = top_log_group["LogGroupName"]
+        size_in_bytes = top_log_group.get("Size", {}).get("Bytes", 0)
+        size_in_megs = top_log_group.get("Size", {}).get("MB", 0)
+        size_in_gigs = top_log_group.get("Size", {}).get("GB", 0)
+        size: str = ""
         if size_in_gigs > 1:
             size = f"{size_in_gigs:.2f} GB"
         elif size_in_megs > 1:

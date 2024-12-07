@@ -9,7 +9,6 @@ import datetime as dt
 import decimal
 import inspect
 import uuid
-
 from typing import TypeVar, List
 from boto3.dynamodb.types import TypeSerializer
 from boto3_assist.utilities.serialization_utility import Serialization
@@ -82,6 +81,10 @@ class DynamoDBModelBase:
 
         return self.__projection_expression
 
+    @projection_expression.setter
+    def projection_expression(self, value: str | None):
+        self.__projection_expression = value
+
     @property
     @exclude_from_serialization
     def auto_generate_projections(self) -> bool:
@@ -91,10 +94,6 @@ class DynamoDBModelBase:
     @auto_generate_projections.setter
     def auto_generate_projections(self, value: bool):
         self.__auto_generate_projections = value
-
-    @projection_expression.setter
-    def projection_expression(self, value: str | None):
-        self.__projection_expression = value
 
     @property
     @exclude_from_serialization

@@ -7,6 +7,10 @@ from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
 class IDynamoDBService(ABC):
     """DynamoDB Service Interface"""
 
+    def __init__(self, db: DynamoDB) -> None:
+        self.db = db
+        super().__init__()
+
     @property
     @abstractmethod
     def db(self) -> DynamoDB:

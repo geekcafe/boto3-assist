@@ -3,7 +3,10 @@ from typing import List
 
 
 class DynamoDBReservedWords:
-    """Reserved Word"""
+    """
+    Reserved Words used by DynamoDB that can cause issues,
+    so they will need to be transformed under certain conditions, such as when doing projections
+    """
 
     def __init__(self) -> None:
         self.__list: List[str] = self.__read_list()
@@ -35,9 +38,9 @@ class DynamoDBReservedWords:
         projections = ["#" + p if self.is_reserved_word(p) else p for p in projections]
         return projections
 
-    def transform_attributes(self, projections: List[str] | str) -> dict:
+    def transform_attributes(self, projections: List[str] | str) -> dict | None:
         """Transforms a dict of attributes to remove reserved words"""
-        transformed_attributes: dict | None = {}
+        transformed_attributes: dict = {}
         if isinstance(projections, str):
             projections = projections.split(",")
         for item in projections:

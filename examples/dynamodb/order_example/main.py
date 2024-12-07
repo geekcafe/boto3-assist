@@ -5,17 +5,18 @@ DynamoDB Example
 import json
 import os
 import random
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import List
-from datetime import datetime, timedelta, UTC
+
 from boto3_assist.dynamodb.dynamodb import DynamoDB
 from boto3_assist.environment_services.environment_loader import EnvironmentLoader
 from boto3_assist.utilities.serialization_utility import JsonEncoder
 from boto3_assist.utilities.string_utility import StringUtility
-from examples.dynamodb.services.table_service import DynamoDBTableService
-from examples.dynamodb.services.order_service import OrderService, Order
-from examples.dynamodb.services.order_item_service import OrderItemService, OrderItem
 from examples.dynamodb.models.product_model import Product
+from examples.dynamodb.services.order_item_service import OrderItem, OrderItemService
+from examples.dynamodb.services.order_service import Order, OrderService
+from examples.dynamodb.services.table_service import DynamoDBTableService
 
 
 class DynamoDBExample:
@@ -154,7 +155,7 @@ def main():
     el: EnvironmentLoader = EnvironmentLoader()
     if not os.path.exists(path=path):
         raise FileNotFoundError("Failed to find the environmetn file")
-    loaded: bool = el.load_environment_file(path)
+    loaded: bool = el.load_environment_file(path=path)
     if not loaded:
         raise RuntimeError("Failed to load my local environment")
 

@@ -5,7 +5,6 @@ MIT License.  See Project Root for the license information.
 """
 
 from typing import Optional
-from typing import TYPE_CHECKING
 
 from aws_lambda_powertools import Logger
 from boto3_assist.boto3session import Boto3SessionManager
@@ -15,12 +14,6 @@ from boto3_assist.environment_services.environment_variables import (
 from boto3_assist.cloudwatch.cloudwatch_connection_tracker import (
     CloudWatchConnectionTracker,
 )
-
-if TYPE_CHECKING:
-    from mypy_boto3_cloudwatch import CloudWatchClient, CloudWatchServiceResource
-else:
-    CloudWatchClient = object
-    CloudWatchServiceResource = object
 
 
 logger = Logger()
@@ -50,9 +43,8 @@ class Connection:
             or EnvironmentVariables.AWS.DynamoDB.aws_secret_access_key()
         )
         self.__session: Boto3SessionManager | None = None
-        self.__client: CloudWatchClient | None = None
-        self.__resource: CloudWatchServiceResource | None = None
-        self.__service_name: str = service_name
+
+        self.__service_name: str | None = service_name
         self.raise_on_error: bool = True
 
     def setup(self, setup_source: Optional[str] = None) -> None:
@@ -103,4 +95,7 @@ class Connection:
         """Session"""
         if self.__session is None:
             self.setup(setup_source="session init")
+
+        if self.__session is None:
+            raise RuntimeError("Session is not available")
         return self.__session

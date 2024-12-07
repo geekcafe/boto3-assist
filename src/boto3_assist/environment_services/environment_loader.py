@@ -5,8 +5,16 @@ MIT License.  See Project Root for the license information.
 """
 
 import os
-from typing import IO, Optional, Union
+
+from typing import List, Union, Optional, IO
+from pathlib import Path
 from dotenv import load_dotenv
+from aws_lambda_powertools import Logger
+
+
+logger = Logger(__name__)
+
+DEBUGGING = os.getenv("DEBUGGING", "false").lower() == "true"
 
 StrPath = Union[str, "os.PathLike[str]"]
 
@@ -19,12 +27,16 @@ class EnvironmentLoader:
 
     def load_environment_file(
         self,
+        *,
+        starting_path: Optional[str] = None,
+        file_name: Optional[str] = None,
         path: Optional[StrPath] = None,
         stream: Optional[IO[str]] = None,
         verbose: bool = False,
         override: bool = True,
         interpolate: bool = True,
         encoding: Optional[str] = "utf-8",
+        raise_error_if_not_found: bool = False,
     ) -> bool:
         """
         Loads an environment file into memory. This simply passes off to load_dotenv in dotenv.
@@ -45,11 +57,55 @@ class EnvironmentLoader:
         If both `dotenv_path` and `stream` are `None`, `find_dotenv()` is used to find the
         .env file.
         """
-        return load_dotenv(
-            dotenv_path=path,
+
+        if not starting_path:
+            starting_path = __file__
+
+        if file_name is None:
+            file_name = ".env"
+
+        new_path: str | StrPath | None = path or self.find_file(
+            starting_path=starting_path,
+            file_name=file_name,
+            raise_error_if_not_found=raise_error_if_not_found,
+        )
+
+        loaded = load_dotenv(
+            dotenv_path=new_path,
             stream=stream,
             verbose=verbose,
             override=override,
             interpolate=interpolate,
             encoding=encoding,
         )
+
+        if DEBUGGING:
+            env_vars = os.environ
+            logger.debug(f"Loaded environment file: {path}")
+            print(env_vars)
+
+        return loaded
+
+    def find_file(
+        self, starting_path: str, file_name: str, raise_error_if_not_found: bool = True
+    ) -> str | None:
+        """Searches the project directory structor for a file"""
+        parents = 10
+        starting_path = starting_path or __file__
+
+        paths: List[str] = []
+        for parent in range(parents):
+            path = Path(starting_path).parents[parent].absolute()
+            print(f"searching: {path}")
+            tmp = os.path.join(path, file_name)
+            paths.append(tmp)
+            if os.path.exists(tmp):
+                return tmp
+
+        if raise_error_if_not_found:
+            searched_paths = "\n".join(paths)
+            raise RuntimeError(
+                f"Failed to locate environment file: {file_name} in: \n {searched_paths}"
+            )
+
+        return None
