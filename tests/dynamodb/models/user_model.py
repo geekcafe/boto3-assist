@@ -30,50 +30,35 @@ class User(DynamoDBModelBase):
         self.__setup_indexes()
 
     def __setup_indexes(self):
-        primary_key: DynamoDBIndex = DynamoDBIndex(
-            index_name="primary_key",
-            partition_key=DynamoDBKey(
-                attribute_name="pk",
-                value=lambda: DynamoDBKey.build_key((("user", self.id))),
-            ),
-            sort_key=DynamoDBKey(
-                attribute_name="sk",
-                value=lambda: DynamoDBKey.build_key(("user", self.id)),
-            ),
-        )
-        self.indexes.add_primary(primary_key)
+        primay: DynamoDBIndex = DynamoDBIndex()
+        primay.partition_key.attribute_name = "pk"
+        # allows for a wild card search on all "sites"
+        primay.partition_key.value = lambda: DynamoDBKey.build_key(("user", self.id))
+        primay.sort_key.attribute_name = "sk"
+        primay.sort_key.value = lambda: DynamoDBKey.build_key(("user", self.id))
+        self.indexes.add_primary(primay)
 
-        gsi0: DynamoDBIndex = DynamoDBIndex(
-            index_name="gsi0",
-            partition_key=DynamoDBKey(attribute_name="gsi0_pk", value="users#"),
-            sort_key=DynamoDBKey(
-                attribute_name="gsi0_sk",
-                value=lambda: DynamoDBKey.build_key(("email", self.email)),
-            ),
-        )
+        gsi0: DynamoDBIndex = DynamoDBIndex(index_name="gsi0")
+        gsi0.partition_key.attribute_name = "gsi0_pk"
+        gsi0.partition_key.value = lambda: DynamoDBKey.build_key(("users", None))
+        gsi0.sort_key.attribute_name = "gsi0_sk"
+        gsi0.sort_key.value = lambda: DynamoDBKey.build_key(("email", self.email))
         self.indexes.add_secondary(gsi0)
 
-        gsi1: DynamoDBIndex = DynamoDBIndex(
-            index_name="gsi1",
-            partition_key=DynamoDBKey(attribute_name="gsi1_pk", value="users#"),
-            sort_key=DynamoDBKey(
-                attribute_name="gsi1_sk",
-                value=lambda: DynamoDBKey.build_key(
-                    ("lastname", self.last_name), ("firstname", self.first_name)
-                ),
-            ),
+        gsi1: DynamoDBIndex = DynamoDBIndex(index_name="gsi1")
+        gsi1.partition_key.attribute_name = "gsi1_pk"
+        gsi1.partition_key.value = lambda: DynamoDBKey.build_key(("users", None))
+        gsi1.sort_key.attribute_name = "gsi1_sk"
+        gsi1.sort_key.value = lambda: DynamoDBKey.build_key(
+            ("lastname", self.last_name)
         )
         self.indexes.add_secondary(gsi1)
 
-        gsi2: DynamoDBIndex = DynamoDBIndex(
-            index_name="gsi2",
-            partition_key=DynamoDBKey(attribute_name="gsi2_pk", value="users#"),
-            sort_key=DynamoDBKey(
-                attribute_name="gsi2_sk",
-                value=lambda: DynamoDBKey.build_key(
-                    ("firstname", self.first_name), ("lastname", self.last_name)
-                ),
-            ),
+        gsi0: DynamoDBIndex = DynamoDBIndex(index_name="gsi2")
+        gsi0.partition_key.attribute_name = "gsi2_pk"
+        gsi0.partition_key.value = lambda: DynamoDBKey.build_key(("users", None))
+        gsi0.sort_key.attribute_name = "gsi2_sk"
+        gsi0.sort_key.value = lambda: DynamoDBKey.build_key(
+            ("firstname", self.first_name)
         )
-
-        self.indexes.add_secondary(gsi2)
+        self.indexes.add_secondary(gsi0)
