@@ -139,7 +139,7 @@ class S3(S3Connection):
 
         return response
 
-    def upload_file_obj(self, bucket: str, key: str, file_obj: bytes) -> str:
+    def upload_file_obj(self, bucket: str, key: str, file_obj: bytes | str) -> str:
         """
         Uploads a file object to s3. Returns the full s3 path s3://<bucket>/<key>
         """
@@ -156,6 +156,10 @@ class S3(S3Connection):
             }
         )
         try:
+            # convert if necessary
+            file_obj: bytes = (
+                file_obj.encode("utf-8") if isinstance(file_obj, str) else file_obj
+            )
             self.client.upload_fileobj(Fileobj=file_obj, Bucket=bucket, Key=key)
 
         except ClientError as ce:
@@ -503,3 +507,19 @@ class S3(S3Connection):
         else:
             # Not in AWS Lambda, use the system's default temp directory
             return tempfile.gettempdir()
+
+    def encode(
+        self, text: str, encoding: str = "utf-8", errors: str = "strict"
+    ) -> bytes:
+        """
+        Encodes a string for s3
+        """
+        return text.encode(encoding=encoding, errors=errors)
+
+    def decode(
+        self, file_obj: bytes, encoding: str = "utf-8", errors: str = "strict"
+    ) -> str:
+        """
+        Decodes bytes to a string
+        """
+        return file_obj.decode(encoding=encoding, errors=errors)
