@@ -98,7 +98,7 @@ class DynamoDBConnection:
         return self.__session
 
     @property
-    def dynamodb_client(self) -> DynamoDBClient:
+    def client(self) -> DynamoDBClient:
         """DynamoDB Client Connection"""
         if self.__dynamodb_client is None:
             logger.info("Creating DynamoDB Client")
@@ -108,13 +108,26 @@ class DynamoDBConnection:
             raise RuntimeError("DynamoDB Client is not available")
         return self.__dynamodb_client
 
+    @client.setter
+    def client(self, value: DynamoDBClient):
+        logger.info("Setting DynamoDB Client")
+        self.__dynamodb_client = value
+
+    @property
+    def dynamodb_client(self) -> DynamoDBClient:
+        """
+        DynamoDB Client Connection
+            - Backward Compatible.  You should use client instead
+        """
+        return self.client
+
     @dynamodb_client.setter
     def dynamodb_client(self, value: DynamoDBClient):
         logger.info("Setting DynamoDB Client")
         self.__dynamodb_client = value
 
     @property
-    def dynamodb_resource(self) -> DynamoDBServiceResource:
+    def resource(self) -> DynamoDBServiceResource:
         """DynamoDB Resource Connection"""
         if self.__dynamodb_resource is None:
             logger.info("Creating DynamoDB Resource")
@@ -124,6 +137,19 @@ class DynamoDBConnection:
             raise RuntimeError("DynamoDB Resource is not available")
 
         return self.__dynamodb_resource
+
+    @resource.setter
+    def resource(self, value: DynamoDBServiceResource):
+        logger.info("Setting DynamoDB Resource")
+        self.__dynamodb_resource = value
+
+    @property
+    def dynamodb_resource(self) -> DynamoDBServiceResource:
+        """
+        DynamoDB Resource Connection
+            - Backward Compatible.  You should use resource instead
+        """
+        return self.resource
 
     @dynamodb_resource.setter
     def dynamodb_resource(self, value: DynamoDBServiceResource):

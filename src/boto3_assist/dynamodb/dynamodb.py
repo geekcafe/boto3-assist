@@ -144,7 +144,7 @@ class DynamoDB(DynamoDBConnection):
         expression_attribute_names: Optional[dict] = None,
         source: Optional[str] = None,
         call_type: str = "resource",
-    ) -> dict: ...
+    ) -> Dict[str, Any]: ...
 
     @overload
     def get(
@@ -158,7 +158,7 @@ class DynamoDB(DynamoDBConnection):
         expression_attribute_names: Optional[dict] = None,
         source: Optional[str] = None,
         call_type: str = "resource",
-    ) -> dict: ...
+    ) -> Dict[str, Any]: ...
 
     @tracer.capture_method
     def get(

@@ -9,7 +9,7 @@ import datetime as dt
 import decimal
 import inspect
 import uuid
-from typing import TypeVar, List
+from typing import TypeVar, List, Dict, Any
 from boto3.dynamodb.types import TypeSerializer
 from boto3_assist.utilities.serialization_utility import Serialization
 from boto3_assist.dynamodb.dynamodb_helpers import DynamoDBHelpers
@@ -125,7 +125,7 @@ class DynamoDBModelBase:
     def projection_expression_attribute_names(self, value: dict | None):
         self.__projection_expression_attribute_names = value
 
-    def map(self: T, item: dict | DynamoDBModelBase | None) -> T | None:
+    def map(self: T, item: Dict[str, Any] | DynamoDBModelBase | None) -> T | None:
         """
         Map the item to the instance.  If the item is a DynamoDBModelBase,
         it will be converted to a dictionary first and then mapped.

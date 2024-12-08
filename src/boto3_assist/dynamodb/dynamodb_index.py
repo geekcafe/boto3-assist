@@ -47,14 +47,18 @@ class DynamoDBIndexes:
         for _, v in self.__indexes.items():
             if v.partition_key.attribute_name == index.partition_key.attribute_name:
                 raise ValueError(
-                    f"Index {index.name} already exists with partition key {index.partition_key.attribute_name}"
+                    f"The attrubute {index.partition_key.attribute_name} is already being used by index "
+                    f"{v.name}. "
+                    f"Reusing this attribute would over write the value on index {v.name}"
                 )
         # check if the gsi1.sort_key.attribute_name exists
         if index.sort_key is not None:
             for _, v in self.__indexes.items():
                 if v.sort_key.attribute_name == index.sort_key.attribute_name:
                     raise ValueError(
-                        f"Index {index.name} already exists with sort key {index.sort_key.attribute_name}"
+                        f"The attrubute {index.sort_key.attribute_name} is already being used by index "
+                        f"{v.name}. "
+                        f"Reusing this attribute would over write the value on index {v.name}"
                     )
 
         self.__indexes[index.name] = index
