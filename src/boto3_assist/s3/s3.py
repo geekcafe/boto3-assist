@@ -89,7 +89,7 @@ class S3(S3Connection):
         else:
             meta_data.update(local_meta)
 
-        object_key = key_path
+        key = key_path
         method_type = method_type.upper()
 
         signed_url: str | Dict[str, Any]
@@ -98,7 +98,7 @@ class S3(S3Connection):
                 "put_object",
                 Params={
                     "Bucket": f"{bucket_name}",
-                    "Key": f"{object_key}",
+                    "Key": f"{key}",
                     # NOTE: if you include the ContentType or Metadata then its required in the when they upload the file
                     # Otherwise you will get a `SignatureDoesNotMatch` error
                     # for now I'm commenting it out.
@@ -111,7 +111,7 @@ class S3(S3Connection):
         elif method_type == "POST":
             signed_url = self.client.generate_presigned_post(
                 bucket_name,
-                object_key,
+                key,
                 ExpiresIn=expiration,  # URL is valid for x seconds
             )
         elif method_type == "GET":
@@ -119,7 +119,7 @@ class S3(S3Connection):
                 "get_object",
                 Params={
                     "Bucket": f"{bucket_name}",
-                    "Key": f"{object_key}",
+                    "Key": f"{key}",
                 },
                 ExpiresIn=expiration,  # URL is valid for x seconds
             )
@@ -133,11 +133,42 @@ class S3(S3Connection):
 
         response = {
             "signed_url": signed_url,
-            "object_key": object_key,
+            "key": key,
             "meta_data": meta_data,
         }
 
         return response
+
+    def upload_file_obj(self, bucket: str, key: str, file_obj: bytes) -> str:
+        """
+        Uploads a file object to s3. Returns the full s3 path s3://<bucket>/<key>
+        """
+
+        if key.startswith("/"):
+            # remove the first slash
+            key = key[1:]
+
+        logger.debug(
+            {
+                "metric_filter": "upload_file_to_s3",
+                "bucket": bucket,
+                "key": key,
+            }
+        )
+        try:
+            self.client.upload_fileobj(Fileobj=file_obj, Bucket=bucket, Key=key)
+
+        except ClientError as ce:
+            error = {
+                "metric_filter": "upload_file_to_s3_failure",
+                "s3 upload": "failure",
+                "bucket": bucket,
+                "key": key,
+            }
+            logger.error(error)
+            raise RuntimeError(error) from ce
+
+        return f"s3://{bucket}/{key}"
 
     def upload_file(
         self,
@@ -188,7 +219,7 @@ class S3(S3Connection):
     def download_file(
         self,
         bucket: str,
-        object_key: str,
+        key: str,
         local_directory: str | None = None,
         local_file_path: str | None = None,
         retry_attempts: int = 3,
@@ -205,7 +236,7 @@ class S3(S3Connection):
             try:
                 path = self.download_file_no_retries(
                     bucket=bucket,
-                    object_key=object_key,
+                    key=key,
                     local_directory=local_directory,
                     local_file_path=local_file_path,
                 )
@@ -246,7 +277,7 @@ class S3(S3Connection):
     def download_file_no_retries(
         self,
         bucket: str,
-        object_key: str,
+        key: str,
         local_directory: str | None = None,
         local_file_path: str | None = None,
     ) -> str:
@@ -255,7 +286,7 @@ class S3(S3Connection):
 
         Args:
             bucket (str): s3 bucket
-            object_key (str): the s3 object key
+            key (str): the s3 object key
             local_directory (str, optional): Local directory to download to. Defaults to None.
             If None, we'll use a local tmp directory.
 
@@ -272,13 +303,11 @@ class S3(S3Connection):
                 {
                     "action": "downloading file",
                     "bucket": bucket,
-                    "object_key": object_key,
+                    "key": key,
                     "local_directory": local_directory,
                 }
             )
-            return self.__download_file(
-                bucket, object_key, local_directory, local_file_path
-            )
+            return self.__download_file(bucket, key, local_directory, local_file_path)
         except FileNotFoundError:
             logger.warning(
                 {
@@ -286,12 +315,12 @@ class S3(S3Connection):
                     "error": "FileNotFoundError",
                     "message": "attempting to find it decoded",
                     "bucket": bucket,
-                    "object_key": object_key,
+                    "key": key,
                 }
             )
 
-            # attempt to decode the object_key
-            decoded_object_key = HttpUtility.decode_url(object_key)
+            # attempt to decode the key
+            decoded_object_key = HttpUtility.decode_url(key)
 
             logger.error(
                 {
@@ -299,7 +328,7 @@ class S3(S3Connection):
                     "error": "FileNotFoundError",
                     "message": "attempting to find it decoded",
                     "bucket": bucket,
-                    "object_key": object_key,
+                    "key": key,
                     "decoded_object_key": decoded_object_key,
                 }
             )
@@ -317,7 +346,7 @@ class S3(S3Connection):
             )
             raise e
 
-    def stream_file(self, bucket_name: str, object_key: str) -> Dict[str, Any]:
+    def stream_file(self, bucket_name: str, key: str) -> Dict[str, Any]:
         """
         Gets a file from s3 and returns the response.
         The "Body" is a streaming body object.  You can read it like a file.
@@ -334,7 +363,7 @@ class S3(S3Connection):
                 "source": "download_file",
                 "action": "downloading a file from s3",
                 "bucket": bucket_name,
-                "key": object_key,
+                "key": key,
             }
         )
 
@@ -342,7 +371,7 @@ class S3(S3Connection):
         error = None
 
         try:
-            response = dict(self.client.get_object(Bucket=bucket_name, Key=object_key))
+            response = dict(self.client.get_object(Bucket=bucket_name, Key=key))
 
             logger.debug(
                 {"metric_filter": "s3_download_response", "response": str(response)}
@@ -356,7 +385,7 @@ class S3(S3Connection):
                     "metric_filter": "s3_download_error",
                     "error": str(e),
                     "bucket": bucket_name,
-                    "key": object_key,
+                    "key": key,
                 }
             ) from e
 
@@ -366,7 +395,7 @@ class S3(S3Connection):
                     "source": "download_file",
                     "action": "downloading a file from s3",
                     "bucket": bucket_name,
-                    "key": object_key,
+                    "key": key,
                     "response": response,
                     "errors": error,
                 }
