@@ -7,6 +7,7 @@ MIT License.  See Project Root for the license information.
 import os
 import tempfile
 import time
+import io
 from typing import Any, Dict, List, Optional
 
 from aws_lambda_powertools import Logger
@@ -50,8 +51,22 @@ class S3(S3Connection):
             aws_secret_access_key=aws_secret_access_key,
         )
 
+    def create_bucket(self, *, bucket_name: str) -> None:
+        """
+        Create an S3 bucket
+        :param bucket_name: Bucket to create
+        :return: True if bucket is created, else False
+        """
+        try:
+            self.client.create_bucket(Bucket=bucket_name)
+            logger.info(f"Bucket {bucket_name} created")
+        except ClientError as e:
+            logger.exception(e)
+            raise e
+
     def generate_presigned_url(
         self,
+        *,
         bucket_name: str,
         key_path: str,
         user_id: str,
@@ -139,7 +154,7 @@ class S3(S3Connection):
 
         return response
 
-    def upload_file_obj(self, bucket: str, key: str, file_obj: bytes | str) -> str:
+    def upload_file_obj(self, *, bucket: str, key: str, file_obj: bytes | str) -> str:
         """
         Uploads a file object to s3. Returns the full s3 path s3://<bucket>/<key>
         """
@@ -160,7 +175,9 @@ class S3(S3Connection):
             file_obj: bytes = (
                 file_obj.encode("utf-8") if isinstance(file_obj, str) else file_obj
             )
-            self.client.upload_fileobj(Fileobj=file_obj, Bucket=bucket, Key=key)
+            self.client.upload_fileobj(
+                Fileobj=io.BytesIO(file_obj), Bucket=bucket, Key=key
+            )
 
         except ClientError as ce:
             error = {
@@ -176,6 +193,7 @@ class S3(S3Connection):
 
     def upload_file(
         self,
+        *,
         bucket: str,
         key: str,
         local_file_path: str,
@@ -222,6 +240,7 @@ class S3(S3Connection):
 
     def download_file(
         self,
+        *,
         bucket: str,
         key: str,
         local_directory: str | None = None,

@@ -50,7 +50,7 @@ class User(DynamoDBModelBase):
         gsi1.partition_key.value = lambda: DynamoDBKey.build_key(("users", None))
         gsi1.sort_key.attribute_name = "gsi1_sk"
         gsi1.sort_key.value = lambda: DynamoDBKey.build_key(
-            ("lastname", self.last_name)
+            ("lastname", self.last_name), ("firstname", self.first_name)
         )
         self.indexes.add_secondary(gsi1)
 
@@ -59,6 +59,6 @@ class User(DynamoDBModelBase):
         gsi0.partition_key.value = lambda: DynamoDBKey.build_key(("users", None))
         gsi0.sort_key.attribute_name = "gsi2_sk"
         gsi0.sort_key.value = lambda: DynamoDBKey.build_key(
-            ("firstname", self.first_name)
+            ("firstname", self.first_name), ("lastname", self.last_name)
         )
         self.indexes.add_secondary(gsi0)

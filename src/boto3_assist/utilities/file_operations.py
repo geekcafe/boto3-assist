@@ -59,6 +59,16 @@ class FileOperations:
         return dirname
 
     @staticmethod
+    def read_file(path: str, encoding: str = "utf-8") -> str:
+        """
+        Read a file
+        """
+        logger.debug(f"reading file {path}")
+        with open(path, "r", encoding=encoding) as file:
+            data = file.read()
+        return data
+
+    @staticmethod
     def write_to_file(path: str, data: str, append: bool = False) -> str:
         """
         Write to a file
