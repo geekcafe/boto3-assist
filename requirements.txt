@@ -7,3 +7,4 @@ python-dotenv
 pytz
 requests
 types-python-dateutil
+PyJWT

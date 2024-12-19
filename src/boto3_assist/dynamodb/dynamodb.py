@@ -82,11 +82,20 @@ class DynamoDB(DynamoDBConnection):
         try:
             if not isinstance(item, dict):
                 # attemp to convert it
+                if not isinstance(item, DynamoDBModelBase):
+                    raise RuntimeError(
+                        f"Item is not a dictionary or DynamoDBModelBase. Type: {type(item).__name__}. "
+                        "In order to prep the model for saving, it needs to already be dictionary or support "
+                        "the to_resource_dictionary() method, which is available when you inherit from DynamoDBModelBase. "
+                        "Unable to save item to DynamoDB.  The entry was not saved."
+                    )
                 try:
                     item = item.to_resource_dictionary()
                 except Exception as e:  # pylint: disable=w0718
                     logger.exception(e)
-                    raise ValueError("Unsupported item or module was passed.") from e
+                    raise RuntimeError(
+                        "An error occured during model converation.  The entry was not saved. "
+                    ) from e
 
             if isinstance(item, dict):
                 self.__log_item_size(item=item)

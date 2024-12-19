@@ -18,6 +18,7 @@ from boto3_assist.dynamodb.dynamodb_index import (
     DynamoDBIndex,
 )
 from boto3_assist.dynamodb.dynamodb_reserved_words import DynamoDBReservedWords
+from boto3_assist.utilities.datetime_utility import DatetimeUtility
 
 
 def exclude_from_serialization(method):
@@ -48,6 +49,7 @@ class DynamoDBModelBase:
         self.__indexes: DynamoDBIndexes | None = None
         self.__reserved_words: DynamoDBReservedWords = DynamoDBReservedWords()
         self.__auto_generate_projections: bool = auto_generate_projections
+        self.__actively_serializing_data__: bool = False
 
     @property
     @exclude_from_serialization
@@ -213,6 +215,38 @@ class DynamoDBModelBase:
             values = [v for v in values if not v.name == DynamoDBIndexes.PRIMARY_INDEX]
 
         return values
+
+    def to_timestamp_or_none(self, value: str | dt.datetime | None) -> float | None:
+        """
+        Convert a value to a timestamp (float) or None
+
+        Exceptions:
+            ValueError: If the value is not a datetime string or datetime
+        """
+
+        if isinstance(value, str):
+            # value = dt.datetime.fromisoformat(value)
+            value = DatetimeUtility.to_datetime_utc(value)
+
+        if value is None:
+            return None
+
+        if isinstance(value, dt.datetime):
+            return value.timestamp()
+
+        raise ValueError(
+            "Value must be a None, a string in a valid datetime format or datetime"
+        )
+
+    def to_utc(self, value: str | dt.datetime | None) -> dt.datetime | None:
+        """
+        Convert a datetime to UTC. This ensures all datetimes are stored in UTC format
+
+        Exceptions:
+            ValueError: If the value is not a datetime string or datetime
+        """
+
+        value = DatetimeUtility.to_datetime_utc(value)
 
 
 class DynamoDBSerializer:

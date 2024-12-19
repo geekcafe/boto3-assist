@@ -39,7 +39,7 @@ class JsonEncoder(json.JSONEncoder):
         elif isinstance(o, Decimal):
             return float(o)
 
-        logger.info(f"AplosJsonEncoder failing back: ${type(o)}")
+        logger.info(f"JsonEncoder failing back: ${type(o)}")
 
         # Fallback to the base class implementation for other types
 

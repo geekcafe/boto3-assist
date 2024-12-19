@@ -25,9 +25,22 @@ class DynamoDBIndexes:
     def __init__(self) -> None:
         self.__indexes: dict[str, DynamoDBIndex] = {}
 
+    def remove_primary(self):
+        """Remove the primary index"""
+        if DynamoDBIndexes.PRIMARY_INDEX in self.__indexes:
+            del self.__indexes[DynamoDBIndexes.PRIMARY_INDEX]
+
     def add_primary(self, index: DynamoDBIndex):
         """Add an index"""
         index.name = DynamoDBIndexes.PRIMARY_INDEX
+
+        if index.name in self.__indexes:
+            raise ValueError(
+                f"The index {index.name} is already defined in your model somewhere. "
+                "This error is generated to protect you from unforseen issues. "
+                "If you models are inheriting from other models, you may have the primary defined twice."
+            )
+
         self.__indexes[DynamoDBIndexes.PRIMARY_INDEX] = index
 
     def add_secondary(self, index: DynamoDBIndex):
@@ -37,7 +50,11 @@ class DynamoDBIndexes:
 
         # if the index already exists, raise an exception
         if index.name in self.__indexes:
-            raise ValueError(f"Index {index.name} already exists")
+            raise ValueError(
+                f"The index {index.name} is already defined in your model somewhere. "
+                "This error is generated to protect you from unforseen issues. "
+                "If you models are inheriting from other models, you may have the primary defined twice."
+            )
         if index.name == DynamoDBIndexes.PRIMARY_INDEX:
             raise ValueError(f"Index {index.name} is reserved for the primary index")
         if index.partition_key is None:

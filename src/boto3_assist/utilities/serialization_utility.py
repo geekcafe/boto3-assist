@@ -36,7 +36,7 @@ class JsonEncoder(json.JSONEncoder):
         elif isinstance(o, Decimal):
             return float(o)
 
-        logger.info(f"AplosJsonEncoder failing back: ${type(o)}")
+        logger.info(f"JsonEncoder failing back: ${type(o)}")
 
         # Fallback to the base class implementation for other types
 
@@ -67,7 +67,6 @@ class Serialization:
         raise ValueError("Unable to convert object to dictionary")
 
     @staticmethod
-    @tracer.capture_method
     def map(source: object, target: T) -> T | None:
         """Map an object from one object to another"""
         source_dict: dict | object
@@ -80,7 +79,6 @@ class Serialization:
         return Serialization.load_properties(source_dict, target=target)
 
     @staticmethod
-    @tracer.capture_method
     def load_properties(source: dict, target: T) -> T | None:
         """
         Converts a source to an object
@@ -93,8 +91,11 @@ class Serialization:
         if hasattr(source, "__dict__"):
             source = source.__dict__
 
+        if hasattr(target, "__actively_serializing_data__"):
+            setattr(target, "__actively_serializing_data__", True)
+
         for key, value in source.items():
-            if hasattr(target, key):
+            if Serialization.has_attribute(target, key):  # hasattr(target, key):
                 attr = getattr(target, key)
                 if isinstance(attr, (int, float, str, bool, type(None))):
                     try:
@@ -116,4 +117,29 @@ class Serialization:
                     Serialization.load_properties(value, attr)
                 else:
                     setattr(target, key, value)
+
+        if hasattr(target, "__actively_serializing_data__"):
+            setattr(target, "__actively_serializing_data__", False)
+
         return target
+
+    @staticmethod
+    def has_attribute(obj: object, attribute_name: str) -> bool:
+        """Check if an object has an attribute"""
+        try:
+            return hasattr(obj, attribute_name)
+        except AttributeError:
+            return False
+        except Exception as e:  # pylint: disable=w0718
+            raise RuntimeError(
+                "Failed to serialize the object. \n"
+                "You may have some validation that is preventing this routine "
+                "from completing. Such as a None checker on a getter. \n\n"
+                "To work around this create a boolean (bool) property named __actively_serializing_data__. \n"
+                "e.g. self.__actively_serializing_data__: bool = False\n\n"
+                "Only issue/raise your exception if __actively_serializing_data__ is not True. \n\n"
+                "e.g. if not self.some_propert and not self.__actively_serializing_data__:\n"
+                '    raise ValueError("some_property must be set")\n\n'
+                "This procedure will update the property from False to True while serializing, "
+                "then back to False once serialization is complete. "
+            ) from e
