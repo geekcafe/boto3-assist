@@ -8,11 +8,8 @@ from typing import Optional
 from typing import TYPE_CHECKING
 
 from aws_lambda_powertools import Logger
-from boto3_assist.boto3session import Boto3SessionManager
-from boto3_assist.environment_services.environment_variables import (
-    EnvironmentVariables,
-)
-from boto3_assist.dynamodb.dynamodb_connection_tracker import DynamoDBConnectionTracker
+from boto3_assist.connection import Connection
+
 
 if TYPE_CHECKING:
     from mypy_boto3_dynamodb import DynamoDBClient, DynamoDBServiceResource
@@ -22,10 +19,9 @@ else:
 
 
 logger = Logger()
-tracker: DynamoDBConnectionTracker = DynamoDBConnectionTracker()
 
 
-class DynamoDBConnection:
+class DynamoDBConnection(Connection):
     """DB Environment"""
 
     def __init__(
@@ -37,65 +33,19 @@ class DynamoDBConnection:
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
     ) -> None:
-        self.aws_profile = aws_profile or EnvironmentVariables.AWS.profile()
-        self.aws_region = aws_region or EnvironmentVariables.AWS.region()
-        self.end_point_url = (
-            aws_end_point_url or EnvironmentVariables.AWS.DynamoDB.endpoint_url()
+        super().__init__(
+            service_name="dynamodb",
+            aws_profile=aws_profile,
+            aws_region=aws_region,
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            aws_end_point_url=aws_end_point_url,
         )
-        self.aws_access_key_id = (
-            aws_access_key_id or EnvironmentVariables.AWS.DynamoDB.aws_access_key_id()
-        )
-        self.aws_secret_access_key = (
-            aws_secret_access_key
-            or EnvironmentVariables.AWS.DynamoDB.aws_secret_access_key()
-        )
-        self.__session: Boto3SessionManager | None = None
+
         self.__dynamodb_client: DynamoDBClient | None = None
         self.__dynamodb_resource: DynamoDBServiceResource | None = None
 
         self.raise_on_error: bool = True
-
-    def setup(self, setup_source: Optional[str] = None) -> None:
-        """
-        Setup the environment.  Automatically called via init.
-        You can run setup at anytime with new parameters.
-        Args: setup_source: Optional[str] = None
-            Defines the source of the setup.  Useful for logging.
-        Returns: None
-        """
-
-        logger.info(
-            {
-                "metric_filter": "db_connection_setup",
-                "source": "DynamoDBConnection",
-                "aws_profile": self.aws_profile,
-                "aws_region": self.aws_region,
-                "setup_source": setup_source,
-            }
-        )
-
-        self.__session = Boto3SessionManager(
-            service_name="dynamodb",
-            aws_profile=self.aws_profile,
-            aws_region=self.aws_region,
-            aws_access_key_id=self.aws_access_key_id,
-            aws_secret_access_key=self.aws_secret_access_key,
-            aws_endpoint_url=self.end_point_url,
-        )
-
-        tracker.increment_connection()
-
-        self.raise_on_error = EnvironmentVariables.AWS.DynamoDB.raise_on_error_setting()
-
-    @property
-    def session(self) -> Boto3SessionManager:
-        """Session"""
-        if self.__session is None:
-            self.setup(setup_source="session init")
-
-        if self.__session is None:
-            raise RuntimeError("Session is not available")
-        return self.__session
 
     @property
     def client(self) -> DynamoDBClient:

@@ -317,3 +317,29 @@ class DatetimeUtility:
         tz = pytz.timezone(timezone_name)
         result = utc_datetime.astimezone(tz)
         return result
+
+    @staticmethod
+    def get_timestamp(value: datetime | None | str) -> float:
+        """Get a timestampe from a date or 0.0"""
+        if value is None:
+            return 0.0
+        if not isinstance(value, datetime):
+            value = DatetimeUtility.to_datetime_utc(value=value)
+
+        if not isinstance(value, datetime):
+            return 0.0
+        ts = value.timestamp()
+        return ts
+
+    @staticmethod
+    def get_timestamp_or_none(value: datetime | None | str) -> float | None:
+        """Get a timestampe from a date or None"""
+        if value is None:
+            return None
+        if not isinstance(value, datetime):
+            value = DatetimeUtility.to_datetime_utc(value=value)
+
+        if not isinstance(value, datetime):
+            return None
+        ts = value.timestamp()
+        return ts

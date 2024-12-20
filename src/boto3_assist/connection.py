@@ -11,17 +11,15 @@ from boto3_assist.boto3session import Boto3SessionManager
 from boto3_assist.environment_services.environment_variables import (
     EnvironmentVariables,
 )
-from boto3_assist.cloudwatch.cloudwatch_connection_tracker import (
-    CloudWatchConnectionTracker,
-)
+from boto3_assist.connection_tracker import ConnectionTracker
 
 
 logger = Logger()
-tracker: CloudWatchConnectionTracker = CloudWatchConnectionTracker()
+tracker: ConnectionTracker = ConnectionTracker()
 
 
 class Connection:
-    """Boto 3 Connection"""
+    """Base Boto 3 Connection"""
 
     def __init__(
         self,
@@ -31,7 +29,9 @@ class Connection:
         aws_region: Optional[str] = None,
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
+        aws_end_point_url: Optional[str] = None,
     ) -> None:
+        # TODO: determine if we want to pull from environment vars or not
         self.aws_profile = aws_profile or EnvironmentVariables.AWS.profile()
         self.aws_region = aws_region or EnvironmentVariables.AWS.region()
 
@@ -42,9 +42,16 @@ class Connection:
             aws_secret_access_key
             or EnvironmentVariables.AWS.DynamoDB.aws_secret_access_key()
         )
+        self.end_point_url = aws_end_point_url
         self.__session: Boto3SessionManager | None = None
 
         self.__service_name: str | None = service_name
+
+        if self.__service_name is None:
+            raise RuntimeError(
+                "Service Name is not available. The service name is required."
+            )
+
         self.raise_on_error: bool = True
 
     def setup(self, setup_source: Optional[str] = None) -> None:
@@ -72,11 +79,10 @@ class Connection:
             aws_region=self.aws_region,
             aws_access_key_id=self.aws_access_key_id,
             aws_secret_access_key=self.aws_secret_access_key,
+            aws_endpoint_url=self.end_point_url,
         )
 
-        tracker.increment_connection()
-
-        self.raise_on_error = EnvironmentVariables.AWS.DynamoDB.raise_on_error_setting()
+        tracker.add(service_name=self.service_name)
 
     @property
     def service_name(self) -> str:

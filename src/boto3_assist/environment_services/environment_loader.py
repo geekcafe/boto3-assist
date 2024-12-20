@@ -96,7 +96,7 @@ class EnvironmentLoader:
         paths: List[str] = []
         for parent in range(parents):
             path = Path(starting_path).parents[parent].absolute()
-            print(f"searching: {path}")
+            logger.debug(f"searching for {file_name} in: {path}")
             tmp = os.path.join(path, file_name)
             paths.append(tmp)
             if os.path.exists(tmp):

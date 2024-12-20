@@ -21,25 +21,23 @@ from boto3_assist.dynamodb.dynamodb import DynamoDB
 class DynamoDBSortinglUnitTest(unittest.TestCase):
     "Sorting Tests"
 
-    def setUp(self):
-        # load our test environment file to make sure we override any default AWS Environment Vars setup
-        # we don't want to accidently connec to live environments
-        # https://docs.getmoto.org/en/latest/docs/getting_started.html
+    def __init__(self, methodName="runTest"):
+        super().__init__(methodName)
+
         ev: EnvironmentLoader = EnvironmentLoader()
         # NOTE: you need to make sure the the env file below exists or you will get an error
         ev.load_environment_file(file_name=".env.unittest")
         self.__table_name = "mock_test_table"
 
-        # env_vars = str(os.environ.).split(",")
-        for key, value in os.environ.items():
-            print(f"{key}: {value}")
-
-        # option 1: create a connection directly
-        # self.client: DynamoDBClient = boto3.client("dynamodb", region_name="us-east-1")
-
-        # option 2: we can now use our internal libraries, which will wire up everything for us.
         self.db: DynamoDB = DynamoDB()
-        self.helper_create_mock_table(self.db.dynamodb_client)
+
+    def setUp(self):
+        # load our test environment file to make sure we override any default AWS Environment Vars setup
+        # we don't want to accidently connec to live environments
+        # https://docs.getmoto.org/en/latest/docs/getting_started.html
+
+        self.db: DynamoDB = self.db or DynamoDB()
+        self.helper_create_mock_table(self.db.client)
         print("Setup Complete")
 
     def test_storing_and_sorting_test(self):
@@ -125,7 +123,7 @@ class DynamoDBSortinglUnitTest(unittest.TestCase):
         Create a mock DynamoDB table.
         """
 
-        client.create_table(
+        response = client.create_table(
             TableName=self.__table_name,
             KeySchema=[
                 {"AttributeName": "pk", "KeyType": "HASH"},  # Partition key
@@ -157,3 +155,5 @@ class DynamoDBSortinglUnitTest(unittest.TestCase):
             ],
             BillingMode="PAY_PER_REQUEST",
         )
+
+        print(response)

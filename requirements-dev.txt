@@ -1,10 +1,13 @@
 boto3-stubs[dynamodb]
+boto3-stubs[cognito]
 build
 mypy
 mypy_boto3_dynamodb
 mypy_boto3_ec2
 mypy_boto3_cloudwatch
 mypy_boto3_s3
+mypy_boto3_cognito_idp
+
 moto [dynamodb2] # mocks for unit tests
 # setuptools
 types-python-dateutil

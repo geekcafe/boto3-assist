@@ -1,80 +1,120 @@
 """
 Geek Cafe, LLC
 Maintainers: Eric Wilson
-MIT License.  See Project Root for the license information.
+MIT License. See Project Root for the license information.
 """
 
 import traceback
 import os
+from typing import Dict
 
 
 class ConnectionTracker:
     """
-    Tracks Connection Requests.
-    Useful in for performance tuning and debugging.
+    Tracks Boto3 connection requests for performance tuning and debugging.
+
+    Attributes:
+        __stack_trace_env_var (str): Environment variable name to enable stack trace logging.
+        __issue_stack_trace (bool | None): Caches the result of whether stack trace logging is enabled.
+        __connection_counter (Dict[str, int]): Tracks the number of connections per service.
     """
 
-    def __init__(self, service_name: str) -> None:
+    def __init__(self) -> None:
         self.__stack_trace_env_var: str = "BOTO3_ASSIST_CONNECTION_STACK_TRACE"
-        self.__connection_counter: int = 0
-        self.__service_name: str = service_name
         self.__issue_stack_trace: bool | None = None
+        self.__connection_counter: Dict[str, int] = {}
+
+    def add(self, service_name: str) -> None:
+        """
+        Increments the connection count for a given service and
+        performs a check on the number of connections.
+
+        Args:
+            service_name (str): Name of the AWS service.
+        """
+        self.__connection_counter[service_name] = (
+            self.__connection_counter.get(service_name, 0) + 1
+        )
+
+        self.check(service_name=service_name)
 
     @property
     def issue_stack_trace(self) -> bool:
-        """Returns True if the stack trace should be issued"""
+        """
+        Checks if stack trace logging is enabled by the environment variable.
+
+        Returns:
+            bool: True if stack trace logging is enabled, False otherwise.
+        """
         if self.__issue_stack_trace is None:
             self.__issue_stack_trace = (
                 os.getenv(self.__stack_trace_env_var, "").lower() == "true"
             )
         return self.__issue_stack_trace
 
-    def increment_connection(self) -> None:
-        """Increments the connection counter"""
-        self.__connection_counter += 1
+    def check(self, service_name: str) -> None:
+        """
+        Checks the connection count for a service and logs warnings if needed.
 
-        if self.connection_count > 1:
-            service_message = ""
-            stack_trace_message = ""
-            if self.__service_name:
-                service_message = f"Your {self.__service_name} service has more than one connection.\n"
+        Args:
+            service_name (str): Name of the AWS service.
+        """
+        connection_count = self.__connection_counter.get(service_name, 0)
+        if connection_count > 1:
+            service_message = (
+                f"Your {service_name} service has more than one connection.\n"
+            )
 
             if not self.issue_stack_trace:
                 stack_trace_message = (
-                    f"\nTo add addtional information to the log and determine where additional connections are being created"
-                    f", set the environment variable {self.__stack_trace_env_var} to true.\n"
+                    f"\nTo add additional information to the log and determine where additional connections are being created, "
+                    f"set the environment variable {self.__stack_trace_env_var} to true.\n"
                 )
             else:
                 stack = "\n".join(traceback.format_stack())
                 stack_trace_message = (
-                    f"\nStack Trace Enabeld with {self.__stack_trace_env_var}"
-                    f"\n{stack}"
+                    f"\nStack Trace Enabled with {self.__stack_trace_env_var}\n{stack}"
                 )
 
             self.__log_warning(
                 f"{service_message}"
-                f"Your boto3 connection count is {self.connection_count}. "
-                "Under most circumstances you should be able to use the same connection "
-                "vs. creating a new one.  Connections are expensive in terms of time / latency. "
-                "If you are seeing perforance issues, check how and where you are creating your "
-                "connections.  You should be able to pass the connection to your other objects "
+                f"Your boto3 connection count is {connection_count}. "
+                "Under most circumstances, you should be able to use the same connection "
+                "instead of creating a new one. Connections are expensive in terms of time and latency. "
+                "If you are seeing performance issues, check how and where you are creating your "
+                "connections. You should be able to pass the connection to your other objects "
                 "and reuse your boto3 connections."
+                "\n\nMOCK Testing may show this message as well, in which case you can dismiss this warning.\n\n"
                 f"{stack_trace_message}"
             )
 
-    def decrement_connection(self) -> None:
-        """Decrements the connection counter"""
-        self.__connection_counter -= 1
+    def decrement_connection(self, service_name: str) -> None:
+        """
+        Decrements the connection count for a service.
 
-    @property
-    def connection_count(self) -> int:
-        """Returns the current connection count"""
-        return self.__connection_counter
+        Args:
+            service_name (str): Name of the AWS service.
+        """
+        if (
+            service_name in self.__connection_counter
+            and self.__connection_counter[service_name] > 0
+        ):
+            self.__connection_counter[service_name] -= 1
 
-    def reset(self) -> None:
-        """Resets the connection counter"""
-        self.__connection_counter = 0
+    def reset(self, service_name: str) -> None:
+        """
+        Resets the connection count for a service to zero.
+
+        Args:
+            service_name (str): Name of the AWS service.
+        """
+        self.__connection_counter[service_name] = 0
 
     def __log_warning(self, message: str) -> None:
-        """Logs a warning message"""
+        """
+        Logs a warning message.
+
+        Args:
+            message (str): The warning message to log.
+        """
         print(f"Warning: {message}")

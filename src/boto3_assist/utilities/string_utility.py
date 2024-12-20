@@ -7,11 +7,13 @@ MIT License.  See Project Root for the license information.
 import hashlib
 import secrets
 import string
+import time
 from datetime import datetime
 from decimal import Decimal
 import uuid
 import json
 from aws_lambda_powertools import Logger
+from boto3_assist.utilities.datetime_utility import DatetimeUtility
 
 logger = Logger()
 
@@ -230,3 +232,60 @@ class StringUtility:
         size = int(len(_bytes))
 
         return size
+
+    @staticmethod
+    def generate_sortable_uuid():
+        """
+        Generates a unique id for the execution event
+        """
+        epoch_time = time.time()
+        sortable_uuid: uuid.UUID = DatetimeUtility.uuid1_utc(timestamp=epoch_time)
+
+        time_stamp = str(epoch_time).replace(".", "-")
+        sortable_id = f"{time_stamp}:{str(sortable_uuid)}"
+        return sortable_id
+
+    @staticmethod
+    def to_bool(value: str | bool | int | None) -> bool:
+        """
+        Converts a string or boolean value to a boolean.
+
+        Args:
+            value (str | bool | int | None): The value to convert.
+
+        Returns:
+            bool: The converted boolean value.
+
+        Raises:
+            ValueError: If the input value is not a valid boolean or string representation.
+        """
+        return StringUtility.to_boolean(value)
+
+    @staticmethod
+    def to_boolean(value: str | bool | int | None) -> bool:
+        """
+        Converts a string or boolean value to a boolean.
+
+        Args:
+            value (str | bool | int | None): The value to convert.
+
+        Returns:
+            bool: The converted boolean value.
+
+        Raises:
+            ValueError: If the input value is not a valid boolean or string representation.
+        """
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            value = str(value).lower().strip()
+            if value in ("true", "1", "t", "y", "yes"):
+                return True
+            if value in ("false", "0", "f", "n", "no"):
+                return False
+        elif isinstance(value, int):
+            return bool(value)
+        elif value is None:
+            return False
+        else:
+            raise ValueError(f"Invalid boolean value: {value}")

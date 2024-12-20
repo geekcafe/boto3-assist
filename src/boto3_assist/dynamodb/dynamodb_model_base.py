@@ -127,7 +127,7 @@ class DynamoDBModelBase:
     def projection_expression_attribute_names(self, value: dict | None):
         self.__projection_expression_attribute_names = value
 
-    def map(self: T, item: Dict[str, Any] | DynamoDBModelBase | None) -> T | None:
+    def map(self: T, item: Dict[str, Any] | DynamoDBModelBase | None) -> T:
         """
         Map the item to the instance.  If the item is a DynamoDBModelBase,
         it will be converted to a dictionary first and then mapped.
@@ -144,7 +144,7 @@ class DynamoDBModelBase:
             that of the dictionary object or None
         """
         if item is None:
-            return None
+            item = {}
 
         if isinstance(item, DynamoDBModelBase):
             item = item.to_resource_dictionary()
@@ -155,7 +155,7 @@ class DynamoDBModelBase:
                 response: dict | None = item.get("Item")
 
                 if response is None:
-                    return None
+                    response = {}
 
                 item = response
 

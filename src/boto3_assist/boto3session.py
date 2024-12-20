@@ -135,6 +135,7 @@ class Boto3SessionManager:
     def client(self) -> Any:
         """Return the boto3 client connection."""
         if not self.__client:
+            logger.debug(f"Creating {self.service_name} client")
             self.__client = self.__session.client(
                 self.service_name,
                 config=self.config,
@@ -147,6 +148,7 @@ class Boto3SessionManager:
     def resource(self) -> Any:
         """Return the boto3 resource connection."""
         if not self.__resource:
+            logger.debug(f"Creating {self.service_name} resource")
             self.__resource = self.__session.resource(
                 self.service_name,
                 config=self.config,
@@ -156,6 +158,7 @@ class Boto3SessionManager:
 
     def __create_boto3_session(self) -> boto3.Session | None:
         try:
+            logger.debug(f"Creating session for {self.service_name}")
             session = boto3.Session(
                 profile_name=self.aws_profile,
                 region_name=self.aws_region,

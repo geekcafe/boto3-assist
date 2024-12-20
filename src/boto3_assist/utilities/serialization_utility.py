@@ -5,11 +5,11 @@ from decimal import Decimal
 from typing import Dict, List, TypeVar
 import json
 import jsons
-from aws_lambda_powertools import Logger, Tracer
+from aws_lambda_powertools import Logger
 
 T = TypeVar("T")
 
-tracer = Tracer()
+
 logger = Logger()
 
 
@@ -67,7 +67,7 @@ class Serialization:
         raise ValueError("Unable to convert object to dictionary")
 
     @staticmethod
-    def map(source: object, target: T) -> T | None:
+    def map(source: object, target: T, coerce: bool = True) -> T | None:
         """Map an object from one object to another"""
         source_dict: dict | object
         if isinstance(source, dict):
@@ -76,12 +76,26 @@ class Serialization:
             source_dict = Serialization.convert_object_to_dict(source)
             if not isinstance(source_dict, dict):
                 return None
-        return Serialization.load_properties(source_dict, target=target)
+        return Serialization.load_properties(
+            source=source_dict, target=target, coerce=coerce
+        )
 
     @staticmethod
-    def load_properties(source: dict, target: T) -> T | None:
+    def load_properties(
+        source: dict,
+        target: T,
+        coerce: bool = True,
+    ) -> T | None:
         """
-        Converts a source to an object
+        Converts a source dictionary to a target object.
+
+        Args:
+            source (dict): The source dictionary containing properties.
+            target (T): The target object to populate.
+            coerce (bool): If True, attempts to convert values to the target attribute types. If False, raises an error for type mismatches.
+
+        Returns:
+            T | None: The populated target object, or None if an error occurred.
         """
         # Ensure target is an instance of the class
         if isinstance(target, type):
@@ -95,28 +109,56 @@ class Serialization:
             setattr(target, "__actively_serializing_data__", True)
 
         for key, value in source.items():
-            if Serialization.has_attribute(target, key):  # hasattr(target, key):
+            if Serialization.has_attribute(target, key):
                 attr = getattr(target, key)
-                if isinstance(attr, (int, float, str, bool, type(None))):
-                    try:
+                expected_type = type(attr)
+
+                try:
+                    if isinstance(attr, (int, float, str, bool)):
+                        if not isinstance(value, expected_type):
+                            if coerce:
+                                # Attempt to coerce the value to the expected type
+                                try:
+                                    value = expected_type(value)
+                                except ValueError as e:
+                                    logger.warning(
+                                        f"Warning coercing attribute {key} with value {value}: {e}"
+                                    )
+                                    # TODO: should we set numbers to 0 or a NaN or raise an error
+
+                                    setattr(target, key, value)
+                                    # raise ValueError(  # pylint: disable=w0707
+                                    #     f"Type mismatch for attribute {key}. Expected {expected_type}, got {type(value)}."
+                                    # )
+                            else:
+                                raise ValueError(
+                                    f"Type mismatch for attribute {key}. Expected {expected_type}, got {type(value)}."
+                                )
                         setattr(target, key, value)
-                    except Exception as e:  # pylint: disable=w0718
-                        logger.error(
-                            f"Error setting attribute {key} with value {value}: {e}. "
-                            "This usually occurs on properties that don't have setters. "
-                            "You can add a setter (even with a pass action) for this property, "
-                            "decorate it with the @exclude_from_serialization "
-                            "or ignore this error. "
-                        )
-                elif isinstance(attr, list) and isinstance(value, list):
-                    attr.clear()
-                    attr.extend(value)
-                elif isinstance(attr, dict) and isinstance(value, dict):
-                    Serialization.load_properties(value, attr)
-                elif hasattr(attr, "__dict__") and isinstance(value, dict):
-                    Serialization.load_properties(value, attr)
-                else:
-                    setattr(target, key, value)
+                    elif isinstance(attr, type(None)):
+                        setattr(target, key, value)
+                    elif isinstance(attr, list) and isinstance(value, list):
+                        attr.clear()
+                        attr.extend(value)
+                    elif isinstance(attr, dict) and isinstance(value, dict):
+                        Serialization.load_properties(value, attr, coerce=coerce)
+                    elif hasattr(attr, "__dict__") and isinstance(value, dict):
+                        Serialization.load_properties(value, attr, coerce=coerce)
+                    else:
+                        setattr(target, key, value)
+                except ValueError as e:
+                    logger.error(
+                        f"Error setting attribute {key} with value {value}: {e}"
+                    )
+                    raise
+                except Exception as e:  # pylint: disable=w0718
+                    logger.error(
+                        f"Error setting attribute {key} with value {value}: {e}. "
+                        "This usually occurs on properties that don't have setters. "
+                        "You can add a setter (even with a pass action) for this property, "
+                        "decorate it with the @exclude_from_serialization "
+                        "or ignore this error. "
+                    )
 
         if hasattr(target, "__actively_serializing_data__"):
             setattr(target, "__actively_serializing_data__", False)
