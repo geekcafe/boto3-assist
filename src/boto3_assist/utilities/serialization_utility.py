@@ -2,15 +2,56 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, List, TypeVar
+from typing import Dict, List, TypeVar, Any
 import json
 import jsons
+import datetime as dt
+import decimal
+import inspect
+import uuid
 from aws_lambda_powertools import Logger
+
 
 T = TypeVar("T")
 
 
 logger = Logger()
+
+
+class SerializableModel:
+    """Library to Serialize object to a DynamoDB Format"""
+
+    T = TypeVar("T", bound="SerializableModel")
+
+    def __init__(self):
+        pass
+
+    def map(
+        self: T,
+        source: Dict[str, Any] | "SerializableModel" | None,
+        coerce: bool = True,
+    ) -> T:
+        """
+        Map the source dictionary to the target object.
+
+        Args:
+        - source: The dictionary to map from.
+        - target: The object to map to.
+        """
+        mapped = Serialization.map(source=source, target=self, coerce=coerce)
+        if mapped is None:
+            raise ValueError("Unable to map source to target")
+
+        return mapped
+
+    def to_dictionary(self) -> Dict[str, Any]:
+        """
+        Convert the object to a dictionary.
+        """
+        # return Serialization.convert_object_to_dict(self)
+        return Serialization.to_dict(
+            instance=self, serialize_fn=lambda x: x, include_none=True
+        )
 
 
 class JsonEncoder(json.JSONEncoder):
@@ -52,7 +93,7 @@ class JsonEncoder(json.JSONEncoder):
 
 class Serialization:
     """
-    Serliaztion Class
+    Serialization Class
     """
 
     @staticmethod
@@ -60,11 +101,12 @@ class Serialization:
         """
         Dumps an object to dictionary structure
         """
-        dump = jsons.dump(model, strip_privates=True)
-        if isinstance(dump, dict) or isinstance(dump, List):
-            return dump
 
-        raise ValueError("Unable to convert object to dictionary")
+        dump = Serialization.to_dict(
+            instance=model, serialize_fn=lambda x: x, include_none=True
+        )
+
+        return dump
 
     @staticmethod
     def map(source: object, target: T, coerce: bool = True) -> T | None:
@@ -185,3 +227,103 @@ class Serialization:
                 "This procedure will update the property from False to True while serializing, "
                 "then back to False once serialization is complete. "
             ) from e
+
+    @staticmethod
+    def to_dict(
+        instance: SerializableModel,
+        serialize_fn,
+        include_none: bool = True,
+    ) -> Dict[str, Any]:
+        """To Dict / Dictionary"""
+
+        def is_primitive(value):
+            """Check if the value is a primitive data type."""
+            return isinstance(value, (str, int, bool, type(None)))
+
+        def serialize_value(value):
+            """Serialize the value using the provided function."""
+
+            if isinstance(value, SerializableModel):
+                return serialize_fn(
+                    Serialization.to_dict(
+                        instance=value,
+                        serialize_fn=lambda x: x,
+                        include_none=include_none,
+                    )
+                )
+            if isinstance(value, dt.datetime):
+                return serialize_fn(value.isoformat())
+            elif isinstance(value, float):
+                v = serialize_fn(decimal.Decimal(str(value)))
+                return v
+            elif isinstance(value, decimal.Decimal):
+                return serialize_fn(value)
+            elif isinstance(value, uuid.UUID):
+                return serialize_fn(str(value))
+            elif isinstance(value, (bytes, bytearray)):
+                return serialize_fn(value.hex())
+            elif is_primitive(value):
+                return serialize_fn(value)
+            elif isinstance(value, list):
+                return serialize_fn([serialize_value(v) for v in value])
+            elif isinstance(value, dict):
+                return serialize_fn({k: serialize_value(v) for k, v in value.items()})
+            else:
+                return serialize_fn(
+                    Serialization.to_dict(
+                        value,
+                        serialize_fn,
+                        include_none=include_none,
+                    )
+                )
+
+        instance_dict = Serialization._add_properties(
+            instance, serialize_value, include_none=include_none
+        )
+
+        return instance_dict
+
+    @staticmethod
+    def _add_properties(
+        instance: SerializableModel,
+        serialize_value,
+        include_none: bool = True,
+    ) -> dict:
+        instance_dict = {}
+
+        # Add instance variables
+        for attr, value in instance.__dict__.items():
+            if str(attr) == "T":
+                continue
+            # don't get the private properties
+            if not str(attr).startswith("_"):
+                if value is not None or include_none:
+                    instance_dict[attr] = serialize_value(value)
+
+        # Add properties
+        for name, _ in inspect.getmembers(
+            instance.__class__, predicate=inspect.isdatadescriptor
+        ):
+            prop = None
+            try:
+                prop = getattr(instance.__class__, name)
+            except AttributeError:
+                continue
+            if isinstance(prop, property):
+                # Exclude properties marked with the exclude_from_serialization decorator
+                # Check if the property should be excluded
+                exclude = getattr(prop.fget, "exclude_from_serialization", False)
+                if exclude:
+                    continue
+
+                # Skip TypeVar T or instances of DynamoDBModelBase
+                if str(name) == "T":
+                    continue
+
+                # don't get the private properties
+                if not str(name).startswith("_"):
+                    value = getattr(instance, name)
+                    if value is not None or include_none:
+                        instance_dict[name] = serialize_value(value)
+
+        return instance_dict

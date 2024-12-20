@@ -128,7 +128,7 @@ class TestSerializableModel(unittest.TestCase):
         result = model.to_dictionary()
 
         self.assertIsInstance(result, dict)
-        self.assertEqual(len(result), 4)  # includes T = {} # bug we need to fix
+        self.assertEqual(len(result), 3)
         self.assertEqual(result.get("name"), "Bob")
         self.assertEqual(result.get("age"), 35)
         self.assertEqual(result.get("active"), False)
