@@ -163,3 +163,5 @@ cython_debug/
 
 .imports
 .env.development
+.unittest
+.unittests

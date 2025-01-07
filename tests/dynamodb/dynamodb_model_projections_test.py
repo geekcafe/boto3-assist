@@ -7,8 +7,8 @@ MIT License.  See Project Root for the license information.
 import unittest
 
 
-from tests.dynamodb.models.user_model import User
-from tests.dynamodb.models.simple_model import Simple
+from tests.dynamodb.dbmodels.user_model import User
+from tests.dynamodb.dbmodels.simple_model import Simple
 
 
 class DynamoDBModeProjectionlUnitTest(unittest.TestCase):

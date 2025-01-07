@@ -1,16 +1,15 @@
 """Serialization Utility"""
 
-from datetime import datetime
-from decimal import Decimal
-from typing import Dict, List, TypeVar, Any
-import json
-import jsons
 import datetime as dt
 import decimal
 import inspect
+import json
 import uuid
-from aws_lambda_powertools import Logger
+from datetime import datetime
+from decimal import Decimal
+from typing import Any, Dict, List, TypeVar
 
+from aws_lambda_powertools import Logger
 
 T = TypeVar("T")
 
@@ -52,6 +51,15 @@ class SerializableModel:
         return Serialization.to_dict(
             instance=self, serialize_fn=lambda x: x, include_none=True
         )
+
+    def to_wide_dictionary(self) -> Dict:
+        """
+        Dumps an object to dictionary structure
+        """
+
+        dump = Serialization.to_wide_dictionary(model=self)
+
+        return dump
 
 
 class JsonEncoder(json.JSONEncoder):
@@ -109,6 +117,32 @@ class Serialization:
         return dump
 
     @staticmethod
+    def to_wide_dictionary(model: object) -> Dict:
+        """
+        Dumps an object to dictionary structure
+        """
+
+        dump = Serialization.to_dict(
+            instance=model, serialize_fn=lambda x: x, include_none=True
+        )
+
+        # have a dictionary now let's flatten out
+        flat_dict = {}
+        for key, value in dump.items():
+            if isinstance(value, dict):
+                for sub_key, sub_value in value.items():
+                    flat_dict[f"{key}_{sub_key}"] = sub_value
+            elif isinstance(value, list):
+                for i, sub_value in enumerate(value):
+                    sub_dict = Serialization.to_wide_dictionary(sub_value)
+                    for sub_key, sub_value in sub_dict.items():
+                        flat_dict[f"{key}_{i}_{sub_key}"] = sub_value
+            else:
+                flat_dict[key] = value
+
+        return flat_dict
+
+    @staticmethod
     def map(source: object, target: T, coerce: bool = True) -> T | None:
         """Map an object from one object to another"""
         source_dict: dict | object
@@ -118,12 +152,92 @@ class Serialization:
             source_dict = Serialization.convert_object_to_dict(source)
             if not isinstance(source_dict, dict):
                 return None
-        return Serialization.load_properties(
+        return Serialization._load_properties(
             source=source_dict, target=target, coerce=coerce
         )
 
     @staticmethod
-    def load_properties(
+    def to_wide_dictionary_list(
+        data: Dict[str, Any] | List[Dict[str, Any]],
+        remove_collisions: bool = True,
+        raise_error_on_collision: bool = False,
+    ) -> List[Dict[str, Any]]:
+        """
+        Converts a dictionary or list of dictionaries to a list of dictionaries.
+
+        :param data: Dictionary or list of dictionaries to be converted
+        :param remove_collisions: If True, removes duplicate keys from the dictionaries
+        :return: List of dictionaries
+        """
+
+        collisions = []
+
+        def recursive_flatten(prefix, obj):
+            """
+            Recursively flattens a JSON object.
+
+            :param prefix: Current key prefix
+            :param obj: Object to flatten
+            :return: List of flattened dictionaries
+            """
+            if isinstance(obj, list):
+                result = []
+                for _, item in enumerate(obj):
+                    x = recursive_flatten("", item)
+                    result.extend(x)
+                return result
+            elif isinstance(obj, dict):
+                result = [{}]
+                for key, value in obj.items():
+                    sub_result = recursive_flatten(
+                        f"{prefix}_{key}" if prefix else key, value
+                    )
+                    new_result = []
+                    for entry in result:
+                        for sub_entry in sub_result:
+                            # remove any collisions
+
+                            for k in entry:
+                                if k in sub_entry:
+                                    if k not in collisions:
+                                        logger.debug(f"Collision detected: {k}")
+                                        collisions.append(k)
+                            merged = entry.copy()
+                            merged.update(sub_entry)
+                            new_result.append(merged)
+                    result = new_result
+                return result
+            else:
+                return [{prefix: obj}] if prefix else []
+
+        results = recursive_flatten("", data)
+        if remove_collisions:
+            results = Serialization.remove_collisions(results, collisions)
+
+        if raise_error_on_collision and len(collisions) > 0:
+            raise ValueError(f"Duplicate keys detected: {collisions}")
+
+        return results
+
+    @staticmethod
+    def remove_collisions(
+        data: List[Dict[str, Any]], collisions: List[str]
+    ) -> List[Dict[str, Any]]:
+        """
+        Removes collisions from a list of dictionaries.
+
+        :param data: List of dictionaries
+        :param collisions: List of collision keys
+        :return: List of dictionaries with collisions removed
+        """
+        for c in collisions:
+            for r in data:
+                if c in r:
+                    del r[c]
+        return data
+
+    @staticmethod
+    def _load_properties(
         source: dict,
         target: T,
         coerce: bool = True,
@@ -183,9 +297,9 @@ class Serialization:
                         attr.clear()
                         attr.extend(value)
                     elif isinstance(attr, dict) and isinstance(value, dict):
-                        Serialization.load_properties(value, attr, coerce=coerce)
+                        Serialization._load_properties(value, attr, coerce=coerce)
                     elif hasattr(attr, "__dict__") and isinstance(value, dict):
-                        Serialization.load_properties(value, attr, coerce=coerce)
+                        Serialization._load_properties(value, attr, coerce=coerce)
                     else:
                         setattr(target, key, value)
                 except ValueError as e:
@@ -230,11 +344,17 @@ class Serialization:
 
     @staticmethod
     def to_dict(
-        instance: SerializableModel,
+        instance: SerializableModel | dict,
         serialize_fn,
         include_none: bool = True,
     ) -> Dict[str, Any]:
         """To Dict / Dictionary"""
+
+        if instance is None:
+            return {}
+
+        if isinstance(instance, dict):
+            return instance
 
         def is_primitive(value):
             """Check if the value is a primitive data type."""

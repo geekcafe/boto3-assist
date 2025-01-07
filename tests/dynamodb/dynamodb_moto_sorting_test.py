@@ -4,17 +4,15 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-import os
 import unittest
-import moto
 from typing import List
 
-
+import moto
 from mypy_boto3_dynamodb import DynamoDBClient
 
-from dynamodb.models.cms.page import Page
-from boto3_assist.environment_services.environment_loader import EnvironmentLoader
 from boto3_assist.dynamodb.dynamodb import DynamoDB
+from boto3_assist.environment_services.environment_loader import EnvironmentLoader
+from tests.dynamodb.dbmodels.cms.page import Page
 
 
 @moto.mock_aws

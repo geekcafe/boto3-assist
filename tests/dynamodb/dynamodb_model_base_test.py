@@ -5,12 +5,11 @@ MIT License.  See Project Root for the license information.
 """
 
 import unittest
-from typing import List, Dict
-
+from typing import Dict, List
 
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex
-from src.boto3_assist.dynamodb.dynamodb_key import DynamoDBKey
-from tests.dynamodb.models.user_model import User
+from boto3_assist.dynamodb.dynamodb_key import DynamoDBKey
+from tests.dynamodb.dbmodels.user_model import User
 
 
 class DynamoDBModelUnitTest(unittest.TestCase):

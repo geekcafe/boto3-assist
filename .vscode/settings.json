@@ -12,8 +12,7 @@
     "python.analysis.extraPaths": [                
         "${workspaceFolder}",
         "${workspaceFolder}/examples",
-        "${workspaceFolder}/src",
-        "${workspaceFolder}/src/boto3_assist",        
+        "${workspaceFolder}/src",                
         "${workspaceFolder}/tests",
         "${workspaceFolder}/devops",
         "${workspaceFolder}/devops/cdk",   
