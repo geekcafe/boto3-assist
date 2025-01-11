@@ -8,10 +8,7 @@ from typing import Optional
 from typing import TYPE_CHECKING
 
 from aws_lambda_powertools import Logger
-from boto3_assist.boto3session import Boto3SessionManager
-from boto3_assist.environment_services.environment_variables import (
-    EnvironmentVariables,
-)
+
 from boto3_assist.connection import Connection
 
 if TYPE_CHECKING:
