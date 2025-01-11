@@ -67,8 +67,8 @@ class ConnectionTracker:
 
             if not self.issue_stack_trace:
                 stack_trace_message = (
-                    f"\nTo add additional information to the log and determine where additional connections are being created, "
-                    f"set the environment variable {self.__stack_trace_env_var} to true.\n"
+                    f"📄 NOTE: To add additional information 👀 to the log and determine where additional connections are being created: "
+                    f"set the environment variable 👉{self.__stack_trace_env_var}👈 to true ✅. \n"
                 )
             else:
                 stack = "\n".join(traceback.format_stack())
@@ -83,8 +83,8 @@ class ConnectionTracker:
                 "instead of creating a new one. Connections are expensive in terms of time and latency. "
                 "If you are seeing performance issues, check how and where you are creating your "
                 "connections. You should be able to pass the connection to your other objects "
-                "and reuse your boto3 connections."
-                "\n\nMOCK Testing may show this message as well, in which case you can dismiss this warning.\n\n"
+                "and reuse your boto3 connections. "
+                "\n🧪 MOCK Testing may show this message as well, in which case you can dismiss this warning.🧪\n"
                 f"{stack_trace_message}"
             )
 
