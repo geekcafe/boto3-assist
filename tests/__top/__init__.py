@@ -8,12 +8,18 @@ import os
 import sys
 from pathlib import Path
 
-## needed for discovery based top level execution
-print("👋 init test paths for __top")
+VERBOSE: bool = os.getenv("VERBOSE") or False
+
+if VERBOSE:
+    print("👋 init test paths for __top")
+
+
 root_directory = Path(__file__).resolve().parent.parent.parent
 src_directory = os.path.join(root_directory, "src")
-
+# inject src path to python search path
 sys.path.insert(0, src_directory)
-print("")
-for p in sys.path:
-    print(f"👉 {p}")
+
+if VERBOSE:
+    print("")
+    for p in sys.path:
+        print(f"👉 {p}")
