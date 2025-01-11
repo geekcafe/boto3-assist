@@ -196,6 +196,36 @@ class StringUtility:
         return hash_object.hexdigest()
 
     @staticmethod
+    def generate_idempotent_uuid(
+        namespace: uuid.UUID | str, unique_string: str, case_sensitive: bool = False
+    ) -> str:
+        """
+        Generates an idempotnent UUID, which is useful for creates
+
+        Args:
+            namespace (GUID | str): A namespace for your id, it must be a UUID or a string in a UUID format
+            unique_string (str): A unique string like an email address, a tenant name.
+                Use a combination for more granularity:
+                    tenant-name:email
+                    vendor:product-name
+                    vendor:product-id
+                    etc
+
+        Returns:
+            str: a string representation of a UUID
+        """
+        if isinstance(namespace, str):
+            namespace = uuid.UUID(namespace)
+
+        if not unique_string:
+            raise ValueError("unique_string cannot be empty")
+
+        if not case_sensitive:
+            unique_string = unique_string.lower()
+
+        return str(uuid.uuid5(namespace, unique_string))
+
+    @staticmethod
     def get_size_in_kb(input_string: str | dict) -> float:
         """
         Get the size of the input string in kilobytes.
