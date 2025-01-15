@@ -308,18 +308,29 @@ class Serialization:
                     )
                     raise
                 except Exception as e:  # pylint: disable=w0718
-                    logger.error(
-                        f"Error setting attribute {key} with value {value}: {e}. "
-                        "This usually occurs on properties that don't have setters. "
-                        "You can add a setter (even with a pass action) for this property, "
-                        "decorate it with the @exclude_from_serialization "
-                        "or ignore this error. "
-                    )
+                    if not Serialization.has_setter(target, key):
+                        logger.warning(
+                            f"Error warning attempting to set attribute {key} with value {value}: {e}. "
+                            "This usually occurs on properties that don't have setters. "
+                            "You should add a setter (even with a pass action) for this property or "
+                            "decorate it with the @exclude_from_serialization to avoid this warning."
+                        )
+                    else:
+                        raise e
 
         if hasattr(target, "__actively_serializing_data__"):
             setattr(target, "__actively_serializing_data__", False)
 
         return target
+
+    @staticmethod
+    def has_setter(obj: object, attr_name: str) -> bool:
+        """Check if the given attribute has a setter defined."""
+        cls = obj.__class__
+        if not hasattr(cls, attr_name):
+            return False
+        attr = getattr(cls, attr_name, None)
+        return isinstance(attr, property) and attr.fset is not None
 
     @staticmethod
     def has_attribute(obj: object, attribute_name: str) -> bool:
