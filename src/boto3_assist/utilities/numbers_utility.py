@@ -47,12 +47,20 @@ class NumberUtility:
     @staticmethod
     def to_number_or_none(value: str) -> float | int | None:
         """Converts a string to a number."""
-        if value is not None and NumberUtility.is_numeric(value):
-            if "." in str(value):
-                return float(value)
-            else:
-                return int(value)
-        return None
+        if value is None:
+            return None
+
+        if str(value).lower() == "nan":
+            return None
+
+        try:
+            numeric_value = float(value)
+            # Check if the number is an integer (e.g., 7.0) and return as int
+            if numeric_value.is_integer():
+                return int(numeric_value)
+            return numeric_value
+        except (ValueError, TypeError):
+            return None
 
     @staticmethod
     def to_float(
@@ -111,6 +119,7 @@ class NumberUtility:
         Returns:
             int: number of decimal places
         """
+
         number_str = f"{number}"
         if "." in number_str:
             to_the_right = number_str.split(".")[1]
@@ -179,6 +188,30 @@ class NumberUtility:
         return 0.0
 
     @staticmethod
+    def to_number(
+        value: str | float | int,
+        raise_errors: Optional[bool] = False,
+        error_message: Optional[str] = None,
+    ) -> int | float:
+        """Converts a string to a number."""
+        try:
+            numeric_value = float(value)
+            # Check if the number is an integer (e.g., 7.0) and return as int
+            if numeric_value.is_integer():
+                return int(numeric_value)
+            return numeric_value
+        except Exception as e:  # noqa: E722, pylint: disable=w0718
+            logger.error(f"Unable to convert {value} to number")
+            if raise_errors:
+                if error_message:
+                    raise ValueError(
+                        f"Unable to convert {value} to number, {error_message}"
+                    ) from e
+                else:
+                    raise ValueError(f"Unable to convert {value} to number") from e
+            return 0
+
+    @staticmethod
     def to_significant_figure(
         number: int | float | str, sig_figs: int
     ) -> int | float | str:
@@ -201,10 +234,14 @@ class NumberUtility:
             return number
 
         if NumberUtility.is_numeric(number) and isinstance(number, str):
-            if "." in str(number):
-                number = float(number)
-            else:
-                number = int(number)
+            number = NumberUtility.to_number(
+                number,
+                raise_errors=True,
+                error_message=(
+                    f"Error attempting to set significant figure for value {number}"
+                    f", sigfig {sig_figs}"
+                ),
+            )
 
         if number == 0:
             if sig_figs > 1:
