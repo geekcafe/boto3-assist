@@ -183,7 +183,7 @@ class S3Object:
             )
 
         end = DatetimeUtility.get_utc_now()
-        logger.debug(f"Signed URL created in {end-start}")
+        logger.debug(f"Signed URL created in {end - start}")
 
         response = {
             "signed_url": signed_url,
@@ -604,3 +604,65 @@ class S3Object:
                 versions.extend(page["Versions"])
 
         return versions
+
+    def copy(
+        self,
+        source_bucket: str,
+        source_key: str,
+        destination_bucket: str,
+        destination_key: str,
+    ) -> Dict[str, Any]:
+        """
+        Copies an object from one location to another.
+        The original is kept.
+        """
+
+        if source_key.startswith("/"):
+            # remove the first slash
+            source_key = source_key[1:]
+
+        if destination_key.startswith("/"):
+            # remove the first slash
+            destination_key = destination_key[1:]
+
+        response = self.connection.client.copy_object(
+            CopySource={"Bucket": source_bucket, "Key": source_key},
+            Bucket=destination_bucket,
+            Key=destination_key,
+        )
+
+        return response
+
+    def move(
+        self,
+        source_bucket: str,
+        source_key: str,
+        destination_bucket: str,
+        destination_key: str,
+    ) -> Dict[str, Any]:
+        """
+        Copies an object from one location to another then deletes the source.
+        The source is only deleted if the copy is successful
+        """
+
+        copy_response = self.connection.client.copy_object(
+            CopySource={"Bucket": source_bucket, "Key": source_key},
+            Bucket=destination_bucket,
+            Key=destination_key,
+        )
+
+        status_code = copy_response.get("statusCode")
+        delete_response = {}
+        if status_code == 200:
+            if source_key.startswith("/"):
+                source_key = source_key[1:]
+            delete_response = self.delete(bucket_name=source_bucket, key=source_key)
+            status_code = copy_response.get("statusCode", status_code)
+
+        response = {
+            "status_code": status_code,
+            "copy": copy_response,
+            "delete": delete_response,
+        }
+
+        return response

@@ -31,17 +31,10 @@ class Connection:
         aws_secret_access_key: Optional[str] = None,
         aws_end_point_url: Optional[str] = None,
     ) -> None:
-        # TODO: determine if we want to pull from environment vars or not
-        self.aws_profile = aws_profile or EnvironmentVariables.AWS.profile()
-        self.aws_region = aws_region or EnvironmentVariables.AWS.region()
-
-        self.aws_access_key_id = (
-            aws_access_key_id or EnvironmentVariables.AWS.DynamoDB.aws_access_key_id()
-        )
-        self.aws_secret_access_key = (
-            aws_secret_access_key
-            or EnvironmentVariables.AWS.DynamoDB.aws_secret_access_key()
-        )
+        self.__aws_profile = aws_profile
+        self.__aws_region = aws_region
+        self.__aws_access_key_id = aws_access_key_id
+        self.__aws_secret_access_key = aws_secret_access_key
         self.end_point_url = aws_end_point_url
         self.__session: Boto3SessionManager | None = None
 
@@ -83,6 +76,45 @@ class Connection:
         )
 
         tracker.add(service_name=self.service_name)
+
+    @property
+    def asw_profile(self) -> str | None:
+        """The AWS Profile"""
+        return self.__aws_profile or EnvironmentVariables.AWS.profile()
+
+    @asw_profile.setter
+    def aws_profile(self, value: str | None):
+        self.__aws_profile = value
+
+    @property
+    def aws_region(self) -> str | None:
+        """The AWS Region"""
+        return self.__aws_region or EnvironmentVariables.AWS.region()
+
+    @aws_region.setter
+    def aws_region(self, value: str | None):
+        self.__aws_region = value
+
+    @property
+    def aws_access_key_id(self) -> str | None:
+        """The AWS Access Key"""
+        return self.__aws_access_key_id or EnvironmentVariables.AWS.aws_access_key_id()
+
+    @aws_access_key_id.setter
+    def aws_access_key_id(self, value: str | None):
+        self.__aws_access_key_id = value
+
+    @property
+    def aws_secret_access_key(self) -> str | None:
+        """The AWS Access Key"""
+        return (
+            self.__aws_secret_access_key
+            or EnvironmentVariables.AWS.aws_secret_access_key()
+        )
+
+    @aws_secret_access_key.setter
+    def aws_secret_access_key(self, value: str | None):
+        self.__aws_secret_access_key = value
 
     @property
     def service_name(self) -> str:
