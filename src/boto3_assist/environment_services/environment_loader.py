@@ -5,7 +5,7 @@ MIT License.  See Project Root for the license information.
 """
 
 import os
-
+import json
 from typing import List, Union, Optional, IO
 from pathlib import Path
 from dotenv import load_dotenv
@@ -109,3 +109,20 @@ class EnvironmentLoader:
             )
 
         return None
+
+    def load_event_file(self, full_path: str) -> dict:
+        """Loads an AWS event file"""
+        if not os.path.exists(full_path):
+            raise RuntimeError(f"Failed to locate event file: {full_path}")
+
+        event = {}
+        with open(full_path, mode="r", encoding="utf-8") as json_file:
+            event = json.load(json_file)
+
+        if isinstance(event, dict) and "message" in event:
+            event = event.get("message", {})
+
+        if isinstance(event, dict) and "event" in event:
+            event = event.get("event", {})
+
+        return event

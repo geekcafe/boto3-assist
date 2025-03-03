@@ -18,7 +18,7 @@ from boto3_assist.s3.s3_connection import S3Connection
 from boto3_assist.utilities.datetime_utility import DatetimeUtility
 from boto3_assist.utilities.file_operations import FileOperations
 from boto3_assist.utilities.http_utility import HttpUtility
-
+from boto3_assist.errors.custom_exceptions import FileNotFound
 
 logger = Logger(child=True)
 
@@ -192,6 +192,12 @@ class S3Object:
         }
 
         return response
+
+    def put(self, *, bucket: str, key: str, data: bytes | str) -> str:
+        """
+        Uploads a file object to s3. Returns the full s3 path s3://<bucket>/<key>
+        """
+        return self.upload_file_obj(bucket=bucket, key=key, file_obj=data)
 
     def upload_file_obj(self, *, bucket: str, key: str, file_obj: bytes | str) -> str:
         """
@@ -419,6 +425,19 @@ class S3Object:
             print(data)
 
         """
+        return self.get_object(bucket_name=bucket_name, key=key)
+
+    def get_object(self, bucket_name: str, key: str) -> Dict[str, Any]:
+        """
+        Gets a file from s3 and returns the response.
+        The "Body" is a streaming body object.  You can read it like a file.
+        For example:
+
+        with response["Body"] as f:
+            data = f.read()
+            print(data)
+
+        """
 
         logger.debug(
             {
@@ -443,15 +462,28 @@ class S3Object:
 
         except Exception as e:  # pylint: disable=W0718
             error = str(e)
-            logger.error({"metric_filter": "s3_download_error", "error": str(e)})
-            raise RuntimeError(
-                {
-                    "metric_filter": "s3_download_error",
-                    "error": str(e),
-                    "bucket": bucket_name,
-                    "key": key,
-                }
-            ) from e
+            error_info = {
+                "metric_filter": "s3_download_error",
+                "error": str(e),
+                "bucket": bucket_name,
+                "key": key,
+            }
+
+            logger.error(error_info)
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3/client/get_object.html
+            error = str(e)
+            if "An error occurred (AccessDenied)" in error:
+                if (
+                    "is not authorized to perform: s3:ListBucket on resource" in error
+                    and "because no identity-based policy allows the s3:ListBucket action"
+                    in error
+                ):
+                    # the file is not found but you're getting a access error since you don't
+                    # have s3:ListBucket.  To make life easier, we're just going to return a 404 error
+                    raise FileNotFound("File Not Found") from e
+
+            # last ditch
+            raise RuntimeError(error_info) from e
 
         finally:
             logger.debug(
@@ -561,12 +593,7 @@ class S3Object:
         If running in AWS Lambda, returns '/tmp'.
         Otherwise, returns the system's standard temp directory.
         """
-        if "AWS_LAMBDA_FUNCTION_NAME" in os.environ:
-            # In AWS Lambda environment
-            return "/tmp"
-        else:
-            # Not in AWS Lambda, use the system's default temp directory
-            return tempfile.gettempdir()
+        return FileOperations.get_tmp_directory()
 
     def encode(
         self, text: str, encoding: str = "utf-8", errors: str = "strict"

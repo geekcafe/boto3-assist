@@ -12,7 +12,7 @@ from aws_lambda_powertools import Logger
 
 from boto3_assist.cognito.user import CognitoUser
 from boto3_assist.utilities.string_utility import StringUtility
-from boto3_assist.utilities.dictionaroy_utility import DictionaryUtilitiy
+from boto3_assist.utilities.dictionary_utility import DictionaryUtilitiy
 from boto3_assist.cognito.cognito_connection import CognitoConnection
 
 logger = Logger()

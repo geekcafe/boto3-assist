@@ -1,3 +1,9 @@
+"""
+Geek Cafe, LLC
+Maintainers: Eric Wilson
+MIT License.  See Project Root for the license information.
+"""
+
 import uuid
 from datetime import UTC, datetime, timedelta, timezone
 from typing import Any

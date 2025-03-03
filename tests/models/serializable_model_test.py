@@ -5,7 +5,7 @@ MIT License.  See Project Root for the license information.
 """
 
 import unittest
-from typing import Dict
+from typing import Dict, List
 from boto3_assist.models.serializable_model import SerializableModel
 
 
@@ -16,6 +16,15 @@ class ExampleModel(SerializableModel):
         self.name = name
         self.age = age
         self.active = active
+        self.__pets: List[str] = []
+
+    @property
+    def pets(self) -> List[str]:
+        return self.__pets
+
+    @pets.setter
+    def pets(self, value: List[str]):
+        self.__pets = value
 
 
 class TestSerializableModel(unittest.TestCase):
@@ -26,6 +35,7 @@ class TestSerializableModel(unittest.TestCase):
             "name": "John Doe",
             "age": 30,
             "active": True,
+            "pets": ["abby", "lexie", "lena", "keisha"],
         }
 
     def test_map_valid_data(self):
@@ -37,6 +47,7 @@ class TestSerializableModel(unittest.TestCase):
         self.assertEqual(result.name, "John Doe")
         self.assertEqual(result.age, 30)
         self.assertEqual(result.active, True)
+        self.assertEqual(len(result.pets), 4)
 
     def test_map_partial_data(self):
         """
@@ -128,7 +139,7 @@ class TestSerializableModel(unittest.TestCase):
         result = model.to_dictionary()
 
         self.assertIsInstance(result, dict)
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), 4)
         self.assertEqual(result.get("name"), "Bob")
         self.assertEqual(result.get("age"), 35)
         self.assertEqual(result.get("active"), False)

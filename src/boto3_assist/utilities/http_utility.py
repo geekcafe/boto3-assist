@@ -1,3 +1,9 @@
+"""
+Geek Cafe, LLC
+Maintainers: Eric Wilson
+MIT License.  See Project Root for the license information.
+"""
+
 from urllib.parse import unquote
 from typing import Dict, Any
 

@@ -32,3 +32,15 @@ class InvalidRoutePath(Exception):
             "message": message,
         }
         super().__init__(self.message)
+
+
+class FileNotFound(Exception):
+    """File Not Found Error"""
+
+    def __init__(self, message="File Not Found"):
+        """Invalid Route"""
+        self.message = {
+            "status_code": 404,
+            "message": message,
+        }
+        super().__init__(self.message)

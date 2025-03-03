@@ -1,13 +1,16 @@
+"""
+Geek Cafe, LLC
+Maintainers: Eric Wilson
+MIT License.  See Project Root for the license information.
+"""
+
 import os
+
 import shutil
-import json
-import zipfile
-from typing import List, Any, Dict
-from pathlib import Path
-import re
+import tempfile
+
 
 from aws_lambda_powertools import Logger
-
 
 logger = Logger()
 
@@ -113,3 +116,20 @@ class FileOperations:
                 logger.debug(f"extension after prefix removal: {extention}")
 
         return extention
+
+    @staticmethod
+    def get_tmp_directory() -> str:
+        """
+        Get the temp directory
+        """
+        # are we in an aws lambda function?
+        if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+            # we are in a lambda function /tmp is the only place
+            # we can write to
+            if not os.path.exists("/tmp"):
+                raise ValueError("Temp directory does not exist.")
+
+            tmp_dir = "/tmp"
+            return tmp_dir
+
+        return tempfile.gettempdir()

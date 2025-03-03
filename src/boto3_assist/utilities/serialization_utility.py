@@ -1,4 +1,8 @@
-"""Serialization Utility"""
+"""
+Geek Cafe, LLC
+Maintainers: Eric Wilson
+MIT License.  See Project Root for the license information.
+"""
 
 import datetime as dt
 import decimal
@@ -275,6 +279,9 @@ class Serialization:
                             if coerce:
                                 # Attempt to coerce the value to the expected type
                                 try:
+                                    if isinstance(value, list) and expected_type is str:
+                                        value = "".join(value)
+
                                     value = expected_type(value)
                                 except ValueError as e:
                                     logger.warning(
