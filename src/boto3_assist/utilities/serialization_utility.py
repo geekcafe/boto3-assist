@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, TypeVar
-
+import re
 from aws_lambda_powertools import Logger
 
 T = TypeVar("T")
@@ -101,6 +101,114 @@ class JsonEncoder(json.JSONEncoder):
             return str(
                 o
             )  # Or any other way you wish to serialize objects without __dict__
+
+
+class JsonConversions:
+    """
+    Json Conversion Utility
+    Used for snake_case to camelCase and vice versa
+    """
+
+    @staticmethod
+    def _camel_to_snake(value: str) -> str:
+        """Converts a camelCase to a snake_case"""
+        # Insert underscores before uppercase letters, then convert to lowercase.
+        s1 = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", value)
+        return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+
+    @staticmethod
+    def _snake_to_camel(value: str) -> str:
+        """Converts a value from snake_case to camelCase"""
+        # Split the value by underscores and capitalize each component except the first.
+        components = value.split("_")
+        return components[0] + "".join(x.title() for x in components[1:])
+
+    @staticmethod
+    def _convert_keys(data, convert_func, deep: bool = True):
+        """
+        Recursively converts dictionary keys using the provided convert_func.
+
+        Parameters:
+        data: The input data (dict, list, or other) to process.
+        convert_func: Function to convert the keys (e.g. camel_to_snake or snake_to_camel).
+        deep (bool): If True (default), convert keys in all nested dictionaries.
+                    If False, only convert the keys at the current level.
+        """
+        if isinstance(data, dict):
+            new_dict = {}
+            for key, value in data.items():
+                new_key = convert_func(key)
+                # Only process nested structures if deep is True.
+                new_dict[new_key] = (
+                    JsonConversions._convert_keys(value, convert_func, deep)
+                    if deep
+                    else value
+                )
+            return new_dict
+        elif isinstance(data, list):
+            # For lists, if deep conversion is enabled, process each element.
+            return [
+                JsonConversions._convert_keys(item, convert_func, deep)
+                if deep
+                else item
+                for item in data
+            ]
+        else:
+            return data
+
+    @staticmethod
+    def json_camel_to_snake(data, deep: bool = True):
+        """Converts all keys in the JSON structure from camelCase to snake_case.
+
+        Parameters:
+        data: The JSON-like structure (dict or list) to process.
+        deep (bool): If True, process keys in all nested dictionaries; if False, only at the first level.
+        """
+        return JsonConversions._convert_keys(
+            data, JsonConversions._camel_to_snake, deep
+        )
+
+    @staticmethod
+    def json_snake_to_camel(data, deep: bool = True):
+        """Converts all keys in the JSON structure from snake_case to camelCase.
+
+        Parameters:
+        data: The JSON-like structure (dict or list) to process.
+        deep (bool): If True, process keys in all nested dictionaries; if False, only at the first level.
+        """
+        return JsonConversions._convert_keys(
+            data, JsonConversions._snake_to_camel, deep
+        )
+
+    # # Example usage:
+    # if __name__ == "__main__":
+    #     sample_json = {
+    #         "firstName": "John",
+    #         "lastName": "Doe",
+    #         "address": {"streetAddress": "21 2nd Street", "city": "New York"},
+    #         "phoneNumbers": [
+    #             {"phoneType": "home", "phoneNumber": "2125551234"},
+    #             {"phoneType": "fax", "phoneNumber": "6465554567"},
+    #         ],
+    #     }
+
+    #     print("Original JSON:")
+    #     print(sample_json)
+
+    #     # Convert from camelCase to snake_case on all levels.
+    #     snake_json_deep = json_camel_to_snake(sample_json, deep=True)
+    #     print("\nConverted to snake_case (deep conversion):")
+    #     print(snake_json_deep)
+
+    #     # Convert from camelCase to snake_case only at the first level.
+    #     snake_json_shallow = json_camel_to_snake(sample_json, deep=False)
+    #     print("\nConverted to snake_case (first-level only):")
+    #     print(snake_json_shallow)
+
+    #     # Convert back from snake_case to camelCase on all levels.
+    #     camel_json_deep = json_snake_to_camel(snake_json_deep, deep=True)
+    #     print("\nConverted back to camelCase (deep conversion):")
+    #     print(camel_json_deep)
 
 
 class Serialization:
