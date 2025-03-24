@@ -63,6 +63,9 @@ class Boto3SessionManager:
             logger.debug("Connecting without assuming a role.")
             self.__session = self.__get_aws_session(profile, region)
 
+        if profile:
+            print(f"Connecting with a profile: {profile}")
+
     def __assume_role(self):
         """Assume an AWS IAM role."""
         try:
