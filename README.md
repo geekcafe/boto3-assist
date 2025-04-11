@@ -28,3 +28,19 @@ pip install boto3-assist
 
 ```
 
+## Running Unit Tests
+Several of our tests use a mocking library to simulate connections to S3, DynamoDB, etc.  In order to use those tests, you will need to have a `.env.unittest` file at the root of this project (which our tests will attempt to locate and load).  
+
+For your convenince the `.evn.unittest` file has been added to this project.  The values should not point to live AWS profiles, instead it should use the values added.
+
+Since we also point to a profile, you should create the profile in the `~/.aws/config` file.  The entry should look like the following:
+
+```toml
+[profile moto-mock-tests]
+region = us-east-1
+output = json
+aws_access_key_id = test
+aws_secret_access_key = test
+
+```
+
