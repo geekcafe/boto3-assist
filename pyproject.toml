@@ -5,9 +5,13 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/boto3_assist"]
 
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
 [project]
 name = "boto3_assist"
-version = "0.9.5"
+version = "0.10.0"
 
 authors = [
   { name="Eric Wilson", email="boto3-assist@geekcafe.com" }
