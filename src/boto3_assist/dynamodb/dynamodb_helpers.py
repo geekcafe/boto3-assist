@@ -7,11 +7,11 @@ MIT License.  See Project Root for the license information.
 from typing import List, Any, Dict
 
 from boto3.dynamodb.conditions import ConditionBase, Key, And, Equals
-from aws_lambda_powertools import Tracer, Logger
+from aws_lambda_powertools import Logger
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex
 
 logger = Logger()
-tracer = Tracer()
+
 
 
 class DynamoDBHelpers:
@@ -118,7 +118,7 @@ class DynamoDBHelpers:
             logger.error({"exception": str(e)})
             return "unknown"
 
-    @tracer.capture_method(capture_response=False)
+    
     def wrap_response(self, items, dynamodb_response: dict, diagnostics) -> dict:
         """A wrapper for response data"""
         last_key = dynamodb_response.get("LastEvaluatedKey", None)
@@ -135,8 +135,7 @@ class DynamoDBHelpers:
         }
 
         return response
-
-    @tracer.capture_method(capture_response=False)
+    
     def wrap_collection_response(self, collection: List[dict]) -> dict[str, List]:
         """
         Wraps Up Some usefull information when dealing with

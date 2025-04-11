@@ -7,7 +7,7 @@ MIT License.  See Project Root for the license information.
 import os
 from typing import List, Optional, overload, Dict, Any
 
-from aws_lambda_powertools import Tracer, Logger
+from aws_lambda_powertools import Logger
 from boto3.dynamodb.conditions import (
     Key,
     # And,
@@ -22,7 +22,7 @@ from boto3_assist.utilities.string_utility import StringUtility
 
 
 logger = Logger()
-tracer = Tracer()
+
 
 
 class DynamoDB(DynamoDBConnection):
@@ -55,7 +55,7 @@ class DynamoDB(DynamoDBConnection):
         )
         logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
-    @tracer.capture_method
+    
     def save(
         self,
         item: dict | DynamoDBModelBase,
@@ -169,7 +169,7 @@ class DynamoDB(DynamoDBConnection):
         call_type: str = "resource",
     ) -> Dict[str, Any]: ...
 
-    @tracer.capture_method
+    
     def get(
         self,
         key: Optional[dict] = None,
@@ -344,7 +344,7 @@ class DynamoDB(DynamoDBConnection):
     ) -> dict:
         pass
 
-    @tracer.capture_method
+    
     def delete(
         self,
         *,

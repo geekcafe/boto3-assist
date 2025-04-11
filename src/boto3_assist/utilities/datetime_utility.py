@@ -8,11 +8,11 @@ import uuid
 from datetime import UTC, datetime, timedelta, timezone
 from typing import Any
 import pytz  # type: ignore
-from aws_lambda_powertools import Tracer, Logger
+from aws_lambda_powertools import Logger
 from dateutil.relativedelta import relativedelta
 
 
-tracer = Tracer()
+
 logger = Logger()
 
 _last_timestamp = None
@@ -47,7 +47,7 @@ class DatetimeUtility:
         return datetime.now(timezone.utc)
 
     @staticmethod
-    @tracer.capture_method(capture_response=False)
+    
     def string_to_date(string_date: str | datetime) -> datetime | None:
         """
         Description: takes a string value and returns it as a datetime.
