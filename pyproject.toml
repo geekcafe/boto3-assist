@@ -11,7 +11,7 @@ testpaths = ["tests"]
 
 [project]
 name = "boto3_assist"
-version = "0.10.0"
+version = "0.11.0"
 
 authors = [
   { name="Eric Wilson", email="boto3-assist@geekcafe.com" }
@@ -21,8 +21,11 @@ readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: Other/Proprietary License",
+    "License :: OSI Approved :: MIT License",
+    "Development Status :: 4 - Beta",
     "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Topic :: Software Development"
 ]
 
 dependencies = [
