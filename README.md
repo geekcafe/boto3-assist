@@ -1,5 +1,9 @@
 # boto3 assist
 
+[![PyPI version](https://img.shields.io/pypi/v/boto3-assist.svg)](https://pypi.org/project/boto3-assist/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Downloads](https://static.pepy.tech/badge/boto3-assist)](https://pepy.tech/project/boto3-assist)
+
 This is in beta and subject to changes before it's initial 1.0.0 release
 
 This libary was created to make life a little easier when using boto3.
