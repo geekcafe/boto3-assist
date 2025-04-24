@@ -249,6 +249,7 @@ class DynamoDBModelBase(SerializableModel):
         """
 
         value = DatetimeUtility.to_datetime_utc(value)
+        return value
 
 
 class DynamoDBSerializer:
