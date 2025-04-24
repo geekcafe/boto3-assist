@@ -148,9 +148,11 @@ class JsonConversions:
         elif isinstance(data, list):
             # For lists, if deep conversion is enabled, process each element.
             return [
-                JsonConversions._convert_keys(item, convert_func, deep)
-                if deep
-                else item
+                (
+                    JsonConversions._convert_keys(item, convert_func, deep)
+                    if deep
+                    else item
+                )
                 for item in data
             ]
         else:
@@ -377,7 +379,10 @@ class Serialization:
             setattr(target, "__actively_serializing_data__", True)
 
         for key, value in source.items():
-            if Serialization.has_attribute(target, key):
+            if isinstance(target, dict):
+                # our target is a dictionary, so we need to handle this differently
+                target[key] = value
+            elif Serialization.has_attribute(target, key):
                 attr = getattr(target, key)
                 expected_type = type(attr)
 
