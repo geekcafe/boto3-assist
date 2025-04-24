@@ -14,4 +14,4 @@ class CloudWatchConnectionTracker(ConnectionTracker):
     """
 
     def __init__(self) -> None:
-        super().__init__("CloudWatch")
+        super().__init__()
