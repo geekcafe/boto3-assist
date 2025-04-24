@@ -12,7 +12,7 @@ from mypy_boto3_dynamodb import DynamoDBClient
 
 from boto3_assist.dynamodb.dynamodb import DynamoDB
 from boto3_assist.environment_services.environment_loader import EnvironmentLoader
-from tests.dynamodb.dbmodels.cms.page import Page
+from tests.dynamodb_tests.dbmodels.cms.page import Page
 
 
 @moto.mock_aws
@@ -146,9 +146,7 @@ class DynamoDBSortinglUnitTest(unittest.TestCase):
                             "KeyType": "RANGE",
                         },  # Sort key for GSI
                     ],
-                    "Projection": {
-                        "ProjectionType": "ALL"  # Project all attributes
-                    },
+                    "Projection": {"ProjectionType": "ALL"},  # Project all attributes
                 }
             ],
             BillingMode="PAY_PER_REQUEST",
