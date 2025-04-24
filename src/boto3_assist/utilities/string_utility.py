@@ -313,6 +313,7 @@ class StringUtility:
                 return True
             if value in ("false", "0", "f", "n", "no"):
                 return False
+            raise ValueError(f"Invalid boolean value: {value}")
         elif isinstance(value, int):
             return bool(value)
         elif value is None:

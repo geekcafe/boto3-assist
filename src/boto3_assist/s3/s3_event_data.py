@@ -15,37 +15,37 @@ class EventData:
         self.__event = event
 
     @property
-    def version(self) -> str:
+    def version(self) -> str | None:
         """Event Version"""
         return self.__event.get("version")
 
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Event Id"""
         return self.__event.get("id")
 
     @property
-    def detail_type(self) -> str:
+    def detail_type(self) -> str | None:
         """Event Detail Type"""
         return self.__event.get("detail-type")
 
     @property
-    def source(self) -> str:
+    def source(self) -> str | None:
         """Event Source"""
         return self.__event.get("source")
 
     @property
-    def account(self) -> str:
+    def account(self) -> str | None:
         """Event Account"""
         return self.__event.get("account")
 
     @property
-    def time(self) -> str:
+    def time(self) -> str | None:
         """Event Time"""
         return self.__event.get("time")
 
     @property
-    def region(self) -> str:
+    def region(self) -> str | None:
         """Event Region"""
         return self.__event.get("region")
 

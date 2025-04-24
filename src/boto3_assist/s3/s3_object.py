@@ -217,7 +217,7 @@ class S3Object:
         )
         try:
             # convert if necessary
-            file_obj: bytes = (
+            file_obj = (
                 file_obj.encode("utf-8") if isinstance(file_obj, str) else file_obj
             )
             self.connection.client.upload_fileobj(
@@ -658,7 +658,7 @@ class S3Object:
             Key=destination_key,
         )
 
-        return response
+        return dict(response)
 
     def move(
         self,

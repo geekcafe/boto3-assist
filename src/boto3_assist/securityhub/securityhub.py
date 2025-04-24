@@ -5,7 +5,7 @@ MIT License.  See Project Root for the license information.
 """
 
 import os
-from typing import Optional
+from typing import Optional, Literal
 
 from aws_lambda_powertools import Logger
 
@@ -20,7 +20,7 @@ class SecurityHub(SecurityHubConnection):
     def update_findings_status(
         self,
         region_name: str,
-        workflow_status: str,
+        workflow_status: Literal["NEW", "NOTIFIED", "RESOLVED", "SUPPRESSED"],
         note_text: Optional[str] = None,
         updated_by: Optional[str] = None,
     ):

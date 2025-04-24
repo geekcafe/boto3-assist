@@ -5,7 +5,7 @@ MIT License.  See Project Root for the license information.
 """
 
 import time
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Literal
 
 
 from aws_lambda_powertools import Logger
@@ -130,7 +130,7 @@ class CognitoUtility(CognitoConnection):
                 is_permanent=True,
             )
 
-            return response
+            return dict(response)
 
         except self.client.exceptions.UsernameExistsException as e:
             logger.error(f"Error: {e.response['Error']['Message']}")
@@ -185,7 +185,7 @@ class CognitoUtility(CognitoConnection):
             UserPoolId=user_pool_id, Username=user_name
         )
 
-        return response
+        return dict(response)
 
     def admin_enable_user(
         self, user_name: str, user_pool_id: str, reset_password: bool = True
@@ -271,7 +271,7 @@ class CognitoUtility(CognitoConnection):
             logger.debug(
                 f"User {email} created successfully. Confirmation code sent to {email}."
             )
-            return response
+            return dict(response)
 
         except self.client.exceptions.UsernameExistsException as e:
             logger.error(f"Error: {e.response['Error']['Message']}")
@@ -324,11 +324,11 @@ class CognitoUtility(CognitoConnection):
         user_pool_id,
         client_name,
         id_token_time_out=60,
-        id_token_units="minutes",
+        id_token_units: Literal["days", "hours", "minutes", "seconds"] = "minutes",
         access_token_time_out=60,
-        access_token_units="minutes",
+        access_token_units: Literal["days", "hours", "minutes", "seconds"] = "minutes",
         refresh_token_time_out=60,
-        refresh_token_units="minutes",
+        refresh_token_units: Literal["days", "hours", "minutes", "seconds"] = "minutes",
     ) -> dict:
         # valid units: 'seconds'|'minutes'|'hours'|'days'
 
@@ -340,9 +340,9 @@ class CognitoUtility(CognitoConnection):
             AccessTokenValidity=access_token_time_out,
             IdTokenValidity=id_token_time_out,
             TokenValidityUnits={
-                "AccessToken": f"{access_token_units}",
-                "IdToken": f"{id_token_units}",
-                "RefreshToken": f"{refresh_token_units}",
+                "AccessToken": access_token_units,
+                "IdToken": id_token_units,
+                "RefreshToken": refresh_token_units,
             },
             # ReadAttributes=[
             #     'string',
@@ -381,18 +381,18 @@ class CognitoUtility(CognitoConnection):
             # AuthSessionValidity=123
         )
 
-        return response
+        return dict(response)
 
     def search_cognito(self, email: str, user_pool_id: str) -> dict:
         """Search cognito for an existing user"""
 
-        email = self.__format_email(email=email)
+        email = self.__format_email(email=email) or ""
         filter_string = f'email = "{email}"'
 
         # Call the admin_list_users method with the filter
         response = self.client.list_users(UserPoolId=user_pool_id, Filter=filter_string)
 
-        return response
+        return dict(response)
 
     def __set_user_attributes(self, *, user: CognitoUser) -> List[dict]:
         """
