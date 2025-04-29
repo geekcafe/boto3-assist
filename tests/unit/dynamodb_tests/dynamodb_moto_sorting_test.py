@@ -12,7 +12,7 @@ from mypy_boto3_dynamodb import DynamoDBClient
 
 from boto3_assist.dynamodb.dynamodb import DynamoDB
 from boto3_assist.environment_services.environment_loader import EnvironmentLoader
-from tests.dynamodb_tests.dbmodels.cms.page import Page
+from tests.unit.dynamodb_tests.dbmodels.cms.page import Page
 
 
 @moto.mock_aws

@@ -7,8 +7,8 @@ MIT License.  See Project Root for the license information.
 import unittest
 
 
-from tests.dynamodb_tests.dbmodels.user_model import User
-from tests.dynamodb_tests.dbmodels.user_required_fields_model import User as User2
+from tests.unit.dynamodb_tests.dbmodels.user_model import User
+from tests.unit.dynamodb_tests.dbmodels.user_required_fields_model import User as User2
 
 
 class DynamoDBModelSerializationUnitTest(unittest.TestCase):

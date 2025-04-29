@@ -7,7 +7,7 @@ MIT License.  See Project Root for the license information.
 import datetime as dt
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBKey
 from boto3_assist.utilities.string_utility import StringUtility
-from tests.dynamodb_tests.models.cms.base import BaseCMSDBModel
+from tests.unit.dynamodb_tests.models.cms.base import BaseCMSDBModel
 
 
 class ContentBlock(BaseCMSDBModel):

@@ -9,7 +9,7 @@ from typing import Dict, List
 
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex
 from boto3_assist.dynamodb.dynamodb_key import DynamoDBKey
-from tests.dynamodb_tests.dbmodels.user_model import User
+from tests.unit.dynamodb_tests.dbmodels.user_model import User
 
 
 class DynamoDBModelUnitTest(unittest.TestCase):

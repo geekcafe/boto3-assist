@@ -6,7 +6,7 @@ MIT License.  See Project Root for the license information.
 
 from typing import List
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBKey
-from tests.dynamodb_tests.models.cms.base import BaseCMSDBModel
+from tests.unit.dynamodb_tests.dbmodels.cms.base import BaseCMSDBModel
 
 
 class Template(BaseCMSDBModel):

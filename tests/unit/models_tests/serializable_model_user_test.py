@@ -7,7 +7,7 @@ MIT License.  See Project Root for the license information.
 import unittest
 from typing import Dict, List, Any
 from boto3_assist.models.serializable_model import SerializableModel
-from tests.models_tests.models.user import User
+from tests.unit.models_tests.models.user import User
 
 
 class TestSerializableModel(unittest.TestCase):
