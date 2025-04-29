@@ -8,10 +8,14 @@ packages = ["src/boto3_assist"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+markers = [
+    "integration: marks tests as integration (deselect with '-m \"not integration\"')"
+]
+addopts = "-m 'not integration'"
 
 [project]
 name = "boto3_assist"
-version = "0.11.0"
+version = "0.12.0"
 
 authors = [
   { name="Eric Wilson", email="boto3-assist@geekcafe.com" }
