@@ -30,6 +30,7 @@ class Connection:
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
         aws_end_point_url: Optional[str] = None,
+        assume_role_arn: Optional[str] = None,
     ) -> None:
         self.__aws_profile = aws_profile
         self.__aws_region = aws_region
@@ -37,7 +38,7 @@ class Connection:
         self.__aws_secret_access_key = aws_secret_access_key
         self.end_point_url = aws_end_point_url
         self.__session: Boto3SessionManager | None = None
-
+        self.__assume_role_arn: Optional[str] = assume_role_arn
         self.__service_name: str | None = service_name
 
         if self.__service_name is None:
@@ -73,6 +74,7 @@ class Connection:
             aws_access_key_id=self.aws_access_key_id,
             aws_secret_access_key=self.aws_secret_access_key,
             aws_endpoint_url=self.end_point_url,
+            assume_role_arn=self.__assume_role_arn,
         )
 
         tracker.add(service_name=self.service_name)

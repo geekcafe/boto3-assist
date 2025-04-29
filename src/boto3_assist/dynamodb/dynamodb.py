@@ -24,7 +24,6 @@ from boto3_assist.utilities.string_utility import StringUtility
 logger = Logger()
 
 
-
 class DynamoDB(DynamoDBConnection):
     """
         DynamoDB. Wrapper for basic DynamoDB Connection and Actions
@@ -41,6 +40,7 @@ class DynamoDB(DynamoDBConnection):
         aws_end_point_url: Optional[str] = None,
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
+        assume_role_arn: Optional[str] = None,
     ) -> None:
         super().__init__(
             aws_profile=aws_profile,
@@ -48,6 +48,7 @@ class DynamoDB(DynamoDBConnection):
             aws_end_point_url=aws_end_point_url,
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
+            assume_role_arn=assume_role_arn,
         )
         self.helpers: DynamoDBHelpers = DynamoDBHelpers()
         self.log_dynamodb_item_size = (
@@ -55,7 +56,6 @@ class DynamoDB(DynamoDBConnection):
         )
         logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
-    
     def save(
         self,
         item: dict | DynamoDBModelBase,
@@ -169,7 +169,6 @@ class DynamoDB(DynamoDBConnection):
         call_type: str = "resource",
     ) -> Dict[str, Any]: ...
 
-    
     def get(
         self,
         key: Optional[dict] = None,
@@ -344,7 +343,6 @@ class DynamoDB(DynamoDBConnection):
     ) -> dict:
         pass
 
-    
     def delete(
         self,
         *,
