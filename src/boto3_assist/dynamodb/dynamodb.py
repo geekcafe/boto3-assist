@@ -41,6 +41,8 @@ class DynamoDB(DynamoDBConnection):
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
         assume_role_arn: Optional[str] = None,
+        assume_role_chain: Optional[List[str]] = None,
+        assume_role_duration_seconds: Optional[int] = 3600,
     ) -> None:
         super().__init__(
             aws_profile=aws_profile,
@@ -49,6 +51,8 @@ class DynamoDB(DynamoDBConnection):
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
             assume_role_arn=assume_role_arn,
+            assume_role_chain=assume_role_chain,
+            assume_role_duration_seconds=assume_role_duration_seconds,
         )
         self.helpers: DynamoDBHelpers = DynamoDBHelpers()
         self.log_dynamodb_item_size = (

@@ -4,7 +4,7 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import Optional
+from typing import Optional, List
 
 from aws_lambda_powertools import Logger
 from boto3_assist.boto3session import Boto3SessionManager
@@ -31,6 +31,8 @@ class Connection:
         aws_secret_access_key: Optional[str] = None,
         aws_end_point_url: Optional[str] = None,
         assume_role_arn: Optional[str] = None,
+        assume_role_chain: Optional[List[str]] = None,
+        assume_role_duration_seconds: Optional[int] = 3600,
     ) -> None:
         self.__aws_profile = aws_profile
         self.__aws_region = aws_region
@@ -40,7 +42,8 @@ class Connection:
         self.__session: Boto3SessionManager | None = None
         self.__assume_role_arn: Optional[str] = assume_role_arn
         self.__service_name: str | None = service_name
-
+        self.__assume_role_chain = assume_role_chain
+        self.__assume_role_duration_seconds = assume_role_duration_seconds
         if self.__service_name is None:
             raise RuntimeError(
                 "Service Name is not available. The service name is required."
@@ -75,6 +78,8 @@ class Connection:
             aws_secret_access_key=self.aws_secret_access_key,
             aws_endpoint_url=self.end_point_url,
             assume_role_arn=self.__assume_role_arn,
+            assume_role_chain=self.__assume_role_chain,
+            assume_role_duration_seconds=self.__assume_role_duration_seconds,
         )
 
         tracker.add(service_name=self.service_name)

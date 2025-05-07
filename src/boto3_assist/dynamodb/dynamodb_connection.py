@@ -4,7 +4,7 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import Optional
+from typing import Optional, List
 from typing import TYPE_CHECKING
 
 from aws_lambda_powertools import Logger
@@ -33,6 +33,8 @@ class DynamoDBConnection(Connection):
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
         assume_role_arn: Optional[str] = None,
+        assume_role_chain: Optional[List[str]] = None,
+        assume_role_duration_seconds: Optional[int] = 3600,
     ) -> None:
         super().__init__(
             service_name="dynamodb",
@@ -42,6 +44,8 @@ class DynamoDBConnection(Connection):
             aws_secret_access_key=aws_secret_access_key,
             aws_end_point_url=aws_end_point_url,
             assume_role_arn=assume_role_arn,
+            assume_role_chain=assume_role_chain,
+            assume_role_duration_seconds=assume_role_duration_seconds,
         )
 
         self.__dynamodb_client: DynamoDBClient | None = None
