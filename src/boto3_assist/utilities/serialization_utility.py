@@ -22,7 +22,7 @@ logger = Logger()
 
 
 class SerializableModel:
-    """Library to Serialize object to a DynamoDB Format"""
+    """Library to Serialize object to a DynamoDB Format or other dictionary"""
 
     T = TypeVar("T", bound="SerializableModel")
 
@@ -47,9 +47,16 @@ class SerializableModel:
 
         return mapped
 
+    def dict(self) -> Dict[str, Any]:
+        """
+        Same as .to_dictionary
+
+        """
+        return self.to_dictionary()
+
     def to_dictionary(self) -> Dict[str, Any]:
         """
-        Convert the object to a dictionary.
+        Convert the object to a dictionary. Same as .dict()
         """
         # return Serialization.convert_object_to_dict(self)
         return Serialization.to_dict(
