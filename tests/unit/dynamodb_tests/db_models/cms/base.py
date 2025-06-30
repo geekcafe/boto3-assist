@@ -15,7 +15,7 @@ from boto3_assist.dynamodb.dynamodb_model_base import (
 class BaseCMSDBModel(DynamoDBModelBase):
     """
     The Base DB Model
-    Sets a common set of proporrties for all models
+    Sets a common set of properties for all models
     """
 
     def __init__(self) -> None:

@@ -7,7 +7,7 @@ MIT License.  See Project Root for the license information.
 import datetime as dt
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBKey
 from boto3_assist.utilities.string_utility import StringUtility
-from tests.unit.dynamodb_tests.models.cms.base import BaseCMSDBModel
+from tests.unit.dynamodb_tests.db_models.cms.base import BaseCMSDBModel
 
 
 class ContentBlock(BaseCMSDBModel):
@@ -41,13 +41,13 @@ class ContentBlock(BaseCMSDBModel):
         self.__setup_indexes()
 
     def __setup_indexes(self):
-        primay: DynamoDBIndex = DynamoDBIndex()
-        primay.name = "primary"
-        primay.partition_key.attribute_name = "pk"
-        primay.partition_key.value = lambda: DynamoDBKey.build_key(
+        primary: DynamoDBIndex = DynamoDBIndex()
+        primary.name = "primary"
+        primary.partition_key.attribute_name = "pk"
+        primary.partition_key.value = lambda: DynamoDBKey.build_key(
             ("site", self.site_id), ("block-type", self.block_type)
         )
 
-        primay.sort_key.attribute_name = "sk"
-        primay.sort_key.value = lambda: DynamoDBKey.build_key(("content", self.id))
-        self.indexes.add_primary(primay)
+        primary.sort_key.attribute_name = "sk"
+        primary.sort_key.value = lambda: DynamoDBKey.build_key(("content", self.id))
+        self.indexes.add_primary(primary)

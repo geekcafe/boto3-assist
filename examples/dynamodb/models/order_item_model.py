@@ -36,15 +36,15 @@ class OrderItem(DynamoDBModelBase):
         # the primary key will be made off of the
         # order.id and this item.id
         # this will allow for a 1 to many search on the items related to an order
-        primay: DynamoDBIndex = DynamoDBIndex()
-        primay.name = "primary"
+        primary: DynamoDBIndex = DynamoDBIndex()
+        primary.name = "primary"
         # create a partition key off of the order key
-        primay.partition_key.attribute_name = "pk"
-        primay.partition_key.value = lambda: DynamoDBKey.build_key(
+        primary.partition_key.attribute_name = "pk"
+        primary.partition_key.value = lambda: DynamoDBKey.build_key(
             ("order", self.order_id)
         )
 
         # create the sort key off of this items id
-        primay.sort_key.attribute_name = "sk"
-        primay.sort_key.value = lambda: DynamoDBKey.build_key(("item", self.id))
-        self.indexes.add_primary(primay)
+        primary.sort_key.attribute_name = "sk"
+        primary.sort_key.value = lambda: DynamoDBKey.build_key(("item", self.id))
+        self.indexes.add_primary(primary)

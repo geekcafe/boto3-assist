@@ -33,7 +33,7 @@ class UserPost(DynamoDBModelBase):
         self.__setup_indexes()
 
     def __setup_indexes(self):
-        primay: DynamoDBIndex = DynamoDBIndex(
+        primary: DynamoDBIndex = DynamoDBIndex(
             index_name="primary",
             partition_key=DynamoDBKey(
                 attribute_name="pk",
@@ -44,7 +44,7 @@ class UserPost(DynamoDBModelBase):
                 value=lambda: f"post#{self.slug if self.slug else ''}",
             ),
         )
-        self.indexes.add_primary(primay)
+        self.indexes.add_primary(primary)
 
         gsi0: DynamoDBIndex = DynamoDBIndex(
             index_name="gsi0",

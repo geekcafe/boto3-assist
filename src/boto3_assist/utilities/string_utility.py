@@ -12,6 +12,7 @@ from datetime import datetime
 from decimal import Decimal
 import uuid
 import json
+import re
 from aws_lambda_powertools import Logger
 from boto3_assist.utilities.datetime_utility import DatetimeUtility
 
@@ -200,7 +201,7 @@ class StringUtility:
         namespace: uuid.UUID | str, unique_string: str, case_sensitive: bool = False
     ) -> str:
         """
-        Generates an idempotnent UUID, which is useful for creates
+        Generates an idempotent UUID, which is useful for creates
 
         Args:
             namespace (GUID | str): A namespace for your id, it must be a UUID or a string in a UUID format
@@ -320,3 +321,17 @@ class StringUtility:
             return False
         else:
             raise ValueError(f"Invalid boolean value: {value}")
+
+    @staticmethod
+    def camel_to_snake(value: str) -> str:
+        """Converts a camelCase to a snake_case"""
+        # Insert underscores before uppercase letters, then convert to lowercase.
+        s1 = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", value)
+        return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+
+    @staticmethod
+    def snake_to_camel(value: str) -> str:
+        """Converts a value from snake_case to camelCase"""
+        # Split the value by underscores and capitalize each component except the first.
+        components = value.split("_")
+        return components[0] + "".join(x.title() for x in components[1:])

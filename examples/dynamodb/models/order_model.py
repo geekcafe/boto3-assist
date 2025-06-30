@@ -43,13 +43,13 @@ class Order(DynamoDBModelBase):
 
     def __setup_indexes(self):
         # user id
-        primay: DynamoDBIndex = DynamoDBIndex()
-        primay.name = "primary"
-        primay.partition_key.attribute_name = "pk"
-        primay.partition_key.value = lambda: DynamoDBKey.build_key(("order", self.id))
-        primay.sort_key.attribute_name = "sk"
-        primay.sort_key.value = lambda: DynamoDBKey.build_key(("order", self.id))
-        self.indexes.add_primary(primay)
+        primary: DynamoDBIndex = DynamoDBIndex()
+        primary.name = "primary"
+        primary.partition_key.attribute_name = "pk"
+        primary.partition_key.value = lambda: DynamoDBKey.build_key(("order", self.id))
+        primary.sort_key.attribute_name = "sk"
+        primary.sort_key.value = lambda: DynamoDBKey.build_key(("order", self.id))
+        self.indexes.add_primary(primary)
 
         # all orders on a given day, sort by created date
         self.indexes.add_secondary(

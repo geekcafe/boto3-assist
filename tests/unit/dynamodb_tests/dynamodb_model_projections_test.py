@@ -7,15 +7,15 @@ MIT License.  See Project Root for the license information.
 import unittest
 
 
-from tests.unit.dynamodb_tests.dbmodels.user_model import User
-from tests.unit.dynamodb_tests.dbmodels.simple_model import Simple
+from tests.unit.dynamodb_tests.db_models.user_model import User
+from tests.unit.dynamodb_tests.db_models.simple_model import Simple
 
 
-class DynamoDBModeProjectionlUnitTest(unittest.TestCase):
+class DynamoDBModeProjectionUnitTest(unittest.TestCase):
     "Serialization Tests"
 
     def test_projection_expressions_transformation(self):
-        """Test Basic Serlization"""
+        """Test Basic Serialization"""
         # Arrange
         data = {
             "id": "123456",
@@ -53,7 +53,7 @@ class DynamoDBModeProjectionlUnitTest(unittest.TestCase):
         self.assertIn("status", attribute_names["#status"])
 
     def test_simple_model(self):
-        """Test Basic Serlization"""
+        """Test Basic Serialization"""
         # Arrange
         data = {
             "id": "123456",

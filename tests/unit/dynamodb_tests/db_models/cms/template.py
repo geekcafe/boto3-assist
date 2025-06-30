@@ -6,7 +6,7 @@ MIT License.  See Project Root for the license information.
 
 from typing import List
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBKey
-from tests.unit.dynamodb_tests.dbmodels.cms.base import BaseCMSDBModel
+from tests.unit.dynamodb_tests.db_models.cms.base import BaseCMSDBModel
 
 
 class Template(BaseCMSDBModel):
@@ -28,16 +28,16 @@ class Template(BaseCMSDBModel):
         self.__setup_indexes()
 
     def __setup_indexes(self):
-        primay: DynamoDBIndex = DynamoDBIndex()
-        primay.name = "primary"
-        primay.partition_key.attribute_name = "pk"
-        primay.partition_key.value = lambda: DynamoDBKey.build_key(
+        primary: DynamoDBIndex = DynamoDBIndex()
+        primary.name = "primary"
+        primary.partition_key.attribute_name = "pk"
+        primary.partition_key.value = lambda: DynamoDBKey.build_key(
             ("site", self.site_id), ("templates", None)
         )
 
-        primay.sort_key.attribute_name = "sk"
-        primay.sort_key.value = lambda: DynamoDBKey.build_key(("template", self.title))
-        self.indexes.add_primary(primay)
+        primary.sort_key.attribute_name = "sk"
+        primary.sort_key.value = lambda: DynamoDBKey.build_key(("template", self.title))
+        self.indexes.add_primary(primary)
 
         gsi1: DynamoDBIndex = DynamoDBIndex()
         gsi1.name = "gsi1"
@@ -52,8 +52,10 @@ class Template(BaseCMSDBModel):
     @property
     def s3_object_key(self) -> str:
         """The s3 object key for the template"""
-        return f"{self.site_id}/{self.title}"
+        return f"{self.site_id}/template/{self.type}/{self.title}"
 
     @s3_object_key.setter
     def s3_object_key(self, value: str):
+        # we don't set this field, but we also don't
+        # want an error during the serialization process
         pass

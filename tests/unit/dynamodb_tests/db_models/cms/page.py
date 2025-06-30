@@ -7,7 +7,7 @@ MIT License.  See Project Root for the license information.
 from typing import List, Dict, Any
 import datetime as dt
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBKey
-from tests.unit.dynamodb_tests.dbmodels.cms.base import BaseCMSDBModel
+from tests.unit.dynamodb_tests.db_models.cms.base import BaseCMSDBModel
 
 
 class Page(BaseCMSDBModel):
@@ -45,16 +45,16 @@ class Page(BaseCMSDBModel):
         self.__setup_indexes()
 
     def __setup_indexes(self):
-        primay: DynamoDBIndex = DynamoDBIndex()
-        primay.name = "primary"
-        primay.partition_key.attribute_name = "pk"
-        primay.partition_key.value = lambda: DynamoDBKey.build_key(
+        primary: DynamoDBIndex = DynamoDBIndex()
+        primary.name = "primary"
+        primary.partition_key.attribute_name = "pk"
+        primary.partition_key.value = lambda: DynamoDBKey.build_key(
             ("site", self.site_id), ("pages", None)
         )
 
-        primay.sort_key.attribute_name = "sk"
-        primay.sort_key.value = lambda: DynamoDBKey.build_key(("page", self.slug))
-        self.indexes.add_primary(primay)
+        primary.sort_key.attribute_name = "sk"
+        primary.sort_key.value = lambda: DynamoDBKey.build_key(("page", self.slug))
+        self.indexes.add_primary(primary)
 
         gsi1: DynamoDBIndex = DynamoDBIndex()
         gsi1.name = "gsi1"
@@ -69,7 +69,7 @@ class Page(BaseCMSDBModel):
     @property
     def id(self) -> str:
         """The id for the page"""
-        return f"{self.site_id}/{self.slug}"
+        return f"{self.site_id}/{self.type}/{self.slug}"
 
     @id.setter
     def id(self, id: str):

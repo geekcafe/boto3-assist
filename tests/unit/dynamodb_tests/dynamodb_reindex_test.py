@@ -8,7 +8,7 @@ import unittest
 from typing import Optional, List
 
 from src.boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
-from src.boto3_assist.dynamodb.dynamodb_reindexer import DynamoDBReindexer
+from boto3_assist.dynamodb.dynamodb_re_indexer import DynamoDBReIndexer
 from src.boto3_assist.dynamodb.dynamodb_key import DynamoDBKey
 from src.boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex
 
@@ -120,12 +120,12 @@ class ReindexTest(unittest.TestCase):
         user: User = User().map(data)
         keys: List[DynamoDBKey] = user.list_keys()
 
-        reindexer: DynamoDBReindexer = DynamoDBReindexer("dummy_table")
+        re_indexer: DynamoDBReIndexer = DynamoDBReIndexer("dummy_table")
 
         dictionary = user.helpers.keys_to_dictionary(keys=keys)
 
-        update_expression = reindexer.build_update_expression(dictionary)
-        expression_attribute_values = reindexer.build_expression_attribute_values(
+        update_expression = re_indexer.build_update_expression(dictionary)
+        expression_attribute_values = re_indexer.build_expression_attribute_values(
             dictionary
         )
 

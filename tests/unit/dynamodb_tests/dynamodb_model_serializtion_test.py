@@ -7,15 +7,15 @@ MIT License.  See Project Root for the license information.
 import unittest
 
 
-from tests.unit.dynamodb_tests.dbmodels.user_model import User
-from tests.unit.dynamodb_tests.dbmodels.user_required_fields_model import User as User2
+from tests.unit.dynamodb_tests.db_models.user_model import User
+from tests.unit.dynamodb_tests.db_models.user_required_fields_model import User as User2
 
 
-class DynamoDBModelSerializationUnitTest(unittest.TestCase):
+class Dynamodb_Model_SerializationUnitTest(unittest.TestCase):
     "Serialization Tests"
 
     def test_basic_serialization(self):
-        """Test Basic Serlization"""
+        """Test Basic Serialization"""
         # Arrange
         data = {
             "id": "123456",

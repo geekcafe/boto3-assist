@@ -12,11 +12,11 @@ from mypy_boto3_dynamodb import DynamoDBClient
 
 from boto3_assist.dynamodb.dynamodb import DynamoDB
 from boto3_assist.environment_services.environment_loader import EnvironmentLoader
-from tests.unit.dynamodb_tests.dbmodels.cms.page import Page
+from tests.unit.dynamodb_tests.db_models.cms.page import Page
 
 
 @moto.mock_aws
-class DynamoDBSortinglUnitTest(unittest.TestCase):
+class DynamoDB_SortingUnitTest(unittest.TestCase):
     "Sorting Tests"
 
     def __init__(self, methodName="runTest"):
@@ -31,7 +31,7 @@ class DynamoDBSortinglUnitTest(unittest.TestCase):
 
     def setUp(self):
         # load our test environment file to make sure we override any default AWS Environment Vars setup
-        # we don't want to accidently connec to live environments
+        # we don't want to accidentally connect to live environments
         # https://docs.getmoto.org/en/latest/docs/getting_started.html
 
         self.db: DynamoDB = self.db or DynamoDB()
@@ -54,7 +54,7 @@ class DynamoDBSortinglUnitTest(unittest.TestCase):
             table_name=self.__table_name, key=key, source="unittest", ascending=True
         )
 
-        # after the insert we can sort our expected vaues
+        # after the insert we can sort our expected values
         slugs.sort()
 
         self.assertIn("Items", pages)
@@ -107,7 +107,7 @@ class DynamoDBSortinglUnitTest(unittest.TestCase):
         """
 
         return [
-            "/zerbras",
+            "/zebras",
             "/docs/docs.html",
             "/blogs/blog.html",
             "/blog/re-certify-your-aws-associates-and-cloud-practitioner-certifications-for-free.html",
@@ -131,7 +131,7 @@ class DynamoDBSortinglUnitTest(unittest.TestCase):
                 {"AttributeName": "pk", "AttributeType": "S"},
                 {"AttributeName": "sk", "AttributeType": "S"},
                 {"AttributeName": "gsi1_pk", "AttributeType": "S"},
-                {"AttributeName": "gsi1_sk", "AttributeType": "N"},
+                {"AttributeName": "gsi1_sk", "AttributeType": "S"},
             ],
             GlobalSecondaryIndexes=[
                 {

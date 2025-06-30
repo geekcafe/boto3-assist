@@ -71,7 +71,7 @@ class TestLambdaEventInfo(unittest.TestCase):
         self.assertEqual(result, "access")
 
     @patch("boto3_assist.cognito.cognito_authorizer.CognitoCustomAuthorizer.parse_jwt")
-    def testget_value_from_token(self, mock_parse_jwt):
+    def test_get_value_from_token(self, mock_parse_jwt):
         """
         Test that values are correctly extracted from the JWT token.
         """

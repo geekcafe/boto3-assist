@@ -15,11 +15,11 @@ from boto3.dynamodb.conditions import (
     ComparisonCondition,
     ConditionBase,
 )
-from boto3_assist.dynamodb.dynamodb_connection import DynamoDBConnection
-from boto3_assist.dynamodb.dynamodb_helpers import DynamoDBHelpers
-from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
-from boto3_assist.utilities.string_utility import StringUtility
-
+from .dynamodb_connection import DynamoDBConnection
+from .dynamodb_helpers import DynamoDBHelpers
+from .dynamodb_model_base import DynamoDBModelBase
+from ..utilities.string_utility import StringUtility
+from .dynamodb_index import DynamoDBIndex
 
 logger = Logger()
 
@@ -69,9 +69,9 @@ class DynamoDB(DynamoDBConnection):
         """
         Save an item to the database
         Args:
-            item (dict): DynamoDB Dictionay Object or DynamoDBModelBase.  Supports the "client" or
+            item (dict): DynamoDB Dictionary Object or DynamoDBModelBase.  Supports the "client" or
             "resource" syntax
-            table_name (str): The DyamoDb Table Name
+            table_name (str): The DynamoDb Table Name
             source (str, optional): The source of the call, used for logging. Defaults to None.
 
         Raises:
@@ -98,7 +98,7 @@ class DynamoDB(DynamoDBConnection):
                 except Exception as e:  # pylint: disable=w0718
                     logger.exception(e)
                     raise RuntimeError(
-                        "An error occured during model converation.  The entry was not saved. "
+                        "An error occurred during model conversion.  The entry was not saved. "
                     ) from e
 
             if isinstance(item, dict):
@@ -279,11 +279,11 @@ class DynamoDB(DynamoDBConnection):
 
     def query(
         self,
-        key: dict | Key | ConditionBase | ComparisonCondition,
+        key: dict | Key | ConditionBase | ComparisonCondition | DynamoDBIndex,
+        table_name: str,
         *,
         index_name: Optional[str] = None,
         ascending: bool = False,
-        table_name: Optional[str] = None,
         source: Optional[str] = None,
         strongly_consistent: bool = False,
         projection_expression: Optional[str] = None,
@@ -305,6 +305,17 @@ class DynamoDB(DynamoDBConnection):
         """
 
         logger.debug({"action": "query", "source": source})
+        if not key:
+            raise ValueError("Query failed: key must be provided.")
+
+        if not table_name:
+            raise ValueError("Query failed: table_name must be provided.")
+
+        if isinstance(key, DynamoDBIndex):
+            if not index_name:
+                index_name = key.name
+            # turn it into a key expected by dynamodb
+            key = key.key()
 
         kwargs: dict = {}
         if index_name:
@@ -330,7 +341,16 @@ class DynamoDB(DynamoDBConnection):
             raise ValueError("Query failed: table_name must be provided.")
 
         table = self.dynamodb_resource.Table(table_name)
-        response = dict(table.query(**kwargs))
+        response: dict = {}
+        try:
+            response = dict(table.query(**kwargs))
+        except Exception as e:  # pylint: disable=w0718
+            logger.exception(
+                {"source": f"{source}", "metric_filter": "query", "error": str(e)}
+            )
+            response = {"exception": str(e)}
+            if self.raise_on_error:
+                raise e
 
         return response
 

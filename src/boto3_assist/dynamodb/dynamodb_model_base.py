@@ -40,7 +40,7 @@ def exclude_indexes_from_serialization(method):
 
 
 class DynamoDBModelBase(SerializableModel):
-    """DyanmoDb Model Base"""
+    """DynamoDb Model Base"""
 
     T = TypeVar("T", bound="DynamoDBModelBase")
 
@@ -52,6 +52,9 @@ class DynamoDBModelBase(SerializableModel):
         self.__reserved_words: DynamoDBReservedWords = DynamoDBReservedWords()
         self.__auto_generate_projections: bool = auto_generate_projections
         self.__actively_serializing_data__: bool = False
+
+    def serialization_in_progress(self) -> bool:
+        return self.__actively_serializing_data__
 
     @property
     @exclude_from_serialization

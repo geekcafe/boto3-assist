@@ -12,8 +12,8 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, TypeVar
-import re
 from aws_lambda_powertools import Logger
+from boto3_assist.utilities.string_utility import StringUtility
 
 T = TypeVar("T")
 
@@ -119,16 +119,12 @@ class JsonConversions:
     @staticmethod
     def _camel_to_snake(value: str) -> str:
         """Converts a camelCase to a snake_case"""
-        # Insert underscores before uppercase letters, then convert to lowercase.
-        s1 = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", value)
-        return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+        return StringUtility.camel_to_snake(value)
 
     @staticmethod
     def _snake_to_camel(value: str) -> str:
         """Converts a value from snake_case to camelCase"""
-        # Split the value by underscores and capitalize each component except the first.
-        components = value.split("_")
-        return components[0] + "".join(x.title() for x in components[1:])
+        return StringUtility.snake_to_camel(value)
 
     @staticmethod
     def _convert_keys(data, convert_func, deep: bool = True):
@@ -474,7 +470,7 @@ class Serialization:
                 "To work around this create a boolean (bool) property named __actively_serializing_data__. \n"
                 "e.g. self.__actively_serializing_data__: bool = False\n\n"
                 "Only issue/raise your exception if __actively_serializing_data__ is not True. \n\n"
-                "e.g. if not self.some_propert and not self.__actively_serializing_data__:\n"
+                "e.g. if not self.some_property and not self.__actively_serializing_data__:\n"
                 '    raise ValueError("some_property must be set")\n\n'
                 "This procedure will update the property from False to True while serializing, "
                 "then back to False once serialization is complete. "

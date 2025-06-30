@@ -191,7 +191,7 @@ class SerializationUnitTest(unittest.TestCase):
     "Serialization Tests"
 
     def test_basic_serialization(self):
-        """Test Basic Serlization"""
+        """Test Basic Serialization"""
         # Arrange
         data = {
             "name": "John Doe",
@@ -219,7 +219,7 @@ class SerializationUnitTest(unittest.TestCase):
         self.assertEqual(user.authorization.groups[0], "Admin")
 
     def test_object_serialization_map(self):
-        """Test Basic Serlization"""
+        """Test Basic Serialization"""
         # Arrange
         data = {"name": "John Doe", "age": 30, "email": "john@example.com"}
 
@@ -233,7 +233,7 @@ class SerializationUnitTest(unittest.TestCase):
         self.assertEqual(serialized_data.email, "john@example.com")
 
     def test_object_serialization_map_resource(self):
-        """Ensure the db properties aren't carried over to sub objects during Serlization"""
+        """Ensure the db properties aren't carried over to sub objects during Serialization"""
         # Arrange
         subscription: Subscription = Subscription()
 

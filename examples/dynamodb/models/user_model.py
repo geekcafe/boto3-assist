@@ -31,13 +31,13 @@ class User(DynamoDBModelBase):
 
     def __setup_indexes(self):
         # user id
-        primay: DynamoDBIndex = DynamoDBIndex()
-        primay.name = "primary"
-        primay.partition_key.attribute_name = "pk"
-        primay.partition_key.value = lambda: DynamoDBKey.build_key(("user", self.id))
-        primay.sort_key.attribute_name = "sk"
-        primay.sort_key.value = lambda: DynamoDBKey.build_key(("user", self.id))
-        self.indexes.add_primary(primay)
+        primary: DynamoDBIndex = DynamoDBIndex()
+        primary.name = "primary"
+        primary.partition_key.attribute_name = "pk"
+        primary.partition_key.value = lambda: DynamoDBKey.build_key(("user", self.id))
+        primary.sort_key.attribute_name = "sk"
+        primary.sort_key.value = lambda: DynamoDBKey.build_key(("user", self.id))
+        self.indexes.add_primary(primary)
 
         # find all users by email address
         gsi0: DynamoDBIndex = DynamoDBIndex(

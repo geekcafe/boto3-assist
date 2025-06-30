@@ -9,14 +9,14 @@ from typing import Dict, List
 
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex
 from boto3_assist.dynamodb.dynamodb_key import DynamoDBKey
-from tests.unit.dynamodb_tests.dbmodels.user_model import User
+from tests.unit.dynamodb_tests.db_models.user_model import User
 
 
 class DynamoDBModelUnitTest(unittest.TestCase):
     "Serialization Tests"
 
     def test_basic_serialization(self):
-        """Test Basic Serlization"""
+        """Test Basic Serialization"""
         # Arrange
         data = {
             "id": "123456",
@@ -39,7 +39,7 @@ class DynamoDBModelUnitTest(unittest.TestCase):
         self.assertIsInstance(key, dict)
 
     def test_object_serialization_map(self):
-        """Test Basic Serlization"""
+        """Test Basic Serialization"""
         # Arrange
         data = {
             "id": "123456",
@@ -60,7 +60,7 @@ class DynamoDBModelUnitTest(unittest.TestCase):
         self.assertIsInstance(serialized_data, User)
 
     def test_new_key_design_serialization_map(self):
-        """Test Basic Serlization"""
+        """Test Basic Serialization"""
         # Arrange
         data = {
             "id": "123456",
@@ -82,27 +82,8 @@ class DynamoDBModelUnitTest(unittest.TestCase):
 
         pk = user.indexes.primary.partition_key.value
         self.assertEqual(pk, "user#123456")
-        index_name = "gsi1"
-        gsi_key = user.get_key(index_name).key()
-
-        expression = user.helpers.get_filter_expressions(gsi_key)
-        print(f"expression: {expression}")
-        keys: List[Dict] = expression.get("keys")
-        key_0: Dict = keys[0].get("key")
-        self.assertEqual(key_0.get("name"), "gsi1_pk")
-        self.assertEqual(key_0.get("key"), "users#")
-
-        key_1: Dict = keys[1].get("key")
-        self.assertEqual(key_1.get("name"), "gsi1_sk")
-        # we didn't populate a last name so this is correct (based on the current logic)
-        # we stop here and don't go any further
-        self.assertEqual(key_1.get("key"), "lastname#")
-
-        ### gsi3 mapped to a name of gsi2
         index_name = "gsi2"
         gsi_key = user.get_key(index_name).key()
-        # this should be mapped to gsi0
-        self.assertEqual(index_name, "gsi2")
 
         expression = user.helpers.get_filter_expressions(gsi_key)
         print(f"expression: {expression}")
@@ -113,12 +94,30 @@ class DynamoDBModelUnitTest(unittest.TestCase):
 
         key_1: Dict = keys[1].get("key")
         self.assertEqual(key_1.get("name"), "gsi2_sk")
+        # we didn't populate a last name so this is correct (based on the current logic)
+        # we stop here and don't go any further
+        self.assertEqual(key_1.get("key"), "lastname#")
+
+        index_name = "gsi3"
+        gsi_key = user.get_key(index_name).key()
+        # this should be mapped to gsi0
+        self.assertEqual(index_name, "gsi3")
+
+        expression = user.helpers.get_filter_expressions(gsi_key)
+        print(f"expression: {expression}")
+        keys: List[Dict] = expression.get("keys")
+        key_0: Dict = keys[0].get("key")
+        self.assertEqual(key_0.get("name"), "gsi3_pk")
+        self.assertEqual(key_0.get("key"), "users#")
+
+        key_1: Dict = keys[1].get("key")
+        self.assertEqual(key_1.get("name"), "gsi3_sk")
         self.assertEqual(key_1.get("key"), "firstname#John#lastname#")
 
         resource = user.to_resource_dictionary()
         self.assertIsNotNone(resource)
 
-    def test_keylist(self):
+    def test_key_list(self):
         """Test Listing Keys"""
         # Arrange
         data = {
@@ -145,21 +144,21 @@ class DynamoDBModelUnitTest(unittest.TestCase):
         self.assertEqual(keys[0].sort_key.attribute_name, "sk")
         self.assertEqual(keys[0].sort_key.value, "user#123456")
 
-        self.assertEqual(keys[1].partition_key.attribute_name, "gsi0_pk")
+        self.assertEqual(keys[1].partition_key.attribute_name, "gsi1_pk")
         self.assertEqual(keys[1].partition_key.value, "users#")
-        self.assertEqual(keys[1].sort_key.attribute_name, "gsi0_sk")
+        self.assertEqual(keys[1].sort_key.attribute_name, "gsi1_sk")
         self.assertEqual(keys[1].sort_key.value, "email#john@example.com")
 
-        self.assertEqual(keys[2].partition_key.attribute_name, "gsi1_pk")
+        self.assertEqual(keys[2].partition_key.attribute_name, "gsi2_pk")
         self.assertEqual(keys[2].partition_key.value, "users#")
-        self.assertEqual(keys[2].sort_key.attribute_name, "gsi1_sk")
+        self.assertEqual(keys[2].sort_key.attribute_name, "gsi2_sk")
         self.assertEqual(keys[2].sort_key.value, "lastname#")
         expression = user.helpers.get_filter_expressions(keys[2].key())
         print(f"expression: {expression}")
 
-        self.assertEqual(keys[3].partition_key.attribute_name, "gsi2_pk")
+        self.assertEqual(keys[3].partition_key.attribute_name, "gsi3_pk")
         self.assertEqual(keys[3].partition_key.value, "users#")
-        self.assertEqual(keys[3].sort_key.attribute_name, "gsi2_sk")
+        self.assertEqual(keys[3].sort_key.attribute_name, "gsi3_sk")
         self.assertEqual(keys[3].sort_key.value, "firstname#John#lastname#")
 
         print("stop")
@@ -186,14 +185,14 @@ class DynamoDBModelUnitTest(unittest.TestCase):
         self.assertEqual(dictionary.get("pk"), "user#123456")
         self.assertEqual(dictionary.get("sk"), "user#123456")
 
-        self.assertEqual(dictionary.get("gsi0_pk"), "users#")
-        self.assertEqual(dictionary.get("gsi0_sk"), "email#john@example.com")
-
         self.assertEqual(dictionary.get("gsi1_pk"), "users#")
-        self.assertEqual(dictionary.get("gsi1_sk"), "lastname#Smith#firstname#John")
+        self.assertEqual(dictionary.get("gsi1_sk"), "email#john@example.com")
 
         self.assertEqual(dictionary.get("gsi2_pk"), "users#")
-        self.assertEqual(dictionary.get("gsi2_sk"), "firstname#John#lastname#Smith")
+        self.assertEqual(dictionary.get("gsi2_sk"), "lastname#Smith#firstname#John")
+
+        self.assertEqual(dictionary.get("gsi3_pk"), "users#")
+        self.assertEqual(dictionary.get("gsi3_sk"), "firstname#John#lastname#Smith")
 
         print("stop")
 
@@ -218,13 +217,13 @@ class DynamoDBModelUnitTest(unittest.TestCase):
         self.assertEqual(dictionary.get("pk"), "user#123456")
         self.assertEqual(dictionary.get("sk"), "user#123456")
 
-        self.assertEqual(dictionary.get("gsi0_pk"), "users#")
-        self.assertEqual(dictionary.get("gsi0_sk"), "email#john@example.com")
-
         self.assertEqual(dictionary.get("gsi1_pk"), "users#")
-        self.assertEqual(dictionary.get("gsi1_sk"), "lastname#")
+        self.assertEqual(dictionary.get("gsi1_sk"), "email#john@example.com")
 
         self.assertEqual(dictionary.get("gsi2_pk"), "users#")
-        self.assertEqual(dictionary.get("gsi2_sk"), "firstname#John#lastname#")
+        self.assertEqual(dictionary.get("gsi2_sk"), "lastname#")
+
+        self.assertEqual(dictionary.get("gsi3_pk"), "users#")
+        self.assertEqual(dictionary.get("gsi3_sk"), "firstname#John#lastname#")
 
         print("stop")
