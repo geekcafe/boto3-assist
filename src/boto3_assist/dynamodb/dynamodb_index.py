@@ -156,11 +156,22 @@ class DynamoDBIndex:
         condition: str = "begins_with",
         low_value: Any = None,
         high_value: Any = None,
+        query_key: bool = False,
         # sk_value_2: Optional[str | int | float] = None,
     ) -> dict | Key | ConditionBase | ComparisonCondition | Equals:
         """Get the key for a given index"""
         key: dict | Key | ConditionBase | ComparisonCondition | Equals
-        if (
+
+        if query_key:
+            key = self._build_query_key(
+                include_sort_key=include_sort_key,
+                condition=condition,
+                low_value=low_value,
+                high_value=high_value,
+            )
+            return key
+
+        elif (
             self.name == DynamoDBIndexes.PRIMARY_INDEX
             and include_sort_key
             # if it ends with a # we are assuming that we are doing a wild card mapping
@@ -175,14 +186,15 @@ class DynamoDBIndex:
                 key[self.sort_key.attribute_name] = self.sort_key.value
 
             return key
-        else:
-            key = self._build_query_key(
-                include_sort_key=include_sort_key,
-                condition=condition,
-                low_value=low_value,
-                high_value=high_value,
-            )
-            return key
+
+        # catch all (TODO: decide if this is the best pattern or should we raise an error)
+        key = self._build_query_key(
+            include_sort_key=include_sort_key,
+            condition=condition,
+            low_value=low_value,
+            high_value=high_value,
+        )
+        return key
 
     def _build_query_key(
         self,

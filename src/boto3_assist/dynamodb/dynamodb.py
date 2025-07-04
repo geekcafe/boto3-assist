@@ -352,7 +352,7 @@ class DynamoDB(DynamoDBConnection):
             if not index_name:
                 index_name = key.name
             # turn it into a key expected by dynamodb
-            key = key.key()
+            key = key.key(query_key=True)
 
         kwargs: dict = {}
 
