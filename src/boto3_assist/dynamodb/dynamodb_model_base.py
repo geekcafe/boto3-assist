@@ -21,6 +21,7 @@ from boto3_assist.dynamodb.dynamodb_index import (
 from boto3_assist.dynamodb.dynamodb_reserved_words import DynamoDBReservedWords
 from boto3_assist.utilities.datetime_utility import DatetimeUtility
 from boto3_assist.models.serializable_model import SerializableModel
+from boto3_assist.utilities.string_utility import StringUtility
 
 
 def exclude_from_serialization(method):
@@ -190,7 +191,7 @@ class DynamoDBModelBase(SerializableModel):
     def to_dictionary(self, include_none: bool = True):
         """
         Convert the instance to a dictionary without an indexes/keys.
-        Usefull for turning an object into a dictionary for serialization.
+        Useful for turning an object into a dictionary for serialization.
         This is the same as to_resource_dictionary(include_indexes=False)
         """
         return DynamoDBSerializer.to_resource_dictionary(
@@ -204,6 +205,13 @@ class DynamoDBModelBase(SerializableModel):
             raise ValueError("Index name cannot be None")
 
         return self.indexes.get(index_name)
+
+    @staticmethod
+    def generate_uuid(sortable: bool = True) -> str:
+        if sortable:
+            return StringUtility.generate_sortable_uuid()
+
+        return StringUtility.generate_uuid()
 
     @property
     @exclude_from_serialization
