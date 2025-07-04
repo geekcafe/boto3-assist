@@ -12,7 +12,6 @@ from aws_lambda_powertools import Logger
 from dateutil.relativedelta import relativedelta
 
 
-
 logger = Logger()
 
 _last_timestamp = None
@@ -43,11 +42,10 @@ class DatetimeUtility:
     @staticmethod
     def get_utc_now() -> datetime:
         # datetime.utcnow()
-        # below is the prefered over datetime.utcnow()
+        # below is the preferred over datetime.utcnow()
         return datetime.now(timezone.utc)
 
     @staticmethod
-    
     def string_to_date(string_date: str | datetime) -> datetime | None:
         """
         Description: takes a string value and returns it as a datetime.
@@ -269,7 +267,7 @@ class DatetimeUtility:
             months (int): the number of months
 
         Returns:
-            datetime: One Month added to the input dt
+            datetime: X Month(s) added to the input dt
         """
         new_date = dt + relativedelta(months=+months)
         new_date = new_date + relativedelta(microseconds=-1)
@@ -278,14 +276,14 @@ class DatetimeUtility:
 
     @staticmethod
     def add_days(dt: datetime, days: int = 1) -> datetime:
-        """Add a month to the current date
+        """Add a day to the current date
 
         Args:
             dt (datetime): datetime
-            months (int): the number of months
+            days (int): the number of days, use a negative number to subtract
 
         Returns:
-            datetime: One Month added to the input dt
+            datetime: X days added to the input dt
         """
         new_date = dt + relativedelta(days=+days)
         new_date = new_date + relativedelta(microseconds=-1)
@@ -314,7 +312,7 @@ class DatetimeUtility:
 
         Args:
             utc_datetime (datetime): datetime in utc
-            timezone (str): 'US/Eastern', 'US/Moutain', etc
+            timezone (str): 'US/Eastern', 'US/Mountain', etc
 
         Returns:
             datetime: in the correct timezone
@@ -326,7 +324,7 @@ class DatetimeUtility:
 
     @staticmethod
     def get_timestamp(value: datetime | None | str) -> float:
-        """Get a timestampe from a date or 0.0"""
+        """Get a timestamp from a date or 0.0"""
         if value is None:
             return 0.0
         if not isinstance(value, datetime):
@@ -339,7 +337,7 @@ class DatetimeUtility:
 
     @staticmethod
     def get_timestamp_or_none(value: datetime | None | str) -> float | None:
-        """Get a timestampe from a date or None"""
+        """Get a timestamp from a date or None"""
         if value is None:
             return None
         if not isinstance(value, datetime):
