@@ -355,7 +355,9 @@ class DynamoDB(DynamoDBConnection):
             key = key.key()
 
         kwargs: dict = {}
-        if index_name:
+
+        if index_name and index_name != "primary":
+            # only include the index_name if we are not using our "primary" pk/sk
             kwargs["IndexName"] = f"{index_name}"
         kwargs["TableName"] = f"{table_name}"
         kwargs["KeyConditionExpression"] = key

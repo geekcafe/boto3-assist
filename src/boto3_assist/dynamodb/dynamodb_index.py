@@ -37,7 +37,7 @@ class DynamoDBIndexes:
         if index.name in self.__indexes:
             raise ValueError(
                 f"The index {index.name} is already defined in your model somewhere. "
-                "This error is generated to protect you from unforseen issues. "
+                "This error is generated to protect you from unforeseen issues. "
                 "If you models are inheriting from other models, you may have the primary defined twice."
             )
 
@@ -64,7 +64,7 @@ class DynamoDBIndexes:
         for _, v in self.__indexes.items():
             if v.partition_key.attribute_name == index.partition_key.attribute_name:
                 raise ValueError(
-                    f"The attrubute {index.partition_key.attribute_name} is already being used by index "
+                    f"The attribute {index.partition_key.attribute_name} is already being used by index "
                     f"{v.name}. "
                     f"Reusing this attribute would over write the value on index {v.name}"
                 )
@@ -73,7 +73,7 @@ class DynamoDBIndexes:
             for _, v in self.__indexes.items():
                 if v.sort_key.attribute_name == index.sort_key.attribute_name:
                     raise ValueError(
-                        f"The attrubute {index.sort_key.attribute_name} is already being used by index "
+                        f"The attribute {index.sort_key.attribute_name} is already being used by index "
                         f"{v.name}. "
                         f"Reusing this attribute would over write the value on index {v.name}"
                     )
@@ -160,9 +160,14 @@ class DynamoDBIndex:
     ) -> dict | Key | ConditionBase | ComparisonCondition | Equals:
         """Get the key for a given index"""
         key: dict | Key | ConditionBase | ComparisonCondition | Equals
-        if self.name == DynamoDBIndexes.PRIMARY_INDEX and include_sort_key:
+        if (
+            self.name == DynamoDBIndexes.PRIMARY_INDEX
+            and include_sort_key
+            # if it ends with a # we are assuming that we are doing a wild card mapping
+            and not str(self.sort_key.value).endswith("#")
+        ):
             # this is a direct primary key which is used in a get call
-            # this is differenet than query keys
+            # this is different than query keys
             key = {}
             key[self.partition_key.attribute_name] = self.partition_key.value
 
