@@ -6,6 +6,8 @@ MIT License.  See Project Root for the license information.
 
 import os
 from typing import List, Optional, overload, Dict, Any
+from botocore.exceptions import ClientError
+from boto3.dynamodb.conditions import Attr
 
 from aws_lambda_powertools import Logger
 from boto3.dynamodb.conditions import (
@@ -65,17 +67,22 @@ class DynamoDB(DynamoDBConnection):
         item: dict | DynamoDBModelBase,
         table_name: str,
         source: Optional[str] = None,
+        fail_if_exists: bool = False,
     ) -> dict:
         """
         Save an item to the database
         Args:
-            item (dict): DynamoDB Dictionary Object or DynamoDBModelBase.  Supports the "client" or
-            "resource" syntax
+            item (dict): DynamoDB Dictionary Object or DynamoDBModelBase.
+                Supports the "client" or "resource" syntax
             table_name (str): The DynamoDb Table Name
             source (str, optional): The source of the call, used for logging. Defaults to None.
+            fail_if_exists (bool, optional): Only allow it to insert once.
+                Fail if it already exits. This is useful for loggers, historical records,
+                tasks, etc. that should only be created once
 
         Raises:
-            e: Any Error Raised
+            ClientError: Client specific errors
+            Exception: Any Error Raised
 
         Returns:
             dict: The Response from DynamoDB's put_item actions.
@@ -85,7 +92,7 @@ class DynamoDB(DynamoDBConnection):
 
         try:
             if not isinstance(item, dict):
-                # attemp to convert it
+                # attempt to convert it
                 if not isinstance(item, DynamoDBModelBase):
                     raise RuntimeError(
                         f"Item is not a dictionary or DynamoDBModelBase. Type: {type(item).__name__}. "
@@ -106,19 +113,49 @@ class DynamoDB(DynamoDBConnection):
 
             if isinstance(item, dict) and isinstance(next(iter(item.values())), dict):
                 # Use boto3.client syntax
-                response = dict(
-                    self.dynamodb_client.put_item(TableName=table_name, Item=item)
-                )
+                # client API style
+                params = {
+                    "TableName": table_name,
+                    "Item": item,
+                }
+                if fail_if_exists:
+                    # only insert if the item does *not* already exist
+                    params["ConditionExpression"] = (
+                        "attribute_not_exists(#pk) AND attribute_not_exists(#sk)"
+                    )
+                    params["ExpressionAttributeNames"] = {"#pk": "pk", "#sk": "sk"}
+                response = dict(self.dynamodb_client.put_item(**params))
+
             else:
                 # Use boto3.resource syntax
                 table = self.dynamodb_resource.Table(table_name)
-                response = dict(table.put_item(Item=item))  # type: ignore[arg-type]
+                if fail_if_exists:
+                    cond = Attr("pk").not_exists() & Attr("sk").not_exists()
+                    response = dict(table.put_item(Item=item, ConditionExpression=cond))
+                else:
+                    response = dict(table.put_item(Item=item))
+                    # response = dict(table.put_item(Item=item))  # type: ignore[arg-type]
+
+        except ClientError as e:
+            if (
+                fail_if_exists
+                and e.response["Error"]["Code"] == "ConditionalCheckFailedException"
+            ):
+                raise RuntimeError(
+                    f"Item with pk={item['pk']} already exists in {table_name} "
+                    f"and fail_if_exists was set to {fail_if_exists}"
+                ) from e
+
+            logger.exception(
+                {"source": f"{source}", "metric_filter": "put_item", "error": str(e)}
+            )
+            raise
 
         except Exception as e:  # pylint: disable=w0718
             logger.exception(
                 {"source": f"{source}", "metric_filter": "put_item", "error": str(e)}
             )
-            raise e
+            raise
 
         return response
 
