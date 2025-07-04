@@ -6,8 +6,8 @@ MIT License.  See Project Root for the license information.
 
 import unittest
 import moto
-
-from tests.unit.dynamodb_tests.db_models.user_model import User
+from typing import Optional
+from tests.unit.dynamodb_tests.db_models.task import Task
 from boto3_assist.environment_services.environment_loader import EnvironmentLoader
 from boto3_assist.dynamodb.dynamodb import DynamoDB
 from tests.unit.common.db_test_helpers import DbTestHelper
@@ -38,12 +38,10 @@ class DbQueryTest(unittest.TestCase):
 
     def test_fail_if_exists(self):
 
-        # create a few users
+        task_id: str = "123456789"
 
-        user_id: str = "123456789"
-
-        user = User(user_id)
-        response = self.db.save(table_name=self.__table_name, item=user)
+        task = Task(task_id)
+        response = self.db.save(table_name=self.__table_name, item=task)
 
         self.assertEqual(response["ResponseMetadata"]["HTTPStatusCode"], 200)
 
@@ -52,10 +50,10 @@ class DbQueryTest(unittest.TestCase):
             Exception,
             self.db.save,
             table_name=self.__table_name,
-            item=user,
+            item=task,
             fail_if_exists=True,
         )
 
         # this does not
-        response = self.db.save(table_name=self.__table_name, item=user)
+        response = self.db.save(table_name=self.__table_name, item=task)
         self.assertEqual(response["ResponseMetadata"]["HTTPStatusCode"], 200)
