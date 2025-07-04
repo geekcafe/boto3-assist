@@ -62,7 +62,7 @@ def extract_version_and_write_to_file(pyproject_toml: str, version_file: str):
 
 def run_build():
     """Run python build commands"""
-    run_commands(["python", "-m", "build"])
+    run_commands(["python", "-m", "build", "--no-isolation"])
 
 
 def run_publish():
