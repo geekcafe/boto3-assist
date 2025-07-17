@@ -9,8 +9,10 @@ mypy_boto3_s3
 mypy_boto3_cognito_idp
 mypy_boto3_securityhub
 mypy_boto3_ssm
-moto [dynamodb2] # mocks for unit tests
-# setuptools
+mypy_boto3_ecr
+# mocks for unit tests
+moto 
+# setup-tools
 types-python-dateutil
 toml
 twine

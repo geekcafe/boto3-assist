@@ -30,7 +30,9 @@
         "addopts",
         "dateutil",
         "geekcafe",
-        "relativedelta"
+        "relativedelta",
+        "retag",
+        "retags"
     ],
     
 }
