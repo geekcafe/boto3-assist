@@ -171,12 +171,7 @@ class DynamoDBIndex:
             )
             return key
 
-        elif (
-            self.name == DynamoDBIndexes.PRIMARY_INDEX
-            and include_sort_key
-            # if it ends with a # we are assuming that we are doing a wild card mapping
-            and not str(self.sort_key.value).endswith("#")
-        ):
+        elif self.name == DynamoDBIndexes.PRIMARY_INDEX and include_sort_key:
             # this is a direct primary key which is used in a get call
             # this is different than query keys
             key = {}
