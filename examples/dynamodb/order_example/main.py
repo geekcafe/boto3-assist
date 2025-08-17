@@ -20,7 +20,7 @@ from examples.dynamodb.services.table_service import DynamoDBTableService
 
 
 class DynamoDBExample:
-    """An example of using and debuggin DynamoDB"""
+    """An example of using and debugging DynamoDB"""
 
     def __init__(self, table_name: str) -> None:
         self.db: DynamoDB = DynamoDB()
