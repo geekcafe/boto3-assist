@@ -166,3 +166,9 @@ cython_debug/
 .unittest
 .unittests
 .outputs
+# Local configuration
+.pysetup.json
+
+activate.sh
+.pypirc
+.DS_Store
