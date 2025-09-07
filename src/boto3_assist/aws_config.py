@@ -51,7 +51,7 @@ class AWSConfig:
         pass
 
     def get_path(self) -> Path:
-        """
+        r"""
         Returns the path to the AWS config file, honoring AWS_CONFIG_FILE
         and falling back to ~/.aws/config (or %USERPROFILE%\.aws\config on Windows).
         """
