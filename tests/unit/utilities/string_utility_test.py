@@ -17,7 +17,7 @@ class StringUtilityUnitTest(unittest.TestCase):
     "String Utility Tests"
 
     def test_uuid_idempotency(self):
-        """Testing Idempotnent UUID generation."""
+        """Testing Idempotent UUID generation."""
         # must be consistent
         namespace: uuid.UUID = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 

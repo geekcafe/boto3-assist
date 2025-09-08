@@ -8,6 +8,7 @@ import datetime as dt
 import decimal
 import inspect
 import json
+import typing
 import uuid
 from datetime import datetime
 from decimal import Decimal
@@ -115,6 +116,86 @@ class JsonConversions:
     Json Conversion Utility
     Used for snake_case to camelCase and vice versa
     """
+
+    @staticmethod
+    def string_to_json_obj(
+        value: str | list | dict, raise_on_error: bool = True, retry: int = 0
+    ) -> typing.Union[dict, typing.Any, None]:
+        """
+        Converts a string to a JSON object.
+
+        Args:
+            value: The value to convert (string, list, or dict).
+            raise_on_error: Whether to raise an exception on error.
+            retry: The number of retry attempts made.
+
+        Returns:
+            The converted JSON object, or the original value if conversion fails.
+        """
+        # Handle empty/None values
+        if not value:
+            return {}
+
+        # Return dicts unchanged
+        if isinstance(value, dict):
+            return value
+
+        # Check retry limit early
+        if retry > 5:
+            raise RuntimeError("Too many attempts to convert string to JSON")
+
+        try:
+            # Convert to string if needed
+            if not isinstance(value, str):
+                value = str(value)
+
+            # Clean up the string
+            value = value.replace("\n", "").strip()
+            if value.startswith("'") and value.endswith("'"):
+                value = value.strip("'").strip()
+
+            # Parse JSON
+            parsed_value = json.loads(value)
+            
+            # Handle nested string JSON (recursive case)
+            if isinstance(parsed_value, str):
+                return JsonConversions.string_to_json_obj(parsed_value, raise_on_error, retry + 1)
+            
+            return parsed_value
+
+        except json.JSONDecodeError as e:
+            # Try to fix malformed JSON with single quotes
+            if "Expecting property name enclosed in double quotes" in str(e) and retry < 5:
+                if isinstance(value, str):
+                    fixed_json = JsonConversions.convert_bad_json_string(value)
+                    return JsonConversions.string_to_json_obj(fixed_json, raise_on_error, retry + 1)
+            
+            if raise_on_error:
+                raise e
+            return {}
+
+        except Exception as e:
+            if raise_on_error:
+                logger.exception({"source": "string_to_json_obj", "error": str(e), "value": value})
+                raise e
+            
+            logger.warning({"source": "string_to_json_obj", "returning_original": True, "value": value})
+            return value
+
+
+    @staticmethod
+    def convert_bad_json_string(bad_json: str) -> str:
+        """
+        Fixes malformed JSON by converting single quotes to double quotes.
+
+        Args:
+            bad_json: Malformed JSON string with single quotes.
+
+        Returns:
+            Fixed JSON string with proper double quotes.
+        """
+        # Use a placeholder to safely swap quotes
+        return bad_json.replace("'", "§§§").replace('"', "'").replace("§§§", '"')
 
     @staticmethod
     def _camel_to_snake(value: str) -> str:

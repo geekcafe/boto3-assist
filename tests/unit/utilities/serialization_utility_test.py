@@ -5,11 +5,12 @@ MIT License.  See Project Root for the license information.
 """
 
 import unittest
+import json
 from datetime import datetime, UTC
 from datetime import timedelta
 from typing import cast
 from typing import Optional, List
-from boto3_assist.utilities.serialization_utility import Serialization
+from boto3_assist.utilities.serialization_utility import Serialization, JsonConversions
 from boto3_assist.dynamodb.dynamodb_model_base import (
     DynamoDBModelBase,
     exclude_indexes_from_serialization,
@@ -264,3 +265,147 @@ class SerializationUnitTest(unittest.TestCase):
         self.assertIsNone(active_subscription.get("sk"))
         self.assertIsNone(active_subscription.get("gsi0_pk"))
         self.assertIsNone(active_subscription.get("gsi0_sk"))
+
+
+class JsonConversionsUnitTest(unittest.TestCase):
+    """Unit tests for JsonConversions.string_to_json_obj function"""
+
+    def setUp(self):
+        """Set up common test data"""
+        self.sample_dict = {"name": "John", "age": 30}
+        self.sample_json = '{"name": "John", "age": 30}'
+
+    def test_valid_json_conversions(self):
+        """Test converting valid JSON strings and data types"""
+        test_cases = [
+            (
+                '{"name": "John", "age": 30, "active": true}',
+                {"name": "John", "age": 30, "active": True},
+            ),
+            (
+                '[{"name": "John"}, {"name": "Jane"}]',
+                [{"name": "John"}, {"name": "Jane"}],
+            ),
+            (
+                '{"message": "Hello 🌍", "symbol": "©"}',
+                {"message": "Hello 🌍", "symbol": "©"},
+            ),
+            (
+                '{"name": "John", "middle_name": null}',
+                {"name": "John", "middle_name": None},
+            ),
+        ]
+
+        for json_input, expected in test_cases:
+            with self.subTest(json_input=json_input):
+                result = JsonConversions.string_to_json_obj(json_input)
+                self.assertEqual(result, expected)
+
+    def test_empty_and_none_inputs(self):
+        """Test edge cases with empty/None inputs"""
+        test_cases = [
+            ("", {}),
+            (None, {}),
+        ]
+
+        for input_val, expected in test_cases:
+            with self.subTest(input_val=input_val):
+                result = JsonConversions.string_to_json_obj(input_val)
+                self.assertEqual(result, expected)
+
+    def test_passthrough_types(self):
+        """Test that certain types pass through unchanged"""
+        input_dict = {"name": "John", "age": 30}
+        result = JsonConversions.string_to_json_obj(input_dict)
+        self.assertEqual(result, input_dict)
+        self.assertIs(result, input_dict)
+
+    def test_string_preprocessing(self):
+        """Test string preprocessing (whitespace, quotes)"""
+        test_cases = [
+            ('\n  {"name": "John", "age": 30}  \n', self.sample_dict),
+            ('\'{"name": "John", "age": 30}\'', self.sample_dict),
+            ('"{\\"name\\": \\"John\\", \\"age\\": 30}"', self.sample_dict),
+        ]
+
+        for json_input, expected in test_cases:
+            with self.subTest(json_input=json_input[:20] + "..."):
+                result = JsonConversions.string_to_json_obj(json_input)
+                self.assertEqual(result, expected)
+
+    def test_malformed_json_auto_fix(self):
+        """Test auto-fixing of malformed JSON"""
+        bad_json = "{'name': 'John', 'age': 30}"
+        result = JsonConversions.string_to_json_obj(bad_json)
+        self.assertEqual(result, self.sample_dict)
+
+    def test_error_handling_with_raise_on_error_true(self):
+        """Test error handling when raise_on_error=True"""
+        test_cases = [
+            ("{'name': 'John', 'age': 30, 'invalid'}", json.JSONDecodeError),
+            ('{"valid": "json"}', RuntimeError),  # retry=10 triggers RuntimeError
+        ]
+
+        for invalid_input, expected_exception in test_cases:
+            with self.subTest(invalid_input=invalid_input):
+                with self.assertRaises(expected_exception):
+                    if expected_exception == RuntimeError:
+                        JsonConversions.string_to_json_obj(invalid_input, retry=10)
+                    else:
+                        JsonConversions.string_to_json_obj(
+                            invalid_input, raise_on_error=True
+                        )
+
+    def test_error_handling_with_raise_on_error_false(self):
+        """Test graceful error handling when raise_on_error=False"""
+        test_cases = [
+            ("{'name': 'John', 'age': 30, 'invalid'}", {}),
+            (12345, 12345),  # Non-string input
+        ]
+
+        for invalid_input, expected in test_cases:
+            with self.subTest(invalid_input=invalid_input):
+                result = JsonConversions.string_to_json_obj(
+                    invalid_input, raise_on_error=False
+                )
+                self.assertEqual(result, expected)
+
+    def test_retry_limit(self):
+        """Test retry limit enforcement"""
+        with self.assertRaises(RuntimeError) as context:
+            JsonConversions.string_to_json_obj(self.sample_json, retry=6)
+        self.assertIn("Too many attempts", str(context.exception))
+
+    def test_complex_nested_structure(self):
+        """Test complex nested JSON structure"""
+        complex_json = """{
+            "user": {"name": "John Doe", "details": {"age": 30, "preferences": ["reading", "coding"]}},
+            "metadata": {"version": 1.2}
+        }"""
+
+        result = JsonConversions.string_to_json_obj(complex_json)
+
+        # Verify key nested values
+        self.assertEqual(result["user"]["name"], "John Doe")
+        self.assertEqual(result["user"]["details"]["age"], 30)
+        self.assertEqual(
+            result["user"]["details"]["preferences"], ["reading", "coding"]
+        )
+        self.assertEqual(result["metadata"]["version"], 1.2)
+
+    def test_data_type_preservation(self):
+        """Test that JSON data types are properly preserved"""
+        json_with_types = """{
+            "string_val": "text", "int_val": 42, "float_val": 3.14,
+            "bool_true": true, "bool_false": false, "null_val": null
+        }"""
+
+        result = JsonConversions.string_to_json_obj(json_with_types)
+
+        # Verify all data types
+        self.assertEqual(result["string_val"], "text")
+        self.assertEqual(result["int_val"], 42)
+        self.assertEqual(result["float_val"], 3.14)
+        self.assertTrue(result["bool_true"])
+        self.assertFalse(result["bool_false"])
+        self.assertIsNone(result["null_val"])
