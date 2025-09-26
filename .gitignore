@@ -172,3 +172,4 @@ cython_debug/
 activate.sh
 .pypirc
 .DS_Store
+.prompts

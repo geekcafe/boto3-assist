@@ -21,6 +21,7 @@ from .dynamodb_connection import DynamoDBConnection
 from .dynamodb_helpers import DynamoDBHelpers
 from .dynamodb_model_base import DynamoDBModelBase
 from ..utilities.string_utility import StringUtility
+from ..utilities.decimal_conversion_utility import DecimalConversionUtility
 from .dynamodb_index import DynamoDBIndex
 
 logger = Logger()
@@ -51,16 +52,33 @@ class DynamoDB(DynamoDBConnection):
             aws_region=aws_region,
             aws_end_point_url=aws_end_point_url,
             aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
             assume_role_arn=assume_role_arn,
             assume_role_chain=assume_role_chain,
             assume_role_duration_seconds=assume_role_duration_seconds,
         )
         self.helpers: DynamoDBHelpers = DynamoDBHelpers()
-        self.log_dynamodb_item_size = (
-            str(os.getenv("LOG_DYNAMODB_ITEM_SIZE", "false")).lower() == "true"
+        self.log_dynamodb_item_size: bool = bool(
+            os.getenv("LOG_DYNAMODB_ITEM_SIZE", "False").lower() == "true"
+        )
+        self.convert_decimals: bool = bool(
+            os.getenv("DYNAMODB_CONVERT_DECIMALS", "True").lower() == "true"
         )
         logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
+
+    def _apply_decimal_conversion(self, response: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Apply decimal conversion to DynamoDB response if enabled.
+        
+        Args:
+            response: The DynamoDB response dictionary
+            
+        Returns:
+            The response with decimal conversion applied if enabled
+        """
+        if not self.convert_decimals:
+            return response
+            
+        return DecimalConversionUtility.convert_decimals_to_native_types(response)
 
     def save(
         self,
@@ -283,7 +301,8 @@ class DynamoDB(DynamoDBConnection):
             if self.raise_on_error:
                 raise e
 
-        return response
+        # Apply decimal conversion to the response
+        return self._apply_decimal_conversion(response)
 
     def update_item(
         self,
@@ -391,7 +410,8 @@ class DynamoDB(DynamoDBConnection):
             if self.raise_on_error:
                 raise e
 
-        return response
+        # Apply decimal conversion to the response
+        return self._apply_decimal_conversion(response)
 
     @overload
     def delete(self, *, table_name: str, model: DynamoDBModelBase) -> dict:

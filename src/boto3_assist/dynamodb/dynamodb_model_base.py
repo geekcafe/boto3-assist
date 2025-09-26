@@ -11,8 +11,9 @@ import datetime as dt
 # import inspect
 # import uuid
 from typing import TypeVar, List, Dict, Any
-from boto3.dynamodb.types import TypeSerializer
+from boto3.dynamodb.types import TypeSerializer, TypeDeserializer
 from boto3_assist.utilities.serialization_utility import Serialization
+from boto3_assist.utilities.decimal_conversion_utility import DecimalConversionUtility
 from boto3_assist.dynamodb.dynamodb_helpers import DynamoDBHelpers
 from boto3_assist.dynamodb.dynamodb_index import (
     DynamoDBIndexes,
@@ -156,14 +157,20 @@ class DynamoDBModelBase(SerializableModel):
             item = item.to_resource_dictionary()
 
         if isinstance(item, dict):
-            # see if this is coming directly from dynamodb
+            # Handle DynamoDB response structures
             if "ResponseMetadata" in item:
+                # Full DynamoDB response with metadata
                 response: dict | None = item.get("Item")
-
                 if response is None:
                     response = {}
-
                 item = response
+            elif "Item" in item and not any(key in item for key in ["id", "name", "pk", "sk"]):
+                # Response with Item key but no direct model attributes (likely a DynamoDB response)
+                # This handles cases like {'Item': {...}} or {'Item': {...}, 'Count': 1}
+                item = item.get("Item", {})
+            
+            # Convert any Decimal objects to native Python types for easier handling
+            item = DecimalConversionUtility.convert_decimals_to_native_types(item)
 
         else:
             raise ValueError("Item must be a dictionary or DynamoDBModelBase")
@@ -282,6 +289,7 @@ class DynamoDBSerializer:
             raise ValueError("Unable to map source to target")
 
         return mapped
+
 
     @staticmethod
     def to_client_dictionary(

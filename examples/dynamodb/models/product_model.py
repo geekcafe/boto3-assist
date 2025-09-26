@@ -18,6 +18,9 @@ class Product(DynamoDBModelBase):
         price: float = 0.0,
         description: Optional[str] = None,
         sku: Optional[str] = None,
+        cost: float = 0.0,
+        tax_rate: float = 0.0,
+        weight: float = 0.0,
     ):
         super().__init__()
 
@@ -26,6 +29,9 @@ class Product(DynamoDBModelBase):
         self.price: float = price
         self.description: Optional[str] = description
         self.sku: Optional[str] = sku
+        self.cost: float = cost
+        self.tax_rate: float = tax_rate
+        self.weight: float = weight
 
         self.__setup_indexes()
 

@@ -4,6 +4,9 @@
         "name": "Mjolnir (Thor's Hammer)",
         "description": "Wield the power of the Thunder God with this faithful replica of Thor's mighty hammer. Made from enchanted Uru metal, it's nearly impossible to lift unless you're worthy.",
         "price": 9999.99,
+        "cost": 5000.00,
+        "tax_rate": 0.08,
+        "weight": 42.3,
         "sku": "THOR001"
     },
     {
@@ -11,6 +14,9 @@
         "name": "Tesseract (Space Stone)",
         "description": "Harness the power of the cosmos with the Space Stone, encased within the Tesseract. Instantly transport yourself to any location in the universe.",
         "price": 14999.99,
+        "cost": 8000.00,
+        "tax_rate": 0.10,
+        "weight": 2.5,
         "sku": "TSR002"
     },
     {
@@ -18,6 +24,9 @@
         "name": "Eye of Agamotto",
         "description": "The mystical amulet worn by Doctor Strange, capable of manipulating time itself. Comes with a cautionary warning about potential time loops.",
         "price": 7999.99,
+        "cost": 4500.00,
+        "tax_rate": 0.075,
+        "weight": 0.8,
         "sku": "STRANGE003"
     },
     {
@@ -25,6 +34,9 @@
         "name": "Infinity Gauntlet",
         "description": "The ultimate weapon, designed to hold all six Infinity Stones. Wear this gauntlet and control the very fabric of reality. Stones not included.",
         "price": 19999.99,
+        "cost": 12000.00,
+        "tax_rate": 0.12,
+        "weight": 15.7,
         "sku": "GAUNTLET004"
     },
     {
@@ -32,6 +44,9 @@
         "name": "Arc Reactor",
         "description": "A fully functional Arc Reactor, just like the one that powers Tony Stark's Iron Man suits. Compact, clean energy for all your needs.",
         "price": 8999.99,
+        "cost": 5500.00,
+        "tax_rate": 0.085,
+        "weight": 3.2,
         "sku": "STARK005"
     },
     {
