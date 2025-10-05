@@ -64,3 +64,72 @@ class DbQueryTest(unittest.TestCase):
 
         items = response["Items"]
         self.assertEqual(len(items), 1)
+
+    def test_query_with_pagination_start_key(self):
+        """Test pagination using start_key parameter"""
+        
+        # Create 20 users
+        for i in range(1, 21):
+            user = User(i)
+            user.first_name = f"first_{i}"
+            user.last_name = f"last_{i}"
+            user.email = f"email_{i}@example.com"
+            response = self.db.save(table_name=self.__table_name, item=user)
+            self.assertEqual(response["ResponseMetadata"]["HTTPStatusCode"], 200)
+
+        # Query with limit of 5 - should return first 5 items and a LastEvaluatedKey
+        user = User()
+        key = user.get_key("gsi1")
+        response = self.db.query(
+            table_name=self.__table_name,
+            key=key,
+            limit=5
+        )
+        
+        # Verify first batch
+        items = response["Items"]
+        self.assertEqual(len(items), 5, "First query should return 5 items")
+        self.assertIn("LastEvaluatedKey", response, "Should have LastEvaluatedKey for pagination")
+        
+        # Store the LastEvaluatedKey to use as start_key
+        last_key = response["LastEvaluatedKey"]
+        
+        # Query again using start_key - should return next 5 items
+        response2 = self.db.query(
+            table_name=self.__table_name,
+            key=key,
+            limit=5,
+            start_key=last_key
+        )
+        
+        # Verify second batch
+        items2 = response2["Items"]
+        self.assertEqual(len(items2), 5, "Second query should return 5 items")
+        self.assertIn("LastEvaluatedKey", response2, "Should still have LastEvaluatedKey since more items exist")
+        
+        # Verify the items are different (pagination is working)
+        first_batch_ids = {item["id"] for item in items}
+        second_batch_ids = {item["id"] for item in items2}
+        self.assertEqual(len(first_batch_ids.intersection(second_batch_ids)), 0, 
+                        "First and second batch should contain different items")
+        
+        # Continue pagination until no more items
+        all_items = items + items2
+        next_start_key = response2["LastEvaluatedKey"]
+        
+        while next_start_key:
+            response_next = self.db.query(
+                table_name=self.__table_name,
+                key=key,
+                limit=5,
+                start_key=next_start_key
+            )
+            all_items.extend(response_next["Items"])
+            next_start_key = response_next.get("LastEvaluatedKey")
+        
+        # Verify we retrieved all 20 items
+        self.assertEqual(len(all_items), 20, "Should retrieve all 20 items through pagination")
+        
+        # Verify all items are unique
+        unique_ids = {item["id"] for item in all_items}
+        self.assertEqual(len(unique_ids), 20, "All items should have unique IDs")

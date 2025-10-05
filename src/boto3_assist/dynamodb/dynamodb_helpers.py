@@ -13,7 +13,6 @@ from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex
 logger = Logger()
 
 
-
 class DynamoDBHelpers:
     """Dynamo DB Helper Functions"""
 
@@ -92,15 +91,15 @@ class DynamoDBHelpers:
         key_info: Dict[str, Any] = {
             "name": key_name,
             "key": key_value,
-            "expression_format": None
-            if not isinstance(value, And)
-            else value.expression_format,
-            "expression_operator": None
-            if not isinstance(value, And)
-            else value.expression_operator,
-            "has_grouped_values": None
-            if not isinstance(value, And)
-            else value.has_grouped_values,
+            "expression_format": (
+                None if not isinstance(value, And) else value.expression_format
+            ),
+            "expression_operator": (
+                None if not isinstance(value, And) else value.expression_operator
+            ),
+            "has_grouped_values": (
+                None if not isinstance(value, And) else value.has_grouped_values
+            ),
             "values": values,
         }
 
@@ -118,13 +117,12 @@ class DynamoDBHelpers:
             logger.error({"exception": str(e)})
             return "unknown"
 
-    
     def wrap_response(self, items, dynamodb_response: dict, diagnostics) -> dict:
         """A wrapper for response data"""
         last_key = dynamodb_response.get("LastEvaluatedKey", None)
         more = last_key is not None
 
-        # conform the dynamod dy responses
+        # conform the dynamodb responses
         response = {
             "Items": items,
             "LastKey": last_key,
@@ -135,7 +133,7 @@ class DynamoDBHelpers:
         }
 
         return response
-    
+
     def wrap_collection_response(self, collection: List[dict]) -> dict[str, List]:
         """
         Wraps Up Some usefull information when dealing with

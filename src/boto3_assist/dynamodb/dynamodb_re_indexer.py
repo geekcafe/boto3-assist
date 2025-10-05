@@ -77,7 +77,7 @@ class DynamoDBReIndexer:
             # pk or sk, which you can't do.  If that's the case
         else:
             # add the new one first and optionally delete the older one
-            # once we are succesfull
+            # once we are successful
             try:
                 # save the new one first
                 service_instance: Optional[IDynamoDBService] = (
