@@ -1,0 +1,11 @@
+rules:
+  - name: Defining Models
+    path: docs/defining-models.md
+    description: Model layer design patterns
+  - name: Design Patterns
+    path: docs/design-patterns.md
+    description: Design patterns for building scalable SaaS applications
+  - name: Designing Services
+    path: docs/designing-services.md
+    description: Service layer design patterns
+    
