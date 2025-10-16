@@ -235,21 +235,21 @@ from boto3_assist.s3 import S3
 s3 = S3()
 
 # Upload file
-s3.upload_file(
+s3.object.upload_file(
     file_path="/path/to/file.txt",
     bucket_name="my-bucket",
     key="files/file.txt"
 )
 
 # Download file
-s3.download_file(
+s3.object.download_file(
     bucket_name="my-bucket",
     key="files/file.txt",
     file_path="/path/to/download.txt"
 )
 
 # Generate presigned URL
-url = s3.generate_presigned_url(
+url = s3.object.generate_presigned_url(
     bucket_name="my-bucket",
     key="files/file.txt",
     expiration=3600
