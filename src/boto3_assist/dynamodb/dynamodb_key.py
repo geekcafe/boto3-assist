@@ -45,6 +45,25 @@ class DynamoDBKey:
     def value(self, value: Optional[str | Callable[[], str]]):
         self.__value = value
 
+    def to_dict(self) -> dict[str, str]:
+        """
+        Return a dictionary representation of this key for debugging.
+        
+        Returns:
+            Dictionary with attribute name as key and value as the value.
+            
+        Example:
+            >>> key = DynamoDBKey(attribute_name="pk", value="user#123")
+            >>> key.to_dict()
+            {'pk': 'user#123'}
+            
+            >>> # With lambda
+            >>> key = DynamoDBKey(attribute_name="pk", value=lambda: "user#456")
+            >>> key.to_dict()
+            {'pk': 'user#456'}
+        """
+        return {self.attribute_name: self.value}
+
     @staticmethod
     def build_key(*key_value_pairs) -> str:
         """

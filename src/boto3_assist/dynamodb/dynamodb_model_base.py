@@ -164,11 +164,13 @@ class DynamoDBModelBase(SerializableModel):
                 if response is None:
                     response = {}
                 item = response
-            elif "Item" in item and not any(key in item for key in ["id", "name", "pk", "sk"]):
+            elif "Item" in item and not any(
+                key in item for key in ["id", "name", "pk", "sk"]
+            ):
                 # Response with Item key but no direct model attributes (likely a DynamoDB response)
                 # This handles cases like {'Item': {...}} or {'Item': {...}, 'Count': 1}
                 item = item.get("Item", {})
-            
+
             # Convert any Decimal objects to native Python types for easier handling
             item = DecimalConversionUtility.convert_decimals_to_native_types(item)
 
@@ -194,6 +196,12 @@ class DynamoDBModelBase(SerializableModel):
         return DynamoDBSerializer.to_resource_dictionary(
             self, include_indexes=include_indexes, include_none=include_none
         )
+
+    def to_dict(self, include_none: bool = True):
+        """
+        Convert the instance to a dictionary suitable for DynamoDB client.
+        """
+        return self.to_client_dictionary(include_none=include_none)
 
     def to_dictionary(self, include_none: bool = True):
         """
@@ -289,7 +297,6 @@ class DynamoDBSerializer:
             raise ValueError("Unable to map source to target")
 
         return mapped
-
 
     @staticmethod
     def to_client_dictionary(

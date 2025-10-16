@@ -97,13 +97,13 @@ class OrderService:
         do_projections: bool = True,
     ) -> dict:
         """
-        Retrieves a user by user ID from the specified DynamoDB table.
+        Retrieves a order by order ID from the specified DynamoDB table.
 
         Args:
             order_id (str): The ID of the order to retrieve.
 
         Returns:
-            dict: The retrieved user as a dictionary.
+            dict: The retrieved order as a dictionary.
         """
 
         response: dict = {}

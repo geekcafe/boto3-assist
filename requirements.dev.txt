@@ -1,10 +1,34 @@
 # dev and testing requirements
-pytest
-mypy
-types-python-dateutil
+
+# Build tools
 build
+hatchling
 toml
 twine
 wheel
+
+# Type checking
+mypy
+types-python-dateutil
+
+# boto3 type stubs
+boto3-stubs[cognito]
+boto3-stubs[dynamodb]
+mypy_boto3_cloudwatch
+mypy_boto3_cognito_idp
+mypy_boto3_dynamodb
+mypy_boto3_ec2
+mypy_boto3_ecr
+mypy_boto3_s3
+mypy_boto3_securityhub
+mypy_boto3_ssm
+
+# Testing
+moto
+pytest
+
+# Package info - occasionally needs to be upgraded or we can get upload errors when out of sync
+# Error example: InvalidDistribution: Metadata is missing required fields: Name, Version.
+# Make sure the distribution includes the files where those fields are specified, and is using a supported
+# Metadata-Version: 1.0, 1.1, 1.2, 2.0, 2.1, 2.2, 2.3.
 pkginfo
-hatchling

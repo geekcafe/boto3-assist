@@ -149,6 +149,149 @@ class DynamoDBIndex:
     def sort_key(self, value: DynamoDBKey | None):
         self.__sk = value
 
+    def to_dict(self, include_sort_key: bool = True) -> dict[str, str]:
+        """
+        Return a dictionary representation of this index's keys for debugging.
+        
+        This is particularly useful for:
+        - Debugging key generation logic
+        - Logging DynamoDB operations
+        - Verifying composite key structure
+        - Testing key values
+        
+        Args:
+            include_sort_key: Whether to include the sort key (default: True)
+            
+        Returns:
+            Dictionary with partition key and optionally sort key.
+            
+        Example:
+            >>> index = DynamoDBIndex()
+            >>> index.partition_key.attribute_name = "pk"
+            >>> index.partition_key.value = lambda: "user#123"
+            >>> index.sort_key.attribute_name = "sk"
+            >>> index.sort_key.value = lambda: "user#123"
+            >>> index.to_dict()
+            {'pk': 'user#123', 'sk': 'user#123'}
+            
+            >>> # Partition key only
+            >>> index.to_dict(include_sort_key=False)
+            {'pk': 'user#123'}
+            
+            >>> # Useful for debugging
+            >>> print(f"Querying with key: {index.to_dict()}")
+            Querying with key: {'pk': 'user#123', 'sk': 'user#123'}
+        """
+        result = {}
+        
+        # Always include partition key
+        if self.__pk:
+            result[self.partition_key.attribute_name] = self.partition_key.value
+        
+        # Optionally include sort key
+        if include_sort_key and self.__sk and self.sort_key.attribute_name:
+            try:
+                result[self.sort_key.attribute_name] = self.sort_key.value
+            except ValueError:
+                # Sort key value not set, skip it
+                pass
+                
+        return result
+
+    def debug_info(
+        self,
+        *,
+        include_sort_key: bool = True,
+        condition: str = "begins_with",
+        low_value: Any = None,
+        high_value: Any = None,
+    ) -> dict[str, Any]:
+        """
+        Return detailed debugging information about this index and how it would be queried.
+        
+        This is useful for understanding:
+        - What keys are defined
+        - What condition would be used in a query
+        - What the actual key values are
+        - What index name would be used
+        
+        Args:
+            include_sort_key: Whether to include the sort key (default: True)
+            condition: The condition type being used (default: "begins_with")
+            low_value: Low value for "between" condition
+            high_value: High value for "between" condition
+            
+        Returns:
+            Dictionary with debugging information including keys, condition, and index details.
+            
+        Example:
+            >>> index = product.indexes.get("gsi1")
+            >>> debug = index.debug_info(condition="begins_with")
+            >>> print(debug)
+            {
+                'index_name': 'gsi1',
+                'partition_key': {
+                    'attribute': 'gsi1_pk',
+                    'value': 'category#electronics'
+                },
+                'sort_key': {
+                    'attribute': 'gsi1_sk',
+                    'value': 'product#prod_123',
+                    'condition': 'begins_with'
+                },
+                'keys_dict': {'gsi1_pk': 'category#electronics', 'gsi1_sk': 'product#prod_123'},
+                'query_type': 'GSI' or 'Primary'
+            }
+            
+            >>> # Check condition type
+            >>> if debug['sort_key']['condition'] == 'begins_with':
+            ...     print("This query uses begins_with")
+        """
+        result = {
+            'index_name': self.name,
+            'query_type': 'Primary' if self.name == DynamoDBIndexes.PRIMARY_INDEX else 'GSI/LSI'
+        }
+        
+        # Partition key info
+        if self.__pk:
+            result['partition_key'] = {
+                'attribute': self.partition_key.attribute_name,
+                'value': self.partition_key.value
+            }
+        
+        # Sort key info with condition
+        if include_sort_key and self.__sk and self.sort_key.attribute_name:
+            try:
+                sk_info = {
+                    'attribute': self.sort_key.attribute_name,
+                    'value': self.sort_key.value,
+                    'condition': condition
+                }
+                
+                # Add range info for between condition
+                if condition == "between" and low_value is not None and high_value is not None:
+                    sk_info['low_value'] = low_value
+                    sk_info['high_value'] = high_value
+                    sk_info['full_range'] = {
+                        'low': f"{self.sort_key.value}{low_value}",
+                        'high': f"{self.sort_key.value}{high_value}"
+                    }
+                
+                result['sort_key'] = sk_info
+            except ValueError:
+                # Sort key value not set
+                result['sort_key'] = {
+                    'attribute': self.sort_key.attribute_name,
+                    'value': None,
+                    'condition': condition,
+                    'note': 'Sort key value not set'
+                }
+        
+        # Include the keys dictionary for convenience
+        result['keys_dict'] = self.to_dict(include_sort_key=include_sort_key)
+        
+        return result
+
     def key(
         self,
         *,

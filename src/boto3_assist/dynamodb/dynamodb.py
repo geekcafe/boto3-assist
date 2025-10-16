@@ -86,9 +86,13 @@ class DynamoDB(DynamoDBConnection):
         table_name: str,
         source: Optional[str] = None,
         fail_if_exists: bool = False,
+        condition_expression: Optional[str] = None,
+        expression_attribute_names: Optional[dict] = None,
+        expression_attribute_values: Optional[dict] = None,
     ) -> dict:
         """
-        Save an item to the database
+        Save an item to the database with optional conditional expressions.
+        
         Args:
             item (dict): DynamoDB Dictionary Object or DynamoDBModelBase.
                 Supports the "client" or "resource" syntax
@@ -97,14 +101,37 @@ class DynamoDB(DynamoDBConnection):
             fail_if_exists (bool, optional): Only allow it to insert once.
                 Fail if it already exits. This is useful for loggers, historical records,
                 tasks, etc. that should only be created once
+            condition_expression (str, optional): Custom condition expression.
+                Example: "attribute_not_exists(#pk)" or "#version = :expected_version"
+            expression_attribute_names (dict, optional): Attribute name mappings.
+                Example: {"#version": "version", "#status": "status"}
+            expression_attribute_values (dict, optional): Attribute value mappings.
+                Example: {":expected_version": 1, ":active": "active"}
 
         Raises:
             ClientError: Client specific errors
+            RuntimeError: Conditional check failed
             Exception: Any Error Raised
 
         Returns:
             dict: The Response from DynamoDB's put_item actions.
             It does not return the saved object, only the response.
+            
+        Examples:
+            >>> # Simple save
+            >>> db.save(item=user, table_name="users")
+            
+            >>> # Prevent duplicates
+            >>> db.save(item=user, table_name="users", fail_if_exists=True)
+            
+            >>> # Optimistic locking with version check
+            >>> db.save(
+            ...     item=user,
+            ...     table_name="users",
+            ...     condition_expression="#version = :expected_version",
+            ...     expression_attribute_names={"#version": "version"},
+            ...     expression_attribute_values={":expected_version": 5}
+            ... )
         """
         response: Dict[str, Any] = {}
 
@@ -128,6 +155,10 @@ class DynamoDB(DynamoDBConnection):
 
             if isinstance(item, dict):
                 self.__log_item_size(item=item)
+                
+                # Convert native numeric types to Decimal for DynamoDB
+                # (DynamoDB doesn't accept float, requires Decimal)
+                item = DecimalConversionUtility.convert_native_types_to_decimals(item)
 
             if isinstance(item, dict) and isinstance(next(iter(item.values())), dict):
                 # Use boto3.client syntax
@@ -136,33 +167,65 @@ class DynamoDB(DynamoDBConnection):
                     "TableName": table_name,
                     "Item": item,
                 }
-                if fail_if_exists:
+                
+                # Handle conditional expressions
+                if condition_expression:
+                    # Custom condition provided
+                    params["ConditionExpression"] = condition_expression
+                    if expression_attribute_names:
+                        params["ExpressionAttributeNames"] = expression_attribute_names
+                    if expression_attribute_values:
+                        params["ExpressionAttributeValues"] = expression_attribute_values
+                elif fail_if_exists:
                     # only insert if the item does *not* already exist
                     params["ConditionExpression"] = (
                         "attribute_not_exists(#pk) AND attribute_not_exists(#sk)"
                     )
                     params["ExpressionAttributeNames"] = {"#pk": "pk", "#sk": "sk"}
+                    
                 response = dict(self.dynamodb_client.put_item(**params))
 
             else:
                 # Use boto3.resource syntax
                 table = self.dynamodb_resource.Table(table_name)
-                if fail_if_exists:
-                    cond = Attr("pk").not_exists() & Attr("sk").not_exists()
-                    response = dict(table.put_item(Item=item, ConditionExpression=cond))
-                else:
-                    response = dict(table.put_item(Item=item))
-                    # response = dict(table.put_item(Item=item))  # type: ignore[arg-type]
+                
+                # Build put_item parameters
+                put_params = {"Item": item}
+                
+                # Handle conditional expressions
+                if condition_expression:
+                    # Custom condition provided
+                    # Convert string condition to boto3 condition object if needed
+                    put_params["ConditionExpression"] = condition_expression
+                    if expression_attribute_names:
+                        put_params["ExpressionAttributeNames"] = expression_attribute_names
+                    if expression_attribute_values:
+                        put_params["ExpressionAttributeValues"] = expression_attribute_values
+                elif fail_if_exists:
+                    put_params["ConditionExpression"] = (
+                        Attr("pk").not_exists() & Attr("sk").not_exists()
+                    )
+                
+                response = dict(table.put_item(**put_params))
 
         except ClientError as e:
-            if (
-                fail_if_exists
-                and e.response["Error"]["Code"] == "ConditionalCheckFailedException"
-            ):
-                raise RuntimeError(
-                    f"Item with pk={item['pk']} already exists in {table_name} "
-                    f"and fail_if_exists was set to {fail_if_exists}"
-                ) from e
+            error_code = e.response["Error"]["Code"]
+            
+            if error_code == "ConditionalCheckFailedException":
+                # Enhanced error message for conditional check failures
+                if fail_if_exists:
+                    raise RuntimeError(
+                        f"Item with pk={item['pk']} already exists in {table_name}"
+                    ) from e
+                elif condition_expression:
+                    raise RuntimeError(
+                        f"Conditional check failed for item in {table_name}. "
+                        f"Condition: {condition_expression}"
+                    ) from e
+                else:
+                    raise RuntimeError(
+                        f"Conditional check failed for item in {table_name}"
+                    ) from e
 
             logger.exception(
                 {"source": f"{source}", "metric_filter": "put_item", "error": str(e)}
@@ -309,29 +372,110 @@ class DynamoDB(DynamoDBConnection):
         table_name: str,
         key: dict,
         update_expression: str,
-        expression_attribute_values: dict,
+        expression_attribute_values: Optional[dict] = None,
+        expression_attribute_names: Optional[dict] = None,
+        condition_expression: Optional[str] = None,
+        return_values: str = "NONE",
     ) -> dict:
-        """_summary_
-
+        """
+        Update an item in DynamoDB with an update expression.
+        
+        Update expressions allow you to modify specific attributes without replacing
+        the entire item. Supports SET, ADD, REMOVE, and DELETE operations.
+        
         Args:
-            table_name (str): table name
-            key (dict): pk or pk and sk (composite key)
-            update_expression (str): update expression
-            expression_attribute_values (dict): expression attribute values
-
+            table_name: The DynamoDB table name
+            key: Primary key dict, e.g., {"pk": "user#123", "sk": "user#123"}
+            update_expression: Update expression string, e.g., "SET #name = :name, age = age + :inc"
+            expression_attribute_values: Value mappings, e.g., {":name": "Alice", ":inc": 1}
+            expression_attribute_names: Attribute name mappings for reserved words, e.g., {"#name": "name"}
+            condition_expression: Optional condition that must be met, e.g., "attribute_exists(pk)"
+            return_values: What to return after update:
+                - "NONE" (default): Nothing
+                - "ALL_OLD": All attributes before update
+                - "UPDATED_OLD": Only updated attributes before update
+                - "ALL_NEW": All attributes after update
+                - "UPDATED_NEW": Only updated attributes after update
+                
         Returns:
-            dict: dynamodb response dictionary
+            dict: DynamoDB response with optional Attributes based on return_values
+            
+        Raises:
+            RuntimeError: If condition expression fails
+            ClientError: For other DynamoDB errors
+            
+        Examples:
+            >>> # Simple SET operation
+            >>> db.update_item(
+            ...     table_name="users",
+            ...     key={"pk": "user#123", "sk": "user#123"},
+            ...     update_expression="SET email = :email",
+            ...     expression_attribute_values={":email": "new@example.com"}
+            ... )
+            
+            >>> # Atomic counter
+            >>> db.update_item(
+            ...     table_name="users",
+            ...     key={"pk": "user#123", "sk": "user#123"},
+            ...     update_expression="ADD view_count :inc",
+            ...     expression_attribute_values={":inc": 1}
+            ... )
+            
+            >>> # Multiple operations with reserved word
+            >>> db.update_item(
+            ...     table_name="users",
+            ...     key={"pk": "user#123", "sk": "user#123"},
+            ...     update_expression="SET #status = :status, updated_at = :now REMOVE temp_field",
+            ...     expression_attribute_names={"#status": "status"},
+            ...     expression_attribute_values={":status": "active", ":now": "2024-10-15"}
+            ... )
+            
+            >>> # Conditional update with return value
+            >>> response = db.update_item(
+            ...     table_name="users",
+            ...     key={"pk": "user#123", "sk": "user#123"},
+            ...     update_expression="SET email = :email",
+            ...     expression_attribute_values={":email": "new@example.com"},
+            ...     condition_expression="attribute_exists(pk)",
+            ...     return_values="ALL_NEW"
+            ... )
+            >>> updated_user = response['Attributes']
         """
         table = self.dynamodb_resource.Table(table_name)
-        response = dict(
-            table.update_item(
-                Key=key,
-                UpdateExpression=update_expression,
-                ExpressionAttributeValues=expression_attribute_values,
-            )
-        )
-
-        return response
+        
+        # Build update parameters
+        params = {
+            "Key": key,
+            "UpdateExpression": update_expression,
+            "ReturnValues": return_values
+        }
+        
+        if expression_attribute_values:
+            params["ExpressionAttributeValues"] = expression_attribute_values
+            
+        if expression_attribute_names:
+            params["ExpressionAttributeNames"] = expression_attribute_names
+            
+        if condition_expression:
+            params["ConditionExpression"] = condition_expression
+        
+        try:
+            response = dict(table.update_item(**params))
+            
+            # Apply decimal conversion if response contains attributes
+            return self._apply_decimal_conversion(response)
+            
+        except ClientError as e:
+            error_code = e.response["Error"]["Code"]
+            
+            if error_code == "ConditionalCheckFailedException":
+                raise RuntimeError(
+                    f"Conditional check failed for update in {table_name}. "
+                    f"Condition: {condition_expression}"
+                ) from e
+            
+            logger.exception(f"Error in update_item: {str(e)}")
+            raise
 
     def query(
         self,
@@ -546,3 +690,517 @@ class DynamoDB(DynamoDBConnection):
         """
 
         return response.get("Item", {})
+
+    def batch_get_item(
+        self,
+        keys: list[dict],
+        table_name: str,
+        *,
+        projection_expression: Optional[str] = None,
+        expression_attribute_names: Optional[dict] = None,
+        consistent_read: bool = False,
+    ) -> dict:
+        """
+        Retrieve multiple items from DynamoDB in a single request.
+        
+        DynamoDB allows up to 100 items per batch_get_item call. This method
+        automatically chunks larger requests and handles unprocessed keys with
+        exponential backoff retry logic.
+        
+        Args:
+            keys: List of key dictionaries. Each dict must contain the primary key
+                  (and sort key if applicable) for the items to retrieve.
+                  Example: [{"pk": "user#1", "sk": "user#1"}, {"pk": "user#2", "sk": "user#2"}]
+            table_name: The DynamoDB table name
+            projection_expression: Optional comma-separated list of attributes to retrieve
+            expression_attribute_names: Optional dict mapping attribute name placeholders to actual names
+            consistent_read: If True, uses strongly consistent reads (costs more RCUs)
+            
+        Returns:
+            dict: Response containing:
+                - 'Items': List of retrieved items (with Decimal conversion applied)
+                - 'UnprocessedKeys': Any keys that couldn't be processed after retries
+                - 'ConsumedCapacity': Capacity units consumed (if available)
+                
+        Example:
+            >>> keys = [
+            ...     {"pk": "user#user-001", "sk": "user#user-001"},
+            ...     {"pk": "user#user-002", "sk": "user#user-002"},
+            ...     {"pk": "user#user-003", "sk": "user#user-003"}
+            ... ]
+            >>> response = db.batch_get_item(keys=keys, table_name="users")
+            >>> items = response['Items']
+            >>> print(f"Retrieved {len(items)} items")
+        
+        Note:
+            - Maximum 100 items per request (automatically chunked)
+            - Each item can be up to 400 KB
+            - Maximum 16 MB total response size
+            - Unprocessed keys are automatically retried with exponential backoff
+        """
+        import time
+        
+        all_items = []
+        unprocessed_keys = []
+        
+        # DynamoDB limit: 100 items per batch_get_item call
+        BATCH_SIZE = 100
+        
+        # Chunk keys into batches of 100
+        for i in range(0, len(keys), BATCH_SIZE):
+            batch_keys = keys[i:i + BATCH_SIZE]
+            
+            # Build request parameters
+            request_items = {
+                table_name: {
+                    'Keys': batch_keys,
+                    'ConsistentRead': consistent_read
+                }
+            }
+            
+            # Add projection if provided
+            if projection_expression:
+                request_items[table_name]['ProjectionExpression'] = projection_expression
+            if expression_attribute_names:
+                request_items[table_name]['ExpressionAttributeNames'] = expression_attribute_names
+            
+            # Retry logic for unprocessed keys
+            max_retries = 5
+            retry_count = 0
+            backoff_time = 0.1  # Start with 100ms
+            
+            while retry_count <= max_retries:
+                try:
+                    response = self.dynamodb_resource.meta.client.batch_get_item(
+                        RequestItems=request_items
+                    )
+                    
+                    # Collect items from this batch
+                    if 'Responses' in response and table_name in response['Responses']:
+                        batch_items = response['Responses'][table_name]
+                        all_items.extend(batch_items)
+                    
+                    # Check for unprocessed keys
+                    if 'UnprocessedKeys' in response and response['UnprocessedKeys']:
+                        if table_name in response['UnprocessedKeys']:
+                            unprocessed = response['UnprocessedKeys'][table_name]
+                            
+                            if retry_count < max_retries:
+                                # Retry with exponential backoff
+                                logger.warning(
+                                    f"Batch get has {len(unprocessed['Keys'])} unprocessed keys. "
+                                    f"Retrying in {backoff_time}s (attempt {retry_count + 1}/{max_retries})"
+                                )
+                                time.sleep(backoff_time)
+                                request_items = {table_name: unprocessed}
+                                backoff_time *= 2  # Exponential backoff
+                                retry_count += 1
+                                continue
+                            else:
+                                # Max retries reached, collect remaining unprocessed keys
+                                logger.error(
+                                    f"Max retries reached. {len(unprocessed['Keys'])} keys remain unprocessed"
+                                )
+                                unprocessed_keys.extend(unprocessed['Keys'])
+                                break
+                    else:
+                        # No unprocessed keys, we're done with this batch
+                        break
+                        
+                except ClientError as e:
+                    error_code = e.response['Error']['Code']
+                    if error_code == 'ProvisionedThroughputExceededException' and retry_count < max_retries:
+                        logger.warning(
+                            f"Throughput exceeded. Retrying in {backoff_time}s (attempt {retry_count + 1}/{max_retries})"
+                        )
+                        time.sleep(backoff_time)
+                        backoff_time *= 2
+                        retry_count += 1
+                        continue
+                    else:
+                        logger.exception(f"Error in batch_get_item: {str(e)}")
+                        raise
+        
+        # Apply decimal conversion to all items
+        result = {
+            'Items': all_items,
+            'Count': len(all_items),
+            'UnprocessedKeys': unprocessed_keys
+        }
+        
+        return self._apply_decimal_conversion(result)
+    
+    def batch_write_item(
+        self,
+        items: list[dict],
+        table_name: str,
+        *,
+        operation: str = "put"
+    ) -> dict:
+        """
+        Write or delete multiple items in a single request.
+        
+        DynamoDB allows up to 25 write operations per batch_write_item call.
+        This method automatically chunks larger requests and handles unprocessed
+        items with exponential backoff retry logic.
+        
+        Args:
+            items: List of items to write or delete
+                   - For 'put': Full item dictionaries
+                   - For 'delete': Key-only dictionaries (pk, sk)
+            table_name: The DynamoDB table name
+            operation: Either 'put' (default) or 'delete'
+            
+        Returns:
+            dict: Response containing:
+                - 'UnprocessedItems': Items that couldn't be processed after retries
+                - 'ProcessedCount': Number of successfully processed items
+                - 'UnprocessedCount': Number of unprocessed items
+                
+        Example (Put):
+            >>> items = [
+            ...     {"pk": "user#1", "sk": "user#1", "name": "Alice"},
+            ...     {"pk": "user#2", "sk": "user#2", "name": "Bob"},
+            ...     {"pk": "user#3", "sk": "user#3", "name": "Charlie"}
+            ... ]
+            >>> response = db.batch_write_item(items=items, table_name="users")
+            >>> print(f"Processed {response['ProcessedCount']} items")
+        
+        Example (Delete):
+            >>> keys = [
+            ...     {"pk": "user#1", "sk": "user#1"},
+            ...     {"pk": "user#2", "sk": "user#2"}
+            ... ]
+            >>> response = db.batch_write_item(
+            ...     items=keys,
+            ...     table_name="users",
+            ...     operation="delete"
+            ... )
+        
+        Note:
+            - Maximum 25 operations per request (automatically chunked)
+            - Each item can be up to 400 KB
+            - Maximum 16 MB total request size
+            - No conditional writes in batch operations
+            - Unprocessed items are automatically retried with exponential backoff
+        """
+        import time
+        
+        if operation not in ['put', 'delete']:
+            raise ValueError(f"Invalid operation '{operation}'. Must be 'put' or 'delete'")
+        
+        # DynamoDB limit: 25 operations per batch_write_item call
+        BATCH_SIZE = 25
+        
+        total_processed = 0
+        all_unprocessed = []
+        
+        # Chunk items into batches of 25
+        for i in range(0, len(items), BATCH_SIZE):
+            batch_items = items[i:i + BATCH_SIZE]
+            
+            # Build request items
+            write_requests = []
+            for item in batch_items:
+                if operation == 'put':
+                    write_requests.append({'PutRequest': {'Item': item}})
+                else:  # delete
+                    write_requests.append({'DeleteRequest': {'Key': item}})
+            
+            request_items = {table_name: write_requests}
+            
+            # Retry logic for unprocessed items
+            max_retries = 5
+            retry_count = 0
+            backoff_time = 0.1  # Start with 100ms
+            
+            while retry_count <= max_retries:
+                try:
+                    response = self.dynamodb_resource.meta.client.batch_write_item(
+                        RequestItems=request_items
+                    )
+                    
+                    # Count processed items from this batch
+                    processed_in_batch = len(batch_items)
+                    
+                    # Check for unprocessed items
+                    if 'UnprocessedItems' in response and response['UnprocessedItems']:
+                        if table_name in response['UnprocessedItems']:
+                            unprocessed = response['UnprocessedItems'][table_name]
+                            unprocessed_count = len(unprocessed)
+                            processed_in_batch -= unprocessed_count
+                            
+                            if retry_count < max_retries:
+                                # Retry with exponential backoff
+                                logger.warning(
+                                    f"Batch write has {unprocessed_count} unprocessed items. "
+                                    f"Retrying in {backoff_time}s (attempt {retry_count + 1}/{max_retries})"
+                                )
+                                time.sleep(backoff_time)
+                                request_items = {table_name: unprocessed}
+                                backoff_time *= 2  # Exponential backoff
+                                retry_count += 1
+                                continue
+                            else:
+                                # Max retries reached
+                                logger.error(
+                                    f"Max retries reached. {unprocessed_count} items remain unprocessed"
+                                )
+                                all_unprocessed.extend(unprocessed)
+                                break
+                    
+                    # Successfully processed this batch
+                    total_processed += processed_in_batch
+                    break
+                    
+                except ClientError as e:
+                    error_code = e.response['Error']['Code']
+                    if error_code == 'ProvisionedThroughputExceededException' and retry_count < max_retries:
+                        logger.warning(
+                            f"Throughput exceeded. Retrying in {backoff_time}s (attempt {retry_count + 1}/{max_retries})"
+                        )
+                        time.sleep(backoff_time)
+                        backoff_time *= 2
+                        retry_count += 1
+                        continue
+                    else:
+                        logger.exception(f"Error in batch_write_item: {str(e)}")
+                        raise
+        
+        return {
+            'ProcessedCount': total_processed,
+            'UnprocessedCount': len(all_unprocessed),
+            'UnprocessedItems': all_unprocessed
+        }
+    
+    def transact_write_items(
+        self,
+        operations: list[dict],
+        *,
+        client_request_token: Optional[str] = None,
+        return_consumed_capacity: str = "NONE",
+        return_item_collection_metrics: str = "NONE"
+    ) -> dict:
+        """
+        Execute multiple write operations as an atomic transaction.
+        
+        All operations succeed or all fail together. This is critical for
+        maintaining data consistency across multiple items. Supports up to
+        100 operations per transaction (increased from 25 in 2023).
+        
+        Args:
+            operations: List of transaction operation dictionaries. Each dict must
+                       have one of: 'Put', 'Update', 'Delete', or 'ConditionCheck'
+                       Example:
+                       [
+                           {
+                               'Put': {
+                                   'TableName': 'users',
+                                   'Item': {'pk': 'user#1', 'sk': 'user#1', 'name': 'Alice'}
+                               }
+                           },
+                           {
+                               'Update': {
+                                   'TableName': 'accounts',
+                                   'Key': {'pk': 'account#1', 'sk': 'account#1'},
+                                   'UpdateExpression': 'SET balance = balance - :amount',
+                                   'ExpressionAttributeValues': {':amount': 100}
+                               }
+                           }
+                       ]
+            client_request_token: Optional idempotency token for retry safety
+            return_consumed_capacity: 'INDEXES', 'TOTAL', or 'NONE' (default)
+            return_item_collection_metrics: 'SIZE' or 'NONE' (default)
+            
+        Returns:
+            dict: Transaction response containing:
+                - 'ConsumedCapacity': Capacity consumed (if requested)
+                - 'ItemCollectionMetrics': Metrics (if requested)
+                
+        Raises:
+            TransactionCanceledException: If transaction fails due to:
+                - Conditional check failure
+                - Item size too large
+                - Throughput exceeded
+                - Duplicate request
+                
+        Example:
+            >>> # Transfer money between accounts atomically
+            >>> operations = [
+            ...     {
+            ...         'Update': {
+            ...             'TableName': 'accounts',
+            ...             'Key': {'pk': 'account#123', 'sk': 'account#123'},
+            ...             'UpdateExpression': 'SET balance = balance - :amount',
+            ...             'ExpressionAttributeValues': {':amount': 100},
+            ...             'ConditionExpression': 'balance >= :amount'
+            ...         }
+            ...     },
+            ...     {
+            ...         'Update': {
+            ...             'TableName': 'accounts',
+            ...             'Key': {'pk': 'account#456', 'sk': 'account#456'},
+            ...             'UpdateExpression': 'SET balance = balance + :amount',
+            ...             'ExpressionAttributeValues': {':amount': 100}
+            ...         }
+            ...     }
+            ... ]
+            >>> response = db.transact_write_items(operations=operations)
+        
+        Note:
+            - Maximum 100 operations per transaction (AWS limit as of 2023)
+            - Each item can be up to 400 KB
+            - Maximum 4 MB total transaction size
+            - Cannot target same item multiple times in one transaction
+            - All operations must succeed or all fail (atomic)
+            - Uses strongly consistent reads for condition checks
+        """
+        if not operations:
+            raise ValueError("At least one operation is required")
+        
+        if len(operations) > 100:
+            raise ValueError(
+                f"Transaction supports maximum 100 operations, got {len(operations)}. "
+                "Consider splitting into multiple transactions."
+            )
+        
+        params = {
+            'TransactItems': operations,
+            'ReturnConsumedCapacity': return_consumed_capacity,
+            'ReturnItemCollectionMetrics': return_item_collection_metrics
+        }
+        
+        if client_request_token:
+            params['ClientRequestToken'] = client_request_token
+        
+        try:
+            response = self.dynamodb_resource.meta.client.transact_write_items(**params)
+            return response
+            
+        except ClientError as e:
+            error_code = e.response['Error']['Code']
+            
+            if error_code == 'TransactionCanceledException':
+                # Parse cancellation reasons
+                reasons = e.response.get('CancellationReasons', [])
+                logger.error(f"Transaction cancelled. Reasons: {reasons}")
+                
+                # Enhance error message with specific reason
+                if reasons:
+                    reason_messages = []
+                    for idx, reason in enumerate(reasons):
+                        if reason.get('Code'):
+                            reason_messages.append(
+                                f"Operation {idx}: {reason['Code']} - {reason.get('Message', '')}"
+                            )
+                    
+                    raise RuntimeError(
+                        f"Transaction failed: {'; '.join(reason_messages)}"
+                    ) from e
+            
+            logger.exception(f"Error in transact_write_items: {str(e)}")
+            raise
+    
+    def transact_get_items(
+        self,
+        keys: list[dict],
+        *,
+        return_consumed_capacity: str = "NONE"
+    ) -> dict:
+        """
+        Retrieve multiple items with strong consistency as a transaction.
+        
+        Unlike batch_get_item, this provides a consistent snapshot across all items
+        using strongly consistent reads. Maximum 100 items per transaction.
+        
+        Args:
+            keys: List of get operation dictionaries. Each dict must specify:
+                  - 'Key': The item's primary key
+                  - 'TableName': The table name
+                  - 'ProjectionExpression': Optional projection
+                  - 'ExpressionAttributeNames': Optional attribute names
+                  Example:
+                  [
+                      {
+                          'Key': {'pk': 'user#1', 'sk': 'user#1'},
+                          'TableName': 'users'
+                      },
+                      {
+                          'Key': {'pk': 'order#123', 'sk': 'order#123'},
+                          'TableName': 'orders',
+                          'ProjectionExpression': 'id,total,#status',
+                          'ExpressionAttributeNames': {'#status': 'status'}
+                      }
+                  ]
+            return_consumed_capacity: 'INDEXES', 'TOTAL', or 'NONE' (default)
+            
+        Returns:
+            dict: Response containing:
+                - 'Items': List of retrieved items (with Decimal conversion)
+                - 'ConsumedCapacity': Capacity consumed (if requested)
+                
+        Example:
+            >>> keys = [
+            ...     {
+            ...         'Key': {'pk': 'user#123', 'sk': 'user#123'},
+            ...         'TableName': 'users'
+            ...     },
+            ...     {
+            ...         'Key': {'pk': 'account#123', 'sk': 'account#123'},
+            ...         'TableName': 'accounts'
+            ...     }
+            ... ]
+            >>> response = db.transact_get_items(keys=keys)
+            >>> items = response['Items']
+        
+        Note:
+            - Maximum 100 items per transaction
+            - Always uses strongly consistent reads
+            - More expensive than batch_get_item (2x RCUs)
+            - Provides snapshot isolation across items
+            - Cannot be combined with transact_write_items
+        """
+        if not keys:
+            raise ValueError("At least one key is required")
+        
+        if len(keys) > 100:
+            raise ValueError(
+                f"Transaction supports maximum 100 items, got {len(keys)}. "
+                "Use batch_get_item for larger requests."
+            )
+        
+        # Build transaction get items
+        transact_items = []
+        for key_spec in keys:
+            get_item = {'Get': key_spec}
+            transact_items.append(get_item)
+        
+        params = {
+            'TransactItems': transact_items,
+            'ReturnConsumedCapacity': return_consumed_capacity
+        }
+        
+        try:
+            response = self.dynamodb_resource.meta.client.transact_get_items(**params)
+            
+            # Extract items from response
+            items = []
+            if 'Responses' in response:
+                for item_response in response['Responses']:
+                    if 'Item' in item_response:
+                        items.append(item_response['Item'])
+            
+            result = {
+                'Items': items,
+                'Count': len(items)
+            }
+            
+            if 'ConsumedCapacity' in response:
+                result['ConsumedCapacity'] = response['ConsumedCapacity']
+            
+            # Apply decimal conversion
+            return self._apply_decimal_conversion(result)
+            
+        except ClientError as e:
+            logger.exception(f"Error in transact_get_items: {str(e)}")
+            raise
