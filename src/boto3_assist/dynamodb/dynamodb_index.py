@@ -390,3 +390,118 @@ class DynamoDBIndex:
                         )
 
         return key
+
+    @staticmethod
+    def extract_key_values(
+        key_expression: And | Equals,
+        index: Optional[str | DynamoDBIndex] = None
+    ) -> dict[str, Any]:
+        """
+        Extract key values and condition information from a boto3 Key condition expression.
+        
+        This is useful for debugging queries at runtime to see exactly what values
+        are being used in the KeyConditionExpression.
+        
+        Args:
+            key_expression: The Key condition expression (from key() or _build_query_key())
+            index: Optional index name (str) or DynamoDBIndex object to include in results
+            
+        Returns:
+            Dictionary containing:
+                - index_name: str (if index parameter provided)
+                - partition_key: {'attribute': str, 'value': str}
+                - sort_key: {'attribute': str, 'value': str, 'operator': str, 'format': str} (if present)
+                
+        Example:
+            >>> index = model.indexes.get("gsi1")
+            >>> key_expr = index.key(query_key=True, condition="begins_with")
+            >>> debug = DynamoDBIndex.extract_key_values(key_expr, index)
+            >>> print(debug)
+            {
+                'index_name': 'gsi1',
+                'partition_key': {
+                    'attribute': 'gsi1_pk',
+                    'value': 'inbox#support#status#open'
+                },
+                'sort_key': {
+                    'attribute': 'gsi1_sk',
+                    'value': 'priority#medium#ts#',
+                    'operator': 'begins_with',
+                    'format': '{operator}({0}, {1})'
+                }
+            }
+            
+            >>> # Or pass just the index name
+            >>> debug = DynamoDBIndex.extract_key_values(key_expr, "gsi1")
+            
+            >>> # Quick access to values
+            >>> pk_value = debug['partition_key']['value']
+            >>> sk_value = debug['sort_key']['value']
+            >>> condition = debug['sort_key']['operator']
+            >>> index_name = debug.get('index_name')
+        """
+        result = {}
+        
+        # Include index name if provided
+        if index is not None:
+            if isinstance(index, str):
+                result['index_name'] = index
+            elif isinstance(index, DynamoDBIndex):
+                result['index_name'] = index.name
+        
+        try:
+            # The key_expression._values is a list of conditions
+            # [0] is the partition key (Equals condition)
+            # [1] is the sort key (ComparisonCondition) if present
+            
+            if hasattr(key_expression, '_values') and len(key_expression._values) > 0:
+                # Extract partition key
+                pk_condition = key_expression._values[0]
+                if hasattr(pk_condition, '_values') and len(pk_condition._values) >= 2:
+                    pk_attr = pk_condition._values[0]
+                    result['partition_key'] = {
+                        'attribute': pk_attr.name if hasattr(pk_attr, 'name') else str(pk_attr),
+                        'value': pk_condition._values[1]
+                    }
+                
+                # Extract sort key if present
+                if len(key_expression._values) > 1:
+                    sk_condition = key_expression._values[1]
+                    if hasattr(sk_condition, '_values'):
+                        sk_attr = sk_condition._values[0] if len(sk_condition._values) > 0 else None
+                        sk_info = {
+                            'attribute': sk_attr.name if (sk_attr and hasattr(sk_attr, 'name')) else str(sk_attr),
+                        }
+                        
+                        # Get value(s)
+                        if len(sk_condition._values) > 1:
+                            sk_info['value'] = sk_condition._values[1]
+                        
+                        # For 'between' condition, there are two values
+                        if len(sk_condition._values) > 2:
+                            sk_info['value_low'] = sk_condition._values[1]
+                            sk_info['value_high'] = sk_condition._values[2]
+                            del sk_info['value']  # Remove single value key
+                        
+                        # Get operator and format
+                        if hasattr(sk_condition, 'expression_operator'):
+                            sk_info['operator'] = sk_condition.expression_operator
+                        if hasattr(sk_condition, 'expression_format'):
+                            sk_info['format'] = sk_condition.expression_format
+                        
+                        result['sort_key'] = sk_info
+            
+            # If no _values found, handle single Equals condition (no sort key)
+            elif isinstance(key_expression, Equals):
+                if hasattr(key_expression, '_values') and len(key_expression._values) >= 2:
+                    pk_attr = key_expression._values[0]
+                    result['partition_key'] = {
+                        'attribute': pk_attr.name if hasattr(pk_attr, 'name') else str(pk_attr),
+                        'value': key_expression._values[1]
+                    }
+                    
+        except (AttributeError, IndexError) as e:
+            result['error'] = f"Unable to extract key values: {str(e)}"
+            result['note'] = "The Key expression structure may have changed"
+        
+        return result
