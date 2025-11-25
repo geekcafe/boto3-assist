@@ -201,7 +201,7 @@ class DynamoDBModelBase(SerializableModel):
         """
         Convert the instance to a dictionary suitable for DynamoDB client.
         """
-        return self.to_client_dictionary(include_none=include_none)
+        return self.to_dictionary(include_none=include_none)
 
     def to_dictionary(self, include_none: bool = True):
         """
