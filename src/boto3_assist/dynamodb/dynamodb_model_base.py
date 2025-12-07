@@ -6,11 +6,12 @@ MIT License.  See Project Root for the license information.
 
 from __future__ import annotations
 import datetime as dt
+from enum import Enum
 
 # import decimal
 # import inspect
 # import uuid
-from typing import TypeVar, List, Dict, Any
+from typing import TypeVar, List, Dict, Any, Set
 from boto3.dynamodb.types import TypeSerializer, TypeDeserializer
 from boto3_assist.utilities.serialization_utility import Serialization
 from boto3_assist.utilities.decimal_conversion_utility import DecimalConversionUtility
@@ -23,6 +24,37 @@ from boto3_assist.dynamodb.dynamodb_reserved_words import DynamoDBReservedWords
 from boto3_assist.utilities.datetime_utility import DatetimeUtility
 from boto3_assist.models.serializable_model import SerializableModel
 from boto3_assist.utilities.string_utility import StringUtility
+
+
+class MergeStrategy(Enum):
+    """Strategy for merging updates into an existing model."""
+
+    NON_NULL_WINS = "non_null_wins"
+    """Only overwrite if the update value is not None (default, most common)."""
+
+    UPDATES_WIN = "updates_win"
+    """Update values always win, even if None."""
+
+    EXISTING_WINS = "existing_wins"
+    """Only fill in fields that are currently None in the existing model."""
+
+
+class _ClearFieldSentinel:
+    """Sentinel class to explicitly mark a field for clearing to None."""
+
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __repr__(self) -> str:
+        return "CLEAR_FIELD"
+
+
+# Singleton sentinel value - use this to explicitly clear a field to None
+CLEAR_FIELD = _ClearFieldSentinel()
 
 
 def exclude_from_serialization(method):
@@ -178,6 +210,80 @@ class DynamoDBModelBase(SerializableModel):
             raise ValueError("Item must be a dictionary or DynamoDBModelBase")
         # attempt to map it
         return DynamoDBSerializer.map(source=item, target=self)
+
+    def merge(
+        self: T,
+        updates: Dict[str, Any] | DynamoDBModelBase | None,
+        strategy: MergeStrategy = MergeStrategy.NON_NULL_WINS,
+        include_fields: Set[str] | List[str] | None = None,
+        exclude_fields: Set[str] | List[str] | None = None,
+    ) -> T:
+        """
+        Merge updates into this instance based on the specified strategy.
+
+        Unlike map() which overwrites all fields, merge() selectively updates
+        fields based on the strategy and handles the common case where you want
+        to apply partial updates from an API request.
+
+        Args:
+            updates: The source of updates - can be a dict or another model instance.
+            strategy: How to handle the merge:
+                - NON_NULL_WINS (default): Only overwrite if update value is not None.
+                  Use CLEAR_FIELD sentinel to explicitly set a field to None.
+                - UPDATES_WIN: Update values always win, even if None.
+                - EXISTING_WINS: Only fill in fields that are currently None.
+            include_fields: If provided, only these fields will be considered for merge.
+            exclude_fields: Fields to exclude from the merge (e.g., 'id', 'created_at').
+
+        Returns:
+            Self with merged updates applied.
+
+        Example:
+            # Load existing from DB
+            existing = Product().map(db_response)
+
+            # Merge partial updates (only non-null fields applied)
+            existing.merge({"name": "New Name", "price": None})  # price unchanged
+
+            # Explicitly clear a field
+            from boto3_assist.dynamodb import CLEAR_FIELD
+            existing.merge({"description": CLEAR_FIELD})  # description set to None
+
+            # Fill gaps only (useful for defaults)
+            existing.merge(defaults, strategy=MergeStrategy.EXISTING_WINS)
+        """
+        if updates is None:
+            return self
+
+        # Convert to dict if needed
+        updates_dict: Dict[str, Any]
+        if isinstance(updates, DynamoDBModelBase):
+            updates_dict = updates.to_resource_dictionary(include_indexes=False)
+        elif isinstance(updates, dict):
+            updates_dict = updates.copy()
+        else:
+            raise ValueError("Updates must be a dictionary or DynamoDBModelBase")
+
+        # Convert decimals if present
+        updates_dict = DecimalConversionUtility.convert_decimals_to_native_types(
+            updates_dict
+        )
+
+        # Apply field filters
+        if include_fields is not None:
+            include_set = set(include_fields)
+            updates_dict = {k: v for k, v in updates_dict.items() if k in include_set}
+
+        if exclude_fields is not None:
+            exclude_set = set(exclude_fields)
+            updates_dict = {
+                k: v for k, v in updates_dict.items() if k not in exclude_set
+            }
+
+        # Apply merge based on strategy
+        return DynamoDBSerializer.merge(
+            updates=updates_dict, target=self, strategy=strategy
+        )
 
     def to_client_dictionary(self, include_indexes: bool = True):
         """
@@ -380,3 +486,116 @@ class DynamoDBSerializer:
                 instance_dict[key.sort_key.attribute_name] = key.sort_key.value
 
         return instance_dict
+
+    @staticmethod
+    def merge(updates: Dict[str, Any], target: T, strategy: MergeStrategy) -> T:
+        """
+        Merge updates into the target object based on the specified strategy.
+
+        Args:
+            updates: Dictionary of field updates to apply.
+            target: The target object to merge into.
+            strategy: The merge strategy to use.
+
+        Returns:
+            The target object with updates merged.
+        """
+        for key, update_value in updates.items():
+            if not Serialization.has_attribute(target, key):
+                continue
+
+            current_value = getattr(target, key, None)
+
+            # Handle CLEAR_FIELD sentinel - always clears to None
+            if isinstance(update_value, _ClearFieldSentinel):
+                try:
+                    setattr(target, key, None)
+                except (AttributeError, TypeError):
+                    pass  # Property without setter or type issue
+                continue
+
+            # Apply strategy
+            should_update = False
+
+            if strategy == MergeStrategy.UPDATES_WIN:
+                # Updates always win
+                should_update = True
+
+            elif strategy == MergeStrategy.NON_NULL_WINS:
+                # Only update if the new value is not None
+                should_update = update_value is not None
+
+            elif strategy == MergeStrategy.EXISTING_WINS:
+                # Only update if current value is None
+                should_update = current_value is None
+
+            if should_update:
+                try:
+                    # Handle nested objects/dicts
+                    if (
+                        isinstance(current_value, dict)
+                        and isinstance(update_value, dict)
+                        and strategy != MergeStrategy.UPDATES_WIN
+                    ):
+                        # Recursively merge dicts
+                        DynamoDBSerializer._merge_dict(
+                            current_value, update_value, strategy
+                        )
+                    elif hasattr(current_value, "__dict__") and isinstance(
+                        update_value, dict
+                    ):
+                        # Nested object - recursively merge
+                        DynamoDBSerializer.merge(
+                            updates=update_value,
+                            target=current_value,
+                            strategy=strategy,
+                        )
+                    else:
+                        setattr(target, key, update_value)
+                except (AttributeError, TypeError):
+                    pass  # Property without setter or type issue
+
+        return target
+
+    @staticmethod
+    def _merge_dict(
+        target_dict: Dict[str, Any],
+        updates_dict: Dict[str, Any],
+        strategy: MergeStrategy,
+    ) -> None:
+        """
+        Merge updates into a target dictionary based on strategy.
+
+        Args:
+            target_dict: The dictionary to merge into (modified in place).
+            updates_dict: The dictionary of updates.
+            strategy: The merge strategy to use.
+        """
+        for key, update_value in updates_dict.items():
+            current_value = target_dict.get(key)
+
+            # Handle CLEAR_FIELD sentinel
+            if isinstance(update_value, _ClearFieldSentinel):
+                target_dict[key] = None
+                continue
+
+            should_update = False
+
+            if strategy == MergeStrategy.UPDATES_WIN:
+                should_update = True
+            elif strategy == MergeStrategy.NON_NULL_WINS:
+                should_update = update_value is not None
+            elif strategy == MergeStrategy.EXISTING_WINS:
+                should_update = current_value is None
+
+            if should_update:
+                if (
+                    isinstance(current_value, dict)
+                    and isinstance(update_value, dict)
+                    and strategy != MergeStrategy.UPDATES_WIN
+                ):
+                    DynamoDBSerializer._merge_dict(
+                        current_value, update_value, strategy
+                    )
+                else:
+                    target_dict[key] = update_value
