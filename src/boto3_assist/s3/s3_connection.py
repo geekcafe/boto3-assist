@@ -4,10 +4,12 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
+import os
 from typing import Optional
 from typing import TYPE_CHECKING
 
 from aws_lambda_powertools import Logger
+from botocore.config import Config
 
 from boto3_assist.connection import Connection
 
@@ -32,7 +34,14 @@ class S3Connection(Connection):
         aws_end_point_url: Optional[str] = None,
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
+        signature_version: Optional[str] = None,
     ) -> None:
+        # Build S3-specific config if signature_version is specified
+        config: Optional[Config] = None
+        signature_version = signature_version or os.getenv("AWS_S3_SIGNATURE_VERSION")
+        if signature_version:
+            config = Config(signature_version=signature_version)
+
         super().__init__(
             service_name="s3",
             aws_profile=aws_profile,
@@ -40,6 +49,7 @@ class S3Connection(Connection):
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
             aws_end_point_url=aws_end_point_url,
+            config=config,
         )
 
         self.__client: S3Client | None = None

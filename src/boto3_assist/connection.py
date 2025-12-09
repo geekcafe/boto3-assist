@@ -7,6 +7,7 @@ MIT License.  See Project Root for the license information.
 from typing import Optional, List
 
 from aws_lambda_powertools import Logger
+from botocore.config import Config
 from boto3_assist.boto3session import Boto3SessionManager
 from boto3_assist.environment_services.environment_variables import (
     EnvironmentVariables,
@@ -33,6 +34,7 @@ class Connection:
         assume_role_arn: Optional[str] = None,
         assume_role_chain: Optional[List[str]] = None,
         assume_role_duration_seconds: Optional[int] = 3600,
+        config: Optional[Config] = None,
     ) -> None:
         self.__aws_profile = aws_profile
         self.__aws_region = aws_region
@@ -44,6 +46,7 @@ class Connection:
         self.__service_name: str | None = service_name
         self.__assume_role_chain = assume_role_chain
         self.__assume_role_duration_seconds = assume_role_duration_seconds
+        self.__config = config
         if self.__service_name is None:
             raise RuntimeError(
                 "Service Name is not available. The service name is required."
@@ -80,6 +83,7 @@ class Connection:
             assume_role_arn=self.__assume_role_arn,
             assume_role_chain=self.__assume_role_chain,
             assume_role_duration_seconds=self.__assume_role_duration_seconds,
+            config=self.__config,
         )
 
         tracker.add(service_name=self.service_name)
