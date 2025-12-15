@@ -173,3 +173,5 @@ activate.sh
 .pypirc
 .DS_Store
 .prompts
+.output
+.outputs
