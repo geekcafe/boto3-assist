@@ -4,7 +4,7 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, List
 from boto3_assist.models.serializable_model import SerializableModel
 
 
@@ -17,6 +17,7 @@ class User(SerializableModel):
         self.__email: str | None = None
         self.__meta_data: Dict[str, Any] = {}
         self.settings: Dict[str, Any] = {}
+        self._roles: List[str] = []
 
     @property
     def first_name(self) -> str | None:
@@ -64,3 +65,12 @@ class User(SerializableModel):
             self.__meta_data = {}
             return
         self.__meta_data = value
+
+    @property
+    def roles(self) -> List[str]:
+        """The roles of the user"""
+        return self._roles
+
+    @roles.setter
+    def roles(self, value: List[str]):
+        self._roles = value

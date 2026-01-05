@@ -36,6 +36,7 @@ class TestSerializableModel(unittest.TestCase):
                 "language": "en",
                 "timezone": "UTC",
             },
+            "roles": ["admin", "user"],
         }
 
     def test_map_valid_data(self):
@@ -48,6 +49,7 @@ class TestSerializableModel(unittest.TestCase):
         self.assertEqual(result.last_name, "Doe")
         self.assertEqual(len(result.meta_data), 11)
         self.assertEqual(len(result.settings), 4)
+        self.assertEqual(len(result.roles), 2)
 
 
 if __name__ == "__main__":
