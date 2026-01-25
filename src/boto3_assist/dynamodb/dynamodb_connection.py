@@ -35,6 +35,7 @@ class DynamoDBConnection(Connection):
         assume_role_arn: Optional[str] = None,
         assume_role_chain: Optional[List[str]] = None,
         assume_role_duration_seconds: Optional[int] = 3600,
+        use_connection_pool: bool = False,
     ) -> None:
         super().__init__(
             service_name="dynamodb",
@@ -46,6 +47,7 @@ class DynamoDBConnection(Connection):
             assume_role_arn=assume_role_arn,
             assume_role_chain=assume_role_chain,
             assume_role_duration_seconds=assume_role_duration_seconds,
+            use_connection_pool=use_connection_pool,
         )
 
         self.__dynamodb_client: DynamoDBClient | None = None
