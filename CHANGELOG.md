@@ -19,11 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Factory Methods** - New recommended pattern for creating connections
   - `Connection.from_pool()` - Create connection using pool (recommended for Lambda)
   - `DynamoDB.from_pool()` - Create DynamoDB connection using pool
+  - `S3.from_pool()` - Create S3 connection using pool
+  - `SQSConnection.from_pool()` - Create SQS connection using pool
   - All service classes support `use_connection_pool` parameter
 
 - **Package Exports** - Added `__init__.py` files for cleaner imports
   - `from boto3_assist import Connection, ConnectionPool`
   - `from boto3_assist.dynamodb import DynamoDB`
+  - `from boto3_assist.s3 import S3`
+  - `from boto3_assist.sqs import SQSConnection`
 
 ### Changed
 - **Deprecation Warning** - Connections created without pooling now show deprecation warning
@@ -38,14 +42,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Migration Guide
 ```python
+# DynamoDB
 # Old pattern (still works, shows deprecation warning)
 db = DynamoDB()
-
 # New pattern (recommended for Lambda)
 db = DynamoDB.from_pool()
 
-# Explicit opt-in
+# S3
+# Old pattern (still works, shows deprecation warning)
+s3 = S3()
+# New pattern (recommended for Lambda)
+s3 = S3.from_pool()
+
+# SQS
+# Old pattern (still works, shows deprecation warning)
+sqs = SQSConnection()
+# New pattern (recommended for Lambda)
+sqs = SQSConnection.from_pool()
+
+# Explicit opt-in (any service)
 db = DynamoDB(use_connection_pool=True)
+s3 = S3(use_connection_pool=True)
+sqs = SQSConnection(use_connection_pool=True)
 ```
 
 ### Testing

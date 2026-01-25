@@ -7,6 +7,8 @@ import warnings
 from boto3_assist.connection_pool import ConnectionPool
 from boto3_assist import Connection
 from boto3_assist.dynamodb import DynamoDB
+from boto3_assist.s3 import S3
+from boto3_assist.sqs import SQSConnection
 
 
 class TestConnectionPool:
@@ -229,3 +231,95 @@ class TestBackwardCompatibility:
 
         assert db is not None
         assert db.session is not None
+
+
+class TestS3WithPool:
+    """Test S3 class with connection pool."""
+
+    def setup_method(self):
+        """Reset connection pool before each test."""
+        pool = ConnectionPool.get_instance()
+        pool.reset()
+
+    def test_s3_from_pool(self):
+        """Test S3.from_pool() factory method."""
+        s3_1 = S3.from_pool()
+        s3_2 = S3.from_pool()
+
+        # Should reuse same session
+        assert s3_1.session is s3_2.session
+
+    def test_s3_with_endpoint_url(self):
+        """Test S3.from_pool() with custom endpoint (for moto)."""
+        s3_1 = S3.from_pool(aws_end_point_url="http://localhost:5000")
+        s3_2 = S3.from_pool(aws_end_point_url="http://localhost:5000")
+
+        # Should reuse same session with same endpoint
+        assert s3_1.session is s3_2.session
+
+        # Different endpoint should create different session
+        s3_3 = S3.from_pool(aws_end_point_url="http://localhost:5001")
+        assert s3_1.session is not s3_3.session
+
+    def test_s3_legacy_behavior(self):
+        """Test that legacy S3() still works."""
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            s3_1 = S3()
+            s3_2 = S3()
+
+            # Should see deprecation warnings
+            assert len(w) == 2
+            assert all(
+                issubclass(warning.category, DeprecationWarning) for warning in w
+            )
+
+            # Should create separate sessions (legacy behavior)
+            assert s3_1.session is not s3_2.session
+
+
+class TestSQSWithPool:
+    """Test SQS class with connection pool."""
+
+    def setup_method(self):
+        """Reset connection pool before each test."""
+        pool = ConnectionPool.get_instance()
+        pool.reset()
+
+    def test_sqs_from_pool(self):
+        """Test SQSConnection.from_pool() factory method."""
+        sqs1 = SQSConnection.from_pool()
+        sqs2 = SQSConnection.from_pool()
+
+        # Should reuse same session
+        assert sqs1.session is sqs2.session
+
+    def test_sqs_with_endpoint_url(self):
+        """Test SQSConnection.from_pool() with custom endpoint."""
+        sqs1 = SQSConnection.from_pool(aws_end_point_url="http://localhost:9324")
+        sqs2 = SQSConnection.from_pool(aws_end_point_url="http://localhost:9324")
+
+        # Should reuse same session with same endpoint
+        assert sqs1.session is sqs2.session
+
+        # Different endpoint should create different session
+        sqs3 = SQSConnection.from_pool(aws_end_point_url="http://localhost:9325")
+        assert sqs1.session is not sqs3.session
+
+    def test_sqs_legacy_behavior(self):
+        """Test that legacy SQSConnection() still works."""
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            sqs1 = SQSConnection()
+            sqs2 = SQSConnection()
+
+            # Should see deprecation warnings
+            assert len(w) == 2
+            assert all(
+                issubclass(warning.category, DeprecationWarning) for warning in w
+            )
+
+            # Should create separate sessions (legacy behavior)
+            assert sqs1.session is not sqs2.session

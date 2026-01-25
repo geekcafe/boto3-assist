@@ -35,6 +35,7 @@ class S3Connection(Connection):
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
         signature_version: Optional[str] = None,
+        use_connection_pool: bool = False,
     ) -> None:
         # Build S3-specific config if signature_version is specified
         config: Optional[Config] = None
@@ -50,6 +51,7 @@ class S3Connection(Connection):
             aws_secret_access_key=aws_secret_access_key,
             aws_end_point_url=aws_end_point_url,
             config=config,
+            use_connection_pool=use_connection_pool,
         )
 
         self.__client: S3Client | None = None
