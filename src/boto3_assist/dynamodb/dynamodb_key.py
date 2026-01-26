@@ -48,15 +48,15 @@ class DynamoDBKey:
     def to_dict(self) -> dict[str, str]:
         """
         Return a dictionary representation of this key for debugging.
-        
+
         Returns:
             Dictionary with attribute name as key and value as the value.
-            
+
         Example:
             >>> key = DynamoDBKey(attribute_name="pk", value="user#123")
             >>> key.to_dict()
             {'pk': 'user#123'}
-            
+
             >>> # With lambda
             >>> key = DynamoDBKey(attribute_name="pk", value=lambda: "user#456")
             >>> key.to_dict()
@@ -119,8 +119,13 @@ class DynamoDBKey:
         for key, value in key_value_pairs:
             prefix = f"{key}#" if key else ""
             if value is None:
-                parts.append(f"{prefix}")
+                # when it's None we only want to add it under certain conditions
+                # only add if it's the first one for our sk setting
+                if len(parts) == 0:
+                    parts.append(f"{prefix}")
+                # exit after the first None
                 break
+
             elif len(str(value).strip()) == 0:
                 parts.append(f"{key}")
             else:
