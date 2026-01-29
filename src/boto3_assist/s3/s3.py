@@ -26,7 +26,7 @@ class S3(S3Connection):
         aws_end_point_url: Optional[str] = None,
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
-        use_connection_pool: bool = False,
+        use_connection_pool: bool = True,
     ) -> None:
         """_summary_
 
@@ -36,7 +36,7 @@ class S3(S3Connection):
             aws_end_point_url (Optional[str], optional): _description_. Defaults to None.
             aws_access_key_id (Optional[str], optional): _description_. Defaults to None.
             aws_secret_access_key (Optional[str], optional): _description_. Defaults to None.
-            use_connection_pool (bool, optional): Use connection pooling. Defaults to False.
+            use_connection_pool (bool, optional): Use connection pooling. Defaults to True.
         """
         super().__init__(
             aws_profile=aws_profile,

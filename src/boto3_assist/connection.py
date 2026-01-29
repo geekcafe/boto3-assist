@@ -37,7 +37,7 @@ class Connection:
         assume_role_chain: Optional[List[str]] = None,
         assume_role_duration_seconds: Optional[int] = 3600,
         config: Optional[Config] = None,
-        use_connection_pool: bool = False,
+        use_connection_pool: bool = True,
     ) -> None:
         self.__aws_profile = aws_profile
         self.__aws_region = aws_region

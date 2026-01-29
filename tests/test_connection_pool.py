@@ -122,8 +122,8 @@ class TestConnectionWithPool:
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            conn1 = Connection(service_name="dynamodb")
-            conn2 = Connection(service_name="dynamodb")
+            conn1 = Connection(service_name="dynamodb", use_connection_pool=False)
+            conn2 = Connection(service_name="dynamodb", use_connection_pool=False)
 
             # Should see deprecation warnings
             assert len(w) == 2
@@ -179,8 +179,8 @@ class TestDynamoDBWithPool:
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            db1 = DynamoDB()
-            db2 = DynamoDB()
+            db1 = DynamoDB(use_connection_pool=False)
+            db2 = DynamoDB(use_connection_pool=False)
 
             # Should see deprecation warnings
             assert len(w) == 2
@@ -266,8 +266,8 @@ class TestS3WithPool:
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            s3_1 = S3()
-            s3_2 = S3()
+            s3_1 = S3(use_connection_pool=False)
+            s3_2 = S3(use_connection_pool=False)
 
             # Should see deprecation warnings
             assert len(w) == 2
@@ -312,8 +312,8 @@ class TestSQSWithPool:
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            sqs1 = SQSConnection()
-            sqs2 = SQSConnection()
+            sqs1 = SQSConnection(use_connection_pool=False)
+            sqs2 = SQSConnection(use_connection_pool=False)
 
             # Should see deprecation warnings
             assert len(w) == 2

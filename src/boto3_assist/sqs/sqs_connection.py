@@ -33,7 +33,7 @@ class SQSConnection(Connection):
         aws_end_point_url: Optional[str] = None,
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
-        use_connection_pool: bool = False,
+        use_connection_pool: bool = True,
     ) -> None:
         """
         Initialize SQS connection.
