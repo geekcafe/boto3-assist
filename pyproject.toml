@@ -15,7 +15,7 @@ addopts = "-m 'not integration'"
 
 [project]
 name = "boto3_assist"
-version = "0.40.0"
+version = "0.41.0"
 
 authors = [
   { name="Eric Wilson", email="boto3-assist@geekcafe.com" }
