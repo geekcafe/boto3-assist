@@ -579,7 +579,7 @@ print(type(order_data['tax']))    # <class 'float'>
 
 **Short answer**: Negligible.
 
-**Long answer**: 
+**Long answer**:
 - boto3-assist uses boto3 Resource internally
 - Decimal conversion is a simple type cast
 - Model serialization is dictionary manipulation

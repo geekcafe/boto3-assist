@@ -13,7 +13,7 @@ if [ -f "publish_to_pypi.json" ]; then
   # Try to extract repo_update_preference using grep and sed
   # This avoids requiring jq or python for JSON parsing
   STORED_PREFERENCE=$(grep -o '"repo_update_preference"\s*:\s*"[^"]*"' publish_to_pypi.json 2>/dev/null | sed 's/.*"\([^"]*\)".*/\1/' || echo "")
-  
+
   if [ -n "$STORED_PREFERENCE" ]; then
     echo "🔒 Using stored repository update preference: $STORED_PREFERENCE"
     FETCH_LATEST="$STORED_PREFERENCE"
@@ -67,7 +67,7 @@ if [[ "$FETCH_LATEST" == "yes" ]]; then
   # Download to temporary file first for atomic replacement
   TMP_FILE="$(mktemp)"
   REPO_URL="https://raw.githubusercontent.com/geekcafe/publish-to-pypi-scripts/refs/heads/main/publish_to_pypi.py"
-  
+
   if curl -fsSL "$REPO_URL" -o "$TMP_FILE"; then
     # Verify download was successful
     if [ -s "$TMP_FILE" ]; then

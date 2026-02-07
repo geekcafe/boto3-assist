@@ -5,10 +5,8 @@ MIT License.  See Project Root for the license information.
 """
 
 import os
-
 import shutil
 import tempfile
-
 
 from aws_lambda_powertools import Logger
 

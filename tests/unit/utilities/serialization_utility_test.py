@@ -4,18 +4,17 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-import unittest
 import json
-from datetime import datetime, UTC
-from datetime import timedelta
-from typing import cast
-from typing import Optional, List
-from boto3_assist.utilities.serialization_utility import Serialization, JsonConversions
+import unittest
+from datetime import UTC, datetime, timedelta
+from typing import List, Optional, cast
+
+from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBKey
 from boto3_assist.dynamodb.dynamodb_model_base import (
     DynamoDBModelBase,
     exclude_indexes_from_serialization,
 )
-from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBKey
+from boto3_assist.utilities.serialization_utility import JsonConversions, Serialization
 
 
 class UserAuthorizationModel(DynamoDBModelBase):
@@ -352,9 +351,7 @@ class JsonConversionsUnitTest(unittest.TestCase):
                     if expected_exception == RuntimeError:
                         JsonConversions.string_to_json_obj(invalid_input, retry=10)
                     else:
-                        JsonConversions.string_to_json_obj(
-                            invalid_input, raise_on_error=True
-                        )
+                        JsonConversions.string_to_json_obj(invalid_input, raise_on_error=True)
 
     def test_error_handling_with_raise_on_error_false(self):
         """Test graceful error handling when raise_on_error=False"""
@@ -365,9 +362,7 @@ class JsonConversionsUnitTest(unittest.TestCase):
 
         for invalid_input, expected in test_cases:
             with self.subTest(invalid_input=invalid_input):
-                result = JsonConversions.string_to_json_obj(
-                    invalid_input, raise_on_error=False
-                )
+                result = JsonConversions.string_to_json_obj(invalid_input, raise_on_error=False)
                 self.assertEqual(result, expected)
 
     def test_retry_limit(self):
@@ -388,9 +383,7 @@ class JsonConversionsUnitTest(unittest.TestCase):
         # Verify key nested values
         self.assertEqual(result["user"]["name"], "John Doe")
         self.assertEqual(result["user"]["details"]["age"], 30)
-        self.assertEqual(
-            result["user"]["details"]["preferences"], ["reading", "coding"]
-        )
+        self.assertEqual(result["user"]["details"]["preferences"], ["reading", "coding"])
         self.assertEqual(result["metadata"]["version"], 1.2)
 
     def test_data_type_preservation(self):

@@ -7,12 +7,11 @@ import os
 from pathlib import Path
 
 from boto3_assist.dynamodb.dynamodb import DynamoDB
-from boto3_assist.environment_services.environment_loader import EnvironmentLoader
 from boto3_assist.dynamodb.dynamodb_importer import DynamoDBImporter
-
+from boto3_assist.environment_services.environment_loader import EnvironmentLoader
 from examples.dynamodb.services.table_service import DynamoDBTableService
 from examples.dynamodb.services.user_post_service import UserPost, UserPostService
-from examples.dynamodb.services.user_service import UserService, User
+from examples.dynamodb.services.user_service import User, UserService
 from examples.dynamodb.services.user_service_client_example import (
     UserService as UserServiceClientExample,
 )
@@ -24,9 +23,7 @@ from examples.dynamodb.services.user_service_resource_example import (
 class DynamoDBExample:
     """An example of using and debuggin DynamoDB"""
 
-    def __init__(
-        self, user_table: str, user_post_table: str, import_table_name: str
-    ) -> None:
+    def __init__(self, user_table: str, user_post_table: str, import_table_name: str) -> None:
         self.db: DynamoDB = DynamoDB()
         self.table_service: DynamoDBTableService = DynamoDBTableService(self.db)
         self.user_service: UserService = UserService(self.db, table_name=user_table)
@@ -38,8 +35,8 @@ class DynamoDBExample:
             self.db, table_name=user_table
         )
 
-        self.user_service_resource: UserServiceResourceExample = (
-            UserServiceResourceExample(self.db, table_name=user_table)
+        self.user_service_resource: UserServiceResourceExample = UserServiceResourceExample(
+            self.db, table_name=user_table
         )
 
     def create_tables(self):
@@ -83,9 +80,7 @@ class DynamoDBExample:
         for user in users:
             print(json.dumps(user, indent=4))
 
-        user = self.user_service.get_user_simplified(
-            user_id="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-        )
+        user = self.user_service.get_user_simplified(user_id="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
         print("\nGETTING A USER THAT DOESN'T EXIST")
         print(json.dumps(user, indent=4))
 

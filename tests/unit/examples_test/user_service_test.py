@@ -5,12 +5,13 @@ MIT License.  See Project Root for the license information.
 """
 
 import unittest
-from moto import mock_aws
+
 import boto3
+from moto import mock_aws
 
 from boto3_assist.dynamodb.dynamodb import DynamoDB
-from examples.dynamodb.services.user_service import UserService, User
 from examples.dynamodb.services.table_service import DynamoDBTableService
+from examples.dynamodb.services.user_service import User, UserService
 
 
 @mock_aws
@@ -26,9 +27,7 @@ class UserServiceTest(unittest.TestCase):
         # Set up the mocked DynamoDB
         self.dynamodb: DynamoDB = DynamoDB()
 
-        self.dynamodb.dynamodb_resource = boto3.resource(
-            "dynamodb", region_name="us-east-1"
-        )
+        self.dynamodb.dynamodb_resource = boto3.resource("dynamodb", region_name="us-east-1")
         self.table_name = "my_test_table"
         table_service = DynamoDBTableService(self.dynamodb)
         table_service.create_a_table(table_name=self.table_name)

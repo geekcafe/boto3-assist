@@ -7,7 +7,9 @@ Connection pooling for boto3 sessions to improve Lambda performance.
 """
 
 from typing import Dict, Optional
+
 from aws_lambda_powertools import Logger
+
 from .boto3session import Boto3SessionManager
 
 logger = Logger()

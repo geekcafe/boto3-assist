@@ -140,7 +140,7 @@ Transactions support four operation types:
 def transfer_money(from_account, to_account, amount):
     """Transfer money atomically between accounts"""
     db = DynamoDB()
-    
+
     operations = [
         {
             'Update': {
@@ -160,7 +160,7 @@ def transfer_money(from_account, to_account, amount):
             }
         }
     ]
-    
+
     try:
         db.transact_write_items(operations=operations)
         return True
@@ -175,7 +175,7 @@ def transfer_money(from_account, to_account, amount):
 def register_user(user_id, email):
     """Register user ensuring email uniqueness"""
     db = DynamoDB()
-    
+
     operations = [
         {
             'Put': {
@@ -200,7 +200,7 @@ def register_user(user_id, email):
             }
         }
     ]
-    
+
     try:
         db.transact_write_items(operations=operations)
         return True
@@ -215,9 +215,9 @@ def register_user(user_id, email):
 def reserve_inventory(order_id, items):
     """Reserve inventory for order atomically"""
     db = DynamoDB()
-    
+
     operations = []
-    
+
     # Decrement inventory for each item
     for product_id, quantity in items:
         operations.append({
@@ -229,7 +229,7 @@ def reserve_inventory(order_id, items):
                 'ExpressionAttributeValues': {':qty': quantity}
             }
         })
-    
+
     # Create order
     operations.append({
         'Put': {
@@ -242,7 +242,7 @@ def reserve_inventory(order_id, items):
             }
         }
     })
-    
+
     try:
         db.transact_write_items(operations=operations)
         return True
@@ -257,15 +257,15 @@ def reserve_inventory(order_id, items):
 def update_document_with_version_check(doc_id, new_content):
     """Update document with optimistic locking"""
     db = DynamoDB()
-    
+
     # Read current version
     response = db.get(
         key={'pk': f'doc#{doc_id}', 'sk': f'doc#{doc_id}'},
         table_name='documents'
     )
-    
+
     current_version = response['Item']['version']
-    
+
     # Update with version check
     operations = [{
         'Update': {
@@ -280,7 +280,7 @@ def update_document_with_version_check(doc_id, new_content):
             }
         }
     }]
-    
+
     try:
         db.transact_write_items(operations=operations)
         return True
@@ -377,7 +377,7 @@ Transaction gets cost **2x RCUs** (always strongly consistent):
 
 ```
 Regular Get (eventually consistent): 1 item × 4 KB = 0.5 RCU
-Regular Get (strongly consistent): 1 item × 4 KB = 1 RCU  
+Regular Get (strongly consistent): 1 item × 4 KB = 1 RCU
 Transaction Get: 1 item × 4 KB = 2 RCUs
 ```
 
@@ -424,16 +424,16 @@ Need atomicity (all-or-nothing)?
 try:
     db.transact_write_items(operations=operations)
     print("✅ Transaction successful")
-    
+
 except RuntimeError as e:
     # Transaction cancelled (condition failed, validation error)
     print(f"Transaction failed: {e}")
     # Could retry or handle gracefully
-    
+
 except ValueError as e:
     # Invalid parameters (too many operations, etc.)
     print(f"Invalid request: {e}")
-    
+
 except Exception as e:
     # Other errors (throttling, service errors)
     print(f"Unexpected error: {e}")
@@ -447,7 +447,7 @@ try:
     db.transact_write_items(operations=operations)
 except RuntimeError as e:
     error_msg = str(e)
-    
+
     if "ConditionalCheckFailed" in error_msg:
         print("Condition not met (e.g., insufficient balance)")
     elif "ValidationException" in error_msg:

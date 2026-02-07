@@ -6,8 +6,9 @@ MIT License.  See Project Root for the license information.
 
 import datetime
 from typing import Optional
-from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
+
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBKey
+from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
 from examples.dynamodb.models.product_model import Product
 
 
@@ -40,9 +41,7 @@ class OrderItem(DynamoDBModelBase):
         primary.name = "primary"
         # create a partition key off of the order key
         primary.partition_key.attribute_name = "pk"
-        primary.partition_key.value = lambda: DynamoDBKey.build_key(
-            ("order", self.order_id)
-        )
+        primary.partition_key.value = lambda: DynamoDBKey.build_key(("order", self.order_id))
 
         # create the sort key off of this items id
         primary.sort_key.attribute_name = "sk"

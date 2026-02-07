@@ -37,16 +37,16 @@ class Product(DynamoDBModelBase):
     ):
         # Always call super().__init__() first
         super().__init__()
-        
+
         # Define your attributes
         self.id = id
         self.name = name
         self.price = price
         self.description = description
-        
+
         # Setup indexes last
         self._setup_indexes()
-    
+
     def _setup_indexes(self):
         # Index definitions go here
         pass
@@ -106,7 +106,7 @@ class OrderItem(DynamoDBModelBase):
         self.product_id = None
         self.quantity = 0
         self._setup_indexes()
-    
+
     def _setup_indexes(self):
         primary = DynamoDBIndex()
         # Partition key from PARENT (order)
@@ -205,7 +205,7 @@ GSIs allow you to query data using different keys than your primary key.
 ```python
 def _setup_indexes(self):
     # ... primary key setup ...
-    
+
     # GSI to query all products sorted by name
     self.indexes.add_secondary(
         DynamoDBIndex(
@@ -251,7 +251,7 @@ self.indexes.add_secondary(
 class User(DynamoDBModelBase):
     def _setup_indexes(self):
         # ... primary key ...
-        
+
         # GSI to query all users sorted by last name, then first name
         self.indexes.add_secondary(
             DynamoDBIndex(
@@ -281,7 +281,7 @@ Sometimes you need conditional logic in your keys:
 class User(DynamoDBModelBase):
     def _setup_indexes(self):
         # ... primary key ...
-        
+
         self.indexes.add_secondary(
             DynamoDBIndex(
                 index_name="gsi2",
@@ -295,7 +295,7 @@ class User(DynamoDBModelBase):
                 )
             )
         )
-    
+
     def _get_gsi2_sk(self) -> str:
         """Custom logic for sort key"""
         if self.last_name:
@@ -316,7 +316,7 @@ class Order(DynamoDBModelBase):
         if self.completed_utc is None:
             return 0.0
         return self.completed_utc.timestamp()
-    
+
     def _setup_indexes(self):
         # GSI to query orders by completion date
         self.indexes.add_secondary(
@@ -361,7 +361,7 @@ class User(DynamoDBModelBase):
         self.email = email
         self.status = None
         self._setup_indexes()
-    
+
     def _setup_indexes(self):
         # PRIMARY: Get user by ID
         primary = DynamoDBIndex()
@@ -370,7 +370,7 @@ class User(DynamoDBModelBase):
         primary.sort_key.attribute_name = "sk"
         primary.sort_key.value = lambda: DynamoDBKey.build_key(("user", self.id))
         self.indexes.add_primary(primary)
-        
+
         # GSI0: List all users
         self.indexes.add_secondary(
             DynamoDBIndex(
@@ -385,7 +385,7 @@ class User(DynamoDBModelBase):
                 )
             )
         )
-        
+
         # GSI1: Search users by last name, then first name
         self.indexes.add_secondary(
             DynamoDBIndex(
@@ -403,7 +403,7 @@ class User(DynamoDBModelBase):
                 )
             )
         )
-        
+
         # GSI2: Find users by status and email
         self.indexes.add_secondary(
             DynamoDBIndex(

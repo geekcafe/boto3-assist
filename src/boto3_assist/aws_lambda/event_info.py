@@ -63,7 +63,9 @@ class LambdaEventInfo:
             Returns:
                 The resource pattern as a string, or None if not found.
             """
-            return LambdaEventInfo._get_value_ex(event, "resourcePath", str)  # pylint: disable=w0212
+            return LambdaEventInfo._get_value_ex(
+                event, "resourcePath", str
+            )  # pylint: disable=w0212
 
         class AuthorizerPayload:
             """
@@ -82,16 +84,12 @@ class LambdaEventInfo:
                 Returns:
                     The email or client ID as a string, or None if not found.
                 """
-                token_use = (
-                    LambdaEventInfo.ApiGatewayPayload.AuthorizerPayload.get_token_use(
-                        event
-                    )
+                token_use = LambdaEventInfo.ApiGatewayPayload.AuthorizerPayload.get_token_use(
+                    event
                 )  # pylint: disable=w0212
                 key = "email" if token_use == "access" else "client_id"
-                return (
-                    LambdaEventInfo.ApiGatewayPayload.AuthorizerPayload.get_claims_data(
-                        event, key
-                    )
+                return LambdaEventInfo.ApiGatewayPayload.AuthorizerPayload.get_claims_data(
+                    event, key
                 )  # pylint: disable=w0212
 
             @staticmethod
@@ -190,9 +188,7 @@ class LambdaEventInfo:
         """
 
         @staticmethod
-        def get_target_user_id(
-            event: Dict[str, Any], key: str = "user-id"
-        ) -> Optional[str]:
+        def get_target_user_id(event: Dict[str, Any], key: str = "user-id") -> Optional[str]:
             """
             Extracts the target user ID from the path parameters.
 
@@ -203,12 +199,12 @@ class LambdaEventInfo:
             Returns:
                 The user ID as a string, or None if not found.
             """
-            return LambdaEventInfo._get_value_from_path_parameters(event, key)  # pylint: disable=w0212
+            return LambdaEventInfo._get_value_from_path_parameters(
+                event, key
+            )  # pylint: disable=w0212
 
         @staticmethod
-        def get_target_tenant_id(
-            event: Dict[str, Any], key: str = "tenant-id"
-        ) -> Optional[str]:
+        def get_target_tenant_id(event: Dict[str, Any], key: str = "tenant-id") -> Optional[str]:
             """
             Extracts the target tenant ID from the path parameters.
 
@@ -219,7 +215,9 @@ class LambdaEventInfo:
             Returns:
                 The tenant ID as a string, or None if not found.
             """
-            return LambdaEventInfo._get_value_from_path_parameters(event, key)  # pylint: disable=w0212
+            return LambdaEventInfo._get_value_from_path_parameters(
+                event, key
+            )  # pylint: disable=w0212
 
     @staticmethod
     def get_message_id(event: Dict[str, Any], index: int = 0) -> Optional[str]:
@@ -239,9 +237,7 @@ class LambdaEventInfo:
         return None
 
     @staticmethod
-    def _get_value_ex(
-        event: Dict[str, Any], key: str, expected_type: type
-    ) -> Optional[Any]:
+    def _get_value_ex(event: Dict[str, Any], key: str, expected_type: type) -> Optional[Any]:
         """
         Extracts a value from the event, checking additional paths if necessary.
 
@@ -308,18 +304,24 @@ class LambdaEventInfo:
         Returns:
             The extracted value, or None if not found.
         """
-        value = LambdaEventInfo._search_key(event, "pathParameters", key, default)  # pylint: disable=w0212
+        value = LambdaEventInfo._search_key(
+            event, "pathParameters", key, default
+        )  # pylint: disable=w0212
         if value is None:
-            path = LambdaEventInfo.ApiGatewayPayload.get_resource_path(event)  # pylint: disable=w0212
-            pattern = LambdaEventInfo.ApiGatewayPayload.get_resource_pattern(event)  # pylint: disable=w0212
+            path = LambdaEventInfo.ApiGatewayPayload.get_resource_path(
+                event
+            )  # pylint: disable=w0212
+            pattern = LambdaEventInfo.ApiGatewayPayload.get_resource_pattern(
+                event
+            )  # pylint: disable=w0212
             if path and pattern:
-                value = LambdaEventInfo._extract_value_from_path(path, pattern, key)  # pylint: disable=w0212
+                value = LambdaEventInfo._extract_value_from_path(
+                    path, pattern, key
+                )  # pylint: disable=w0212
         return value
 
     @staticmethod
-    def _extract_value_from_path(
-        path: str, pattern: str, variable_name: str
-    ) -> Optional[str]:
+    def _extract_value_from_path(path: str, pattern: str, variable_name: str) -> Optional[str]:
         """
         Extracts a value from a path using a regex pattern.
 
@@ -395,9 +397,7 @@ class LambdaEventInfo:
         return tmp if isinstance(tmp, dict) else None
 
     @staticmethod
-    def override_event_info(
-        event: Dict[str, Any], key: str, value: Any
-    ) -> Dict[str, Any]:
+    def override_event_info(event: Dict[str, Any], key: str, value: Any) -> Dict[str, Any]:
         """
         Overrides a value in the event payload.
 

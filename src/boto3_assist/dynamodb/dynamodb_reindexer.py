@@ -5,13 +5,15 @@ MIT License.  See Project Root for the license information.
 """
 
 import json
-from typing import Any, Dict, Optional, List, Type
+from typing import Any, Dict, List, Optional, Type
+
 from aws_lambda_powertools import Logger
+
 from boto3_assist.dynamodb.dynamodb import DynamoDB
-from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
-from boto3_assist.utilities.serialization_utility import Serialization
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex
 from boto3_assist.dynamodb.dynamodb_iservice import IDynamoDBService
+from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
+from boto3_assist.utilities.serialization_utility import Serialization
 
 logger = Logger()
 
@@ -87,23 +89,17 @@ class DynamoDBReindexer:
                 if service_instance:
                     service_instance.save(model=model)
                 else:
-                    self.db.save(
-                        item=model, table_name=self.table_name, source="reindex"
-                    )
+                    self.db.save(item=model, table_name=self.table_name, source="reindex")
 
                 # then delete the old on
                 if not leave_original_record:
-                    self.db.delete(
-                        table_name=self.table_name, primary_key=original_primary_key
-                    )
+                    self.db.delete(table_name=self.table_name, primary_key=original_primary_key)
             except Exception as e:  # pylint: disable=broad-except
                 logger.error(str(e))
                 raise RuntimeError(str(e)) from e
             # this gets a little more trick as we need to delete the item
 
-    def load_model(
-        self, db_item: dict, db_model: DynamoDBModelBase
-    ) -> DynamoDBModelBase | None:
+    def load_model(self, db_item: dict, db_model: DynamoDBModelBase) -> DynamoDBModelBase | None:
         """load the model which will serialze the dynamodb dictionary to an instance of an object"""
 
         base_model = Serialization.map(db_item, db_model)
@@ -144,14 +140,10 @@ class DynamoDBReindexer:
         Returns:
             str: _description_
         """
-        update_expression = "SET " + ", ".join(
-            f"{k} = :{k}" for k in updated_keys.keys()
-        )
+        update_expression = "SET " + ", ".join(f"{k} = :{k}" for k in updated_keys.keys())
         return update_expression
 
-    def build_expression_attribute_values(
-        self, updated_keys: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def build_expression_attribute_values(self, updated_keys: Dict[str, Any]) -> Dict[str, Any]:
         """
         Build the expression attribute values for the update expression
 

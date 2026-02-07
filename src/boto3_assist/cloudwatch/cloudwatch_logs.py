@@ -4,7 +4,8 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
+
 from boto3_assist.cloudwatch.cloudwatch_log_connection import CloudWatchConnection
 
 

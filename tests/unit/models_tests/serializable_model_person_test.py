@@ -6,6 +6,7 @@ MIT License.  See Project Root for the license information.
 
 import unittest
 from typing import Dict, List
+
 from boto3_assist.models.serializable_model import SerializableModel
 from tests.unit.models_tests.models.person import Person
 

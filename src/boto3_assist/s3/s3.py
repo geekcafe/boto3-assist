@@ -8,9 +8,9 @@ from typing import Optional, cast
 
 from aws_lambda_powertools import Logger
 
+from boto3_assist.s3.s3_bucket import S3Bucket
 from boto3_assist.s3.s3_connection import S3Connection
 from boto3_assist.s3.s3_object import S3Object
-from boto3_assist.s3.s3_bucket import S3Bucket
 
 logger = Logger(child=True)
 

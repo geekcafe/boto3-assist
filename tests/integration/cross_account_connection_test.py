@@ -1,6 +1,8 @@
-import pytest
 import os
 from typing import List
+
+import pytest
+
 from boto3_assist.dynamodb.dynamodb import DynamoDB
 from tests.integration.tenant_services import TenantServices
 
@@ -47,18 +49,14 @@ def test_cross_account_role_assumption_with_profile():
     ]
 
     for connection in connections:
-        role_arn = (
-            f"arn:aws:iam::{connection['aws_account']}:role/{connection['role_name']}"
-        )
+        role_arn = f"arn:aws:iam::{connection['aws_account']}:role/{connection['role_name']}"
         if connection["enabled"]:
             db = DynamoDB(
                 aws_profile=connection["profile_name"],
                 aws_region=connection["aws_region"],
                 assume_role_arn=role_arn,
             )
-            ts: TenantServices = TenantServices(
-                db=db, table_name=connection["table_name"]
-            )
+            ts: TenantServices = TenantServices(db=db, table_name=connection["table_name"])
             response = ts.list()
             responses.append(response)
             # print(response)

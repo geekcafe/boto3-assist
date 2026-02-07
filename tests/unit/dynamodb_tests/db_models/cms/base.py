@@ -5,11 +5,9 @@ MIT License.  See Project Root for the license information.
 """
 
 import datetime as dt
+
+from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase, exclude_from_serialization
 from boto3_assist.utilities.string_utility import StringUtility
-from boto3_assist.dynamodb.dynamodb_model_base import (
-    DynamoDBModelBase,
-    exclude_from_serialization,
-)
 
 
 class BaseCMSDBModel(DynamoDBModelBase):

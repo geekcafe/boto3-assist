@@ -346,7 +346,7 @@ print(f"Total logins: {updated_user['login_count']}")
 def increment_post_views(post_id):
     """Increment post view count atomically"""
     db = DynamoDB()
-    
+
     db.update_item(
         table_name="posts",
         key={"pk": f"post#{post_id}", "sk": f"post#{post_id}"},
@@ -361,7 +361,7 @@ def increment_post_views(post_id):
 def reserve_inventory(product_id, quantity):
     """Reserve inventory with stock check"""
     db = DynamoDB()
-    
+
     try:
         response = db.update_item(
             table_name="products",
@@ -371,7 +371,7 @@ def reserve_inventory(product_id, quantity):
             condition_expression="stock >= :qty",
             return_values="ALL_NEW"
         )
-        
+
         remaining = response["Attributes"]["stock"]
         return {"success": True, "remaining_stock": remaining}
     except RuntimeError:
@@ -384,7 +384,7 @@ def reserve_inventory(product_id, quantity):
 def log_activity(user_id, action):
     """Append activity to user's log"""
     db = DynamoDB()
-    
+
     db.update_item(
         table_name="users",
         key={"pk": f"user#{user_id}", "sk": f"user#{user_id}"},
@@ -404,7 +404,7 @@ def log_activity(user_id, action):
 def ship_order(order_id):
     """Ship order only if status is 'pending'"""
     db = DynamoDB()
-    
+
     try:
         db.update_item(
             table_name="orders",
@@ -429,7 +429,7 @@ def ship_order(order_id):
 def update_document_with_version(doc_id, content, expected_version):
     """Update document with version check"""
     db = DynamoDB()
-    
+
     try:
         response = db.update_item(
             table_name="documents",
@@ -443,7 +443,7 @@ def update_document_with_version(doc_id, content, expected_version):
             condition_expression="version = :expected_version",
             return_values="ALL_NEW"
         )
-        
+
         new_version = response["Attributes"]["version"]
         return {"success": True, "version": new_version}
     except RuntimeError:

@@ -1,7 +1,7 @@
 # boto3-assist Decimal Enhancement - Implementation Checklist
 
-> **Status**: 📋 Proposed Enhancement - Pending Implementation  
-> **Last Updated**: 2025-10-12  
+> **Status**: 📋 Proposed Enhancement - Pending Implementation
+> **Last Updated**: 2025-10-12
 > **TODO**: Complete when implementing in boto3-assist library
 
 ---
@@ -21,7 +21,7 @@ from decimal import Decimal
 def _get_type_hint(obj: Any, attr_name: str) -> Any:
     """
     Get the type hint for an attribute.
-    
+
     Returns:
         The type hint if available, None otherwise
     """
@@ -35,25 +35,25 @@ def _get_type_hint(obj: Any, attr_name: str) -> Any:
 def _convert_decimal_by_type(value: Any, target_type: Any) -> Any:
     """
     Recursively convert Decimal objects based on target type hint.
-    
+
     Conversion rules:
     - Decimal + float hint → float
-    - Decimal + int hint → int  
+    - Decimal + int hint → int
     - Dict[str, float] → recursively convert dict values
     - List[float] → convert list items
     - No type hint + nested dict/list → convert Decimals to float
     - No type hint + direct Decimal → preserve as Decimal (backward compat)
-    
+
     Args:
         value: The value to convert (may contain Decimals)
         target_type: The type hint from the target property
-    
+
     Returns:
         Converted value with Decimals changed to appropriate types
     """
     if value is None:
         return None
-    
+
     # Handle direct Decimal conversion
     if isinstance(value, Decimal):
         # Has explicit type hint
@@ -63,7 +63,7 @@ def _convert_decimal_by_type(value: Any, target_type: Any) -> Any:
             return int(value)
         # No type hint or unknown hint - preserve Decimal for backward compatibility
         return value
-    
+
     # Handle Dict types
     if isinstance(value, dict):
         origin = get_origin(target_type)
@@ -79,12 +79,12 @@ def _convert_decimal_by_type(value: Any, target_type: Any) -> Any:
         # No specific type hint - convert any Decimals to float by default
         # This prevents common errors with Dict[str, Any] or untyped dicts
         return {
-            k: _convert_decimal_by_type(v, None) if isinstance(v, Decimal) else 
+            k: _convert_decimal_by_type(v, None) if isinstance(v, Decimal) else
                _convert_decimal_by_type(v, None) if isinstance(v, (dict, list)) else v
             for k, v in value.items()
         }
-    
-    # Handle List types  
+
+    # Handle List types
     if isinstance(value, list):
         origin = get_origin(target_type)
         if origin is list:
@@ -99,7 +99,7 @@ def _convert_decimal_by_type(value: Any, target_type: Any) -> Any:
             _convert_decimal_by_type(item, None) if isinstance(item, (dict, list)) else item
             for item in value
         ]
-    
+
     # Non-Decimal, non-container types - return as-is
     return value
 ```
@@ -109,33 +109,33 @@ def _convert_decimal_by_type(value: Any, target_type: Any) -> Any:
 def map(source: dict, target: DynamoDBModelBase) -> DynamoDBModelBase:
     """
     Map source dictionary to target model instance.
-    
+
     Automatically converts Decimal objects from DynamoDB to appropriate
     Python types based on property type hints.
-    
+
     Args:
         source: Dictionary from DynamoDB (may contain Decimals)
         target: Target model instance to populate
-    
+
     Returns:
         Populated model instance with Decimals converted appropriately
     """
     # ... existing code to handle ResponseMetadata, etc ...
-    
+
     # Main mapping loop
     for attr_name, attr_value in source.items():
         if not hasattr(target, attr_name):
             continue
-        
+
         # Get type hint for this property
         target_type = _get_type_hint(target, attr_name)
-        
+
         # Convert Decimals based on type hint
         converted_value = _convert_decimal_by_type(attr_value, target_type)
-        
+
         # Set the converted value
         setattr(target, attr_name, converted_value)
-    
+
     return target
 ```
 
@@ -149,7 +149,7 @@ Create comprehensive test suite (see full examples in BOTO3_ASSIST_DECIMAL_PATTE
 
 **Test coverage:**
 - ✅ `test_decimal_to_float` - Direct Decimal with float hint
-- ✅ `test_decimal_to_int` - Direct Decimal with int hint  
+- ✅ `test_decimal_to_int` - Direct Decimal with int hint
 - ✅ `test_dict_of_decimals_to_floats` - Dict[str, float] conversion
 - ✅ `test_list_of_decimals_to_floats` - List[float] conversion
 - ✅ `test_no_type_hint_preserves_decimal` - Backward compatibility
@@ -168,7 +168,7 @@ Add section:
 ```markdown
 ## Automatic Decimal Conversion
 
-boto3-assist automatically converts DynamoDB's `Decimal` objects to Python 
+boto3-assist automatically converts DynamoDB's `Decimal` objects to Python
 native types based on your model's type hints:
 
 ### Example
@@ -181,12 +181,12 @@ class VoteSummary(DynamoDBModelBase):
     def __init__(self):
         super().__init__()
         self._choice_averages: Dict[str, float] = {}
-    
+
     @property
     def choice_averages(self) -> Dict[str, float]:
         return self._choice_averages
-    
-    @choice_averages.setter  
+
+    @choice_averages.setter
     def choice_averages(self, value: Dict[str, float]):
         self._choice_averages = value
 
@@ -306,21 +306,21 @@ pytest tests/ -v
 
 ## Success Criteria
 
-✅ **All existing tests pass** (backward compatibility)  
-✅ **New tests achieve 100% coverage** for Decimal conversion  
-✅ **Documentation is clear** with examples  
-✅ **No performance degradation** (< 5% overhead acceptable)  
-✅ **Real-world validation** with production-like models  
+✅ **All existing tests pass** (backward compatibility)
+✅ **New tests achieve 100% coverage** for Decimal conversion
+✅ **Documentation is clear** with examples
+✅ **No performance degradation** (< 5% overhead acceptable)
+✅ **Real-world validation** with production-like models
 
 ---
 
 ## Common Pitfalls to Avoid
 
-❌ **Don't convert in property getters** - breaks object identity  
-❌ **Don't ignore backward compatibility** - preserve Decimal when no hint  
-❌ **Don't forget nested structures** - handle Dict[str, Dict[str, float]]  
-❌ **Don't skip integration tests** - unit tests alone aren't enough  
-❌ **Don't forget edge cases** - None values, empty dicts, mixed types  
+❌ **Don't convert in property getters** - breaks object identity
+❌ **Don't ignore backward compatibility** - preserve Decimal when no hint
+❌ **Don't forget nested structures** - handle Dict[str, Dict[str, float]]
+❌ **Don't skip integration tests** - unit tests alone aren't enough
+❌ **Don't forget edge cases** - None values, empty dicts, mixed types
 
 ---
 

@@ -20,9 +20,7 @@ class TestLambdaEventInfo(unittest.TestCase):
             "path": "/users/123",
             "resourcePath": "/users/{user-id}",
             "requestContext": {
-                "authorizer": {
-                    "claims": {"token_use": "access", "email": "user@example.com"}
-                }
+                "authorizer": {"claims": {"token_use": "access", "email": "user@example.com"}}
             },
             "headers": {"Authorization": "Bearer jwt.token.here"},
             "pathParameters": {"user-id": "123"},
@@ -54,10 +52,8 @@ class TestLambdaEventInfo(unittest.TestCase):
         """
         Test that the authenticated email is correctly extracted from the authorizer claims.
         """
-        result = (
-            LambdaEventInfo.ApiGatewayPayload.AuthorizerPayload.get_authenticated_email(
-                self.event
-            )
+        result = LambdaEventInfo.ApiGatewayPayload.AuthorizerPayload.get_authenticated_email(
+            self.event
         )
         self.assertEqual(result, "user@example.com")
 
@@ -65,9 +61,7 @@ class TestLambdaEventInfo(unittest.TestCase):
         """
         Test that the token use is correctly extracted from the authorizer claims.
         """
-        result = LambdaEventInfo.ApiGatewayPayload.AuthorizerPayload.get_token_use(
-            self.event
-        )
+        result = LambdaEventInfo.ApiGatewayPayload.AuthorizerPayload.get_token_use(self.event)
         self.assertEqual(result, "access")
 
     @patch("boto3_assist.cognito.cognito_authorizer.CognitoCustomAuthorizer.parse_jwt")
@@ -76,10 +70,8 @@ class TestLambdaEventInfo(unittest.TestCase):
         Test that values are correctly extracted from the JWT token.
         """
         mock_parse_jwt.return_value = {"email": "user@example.com"}
-        result = (
-            LambdaEventInfo.ApiGatewayPayload.AuthorizerPayload.get_value_from_token(
-                self.event, "email"
-            )
+        result = LambdaEventInfo.ApiGatewayPayload.AuthorizerPayload.get_value_from_token(
+            self.event, "email"
         )  # pylint: disable=w0212
         self.assertEqual(result, "user@example.com")
 
@@ -108,9 +100,7 @@ class TestLambdaEventInfo(unittest.TestCase):
         """
         Test that event information can be correctly overridden.
         """
-        updated_event = LambdaEventInfo.override_event_info(
-            self.event, "new_key", "new_value"
-        )
+        updated_event = LambdaEventInfo.override_event_info(self.event, "new_key", "new_value")
         self.assertIn("new_key", updated_event)
         self.assertEqual(updated_event["new_key"], "new_value")
 

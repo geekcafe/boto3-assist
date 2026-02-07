@@ -132,9 +132,7 @@ class DynamoDBModelUnitTest(unittest.TestCase):
         keys: List[DynamoDBIndex] = user.list_keys()
         print("")
         for key in keys:
-            print(
-                f"key: {key.partition_key.attribute_name} value: {key.partition_key.value}"
-            )
+            print(f"key: {key.partition_key.attribute_name} value: {key.partition_key.value}")
             print(f"key: {key.sort_key.attribute_name} value: {key.sort_key.value}")
 
         self.assertEqual(len(keys), 4)

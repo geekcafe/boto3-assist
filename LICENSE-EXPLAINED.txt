@@ -1,8 +1,8 @@
-This license is permissive, meaning it allows almost unrestricted use of the code, 
-including the right to use, copy, modify, merge, publish, distribute, sublicense, 
-and/or sell copies of the software. 
+This license is permissive, meaning it allows almost unrestricted use of the code,
+including the right to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the software.
 
-However, it requires that the original copyright notice and permission notice be included 
+However, it requires that the original copyright notice and permission notice be included
 in all copies or substantial portions of the software, ensuring I or anyone else who works on this
 gets credit for the work.
 

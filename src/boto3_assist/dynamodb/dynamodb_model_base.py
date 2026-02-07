@@ -5,24 +5,24 @@ MIT License.  See Project Root for the license information.
 """
 
 from __future__ import annotations
+
 import datetime as dt
 from enum import Enum
 
 # import decimal
 # import inspect
 # import uuid
-from typing import TypeVar, List, Dict, Any, Set
-from boto3.dynamodb.types import TypeSerializer, TypeDeserializer
-from boto3_assist.utilities.serialization_utility import Serialization
-from boto3_assist.utilities.decimal_conversion_utility import DecimalConversionUtility
+from typing import Any, Dict, List, Set, TypeVar
+
+from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
+
 from boto3_assist.dynamodb.dynamodb_helpers import DynamoDBHelpers
-from boto3_assist.dynamodb.dynamodb_index import (
-    DynamoDBIndexes,
-    DynamoDBIndex,
-)
+from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBIndexes
 from boto3_assist.dynamodb.dynamodb_reserved_words import DynamoDBReservedWords
-from boto3_assist.utilities.datetime_utility import DatetimeUtility
 from boto3_assist.models.serializable_model import SerializableModel
+from boto3_assist.utilities.datetime_utility import DatetimeUtility
+from boto3_assist.utilities.decimal_conversion_utility import DecimalConversionUtility
+from boto3_assist.utilities.serialization_utility import Serialization
 from boto3_assist.utilities.string_utility import StringUtility
 
 
@@ -143,15 +143,12 @@ class DynamoDBModelBase(SerializableModel):
         Gets the projection expression attribute names
 
         """
-        if (
-            self.__projection_expression_attribute_names is None
-            and self.auto_generate_projections
-        ):
+        if self.__projection_expression_attribute_names is None and self.auto_generate_projections:
             props = self.to_dictionary()
             # turn props to a list[str]
             prop_list = list(props.keys())
-            self.projection_expression_attribute_names = (
-                self.__reserved_words.transform_attributes(prop_list)
+            self.projection_expression_attribute_names = self.__reserved_words.transform_attributes(
+                prop_list
             )
         else:
             if self.projection_expression:
@@ -196,9 +193,7 @@ class DynamoDBModelBase(SerializableModel):
                 if response is None:
                     response = {}
                 item = response
-            elif "Item" in item and not any(
-                key in item for key in ["id", "name", "pk", "sk"]
-            ):
+            elif "Item" in item and not any(key in item for key in ["id", "name", "pk", "sk"]):
                 # Response with Item key but no direct model attributes (likely a DynamoDB response)
                 # This handles cases like {'Item': {...}} or {'Item': {...}, 'Count': 1}
                 item = item.get("Item", {})
@@ -265,9 +260,7 @@ class DynamoDBModelBase(SerializableModel):
             raise ValueError("Updates must be a dictionary or DynamoDBModelBase")
 
         # Convert decimals if present
-        updates_dict = DecimalConversionUtility.convert_decimals_to_native_types(
-            updates_dict
-        )
+        updates_dict = DecimalConversionUtility.convert_decimals_to_native_types(updates_dict)
 
         # Apply field filters
         if include_fields is not None:
@@ -276,26 +269,18 @@ class DynamoDBModelBase(SerializableModel):
 
         if exclude_fields is not None:
             exclude_set = set(exclude_fields)
-            updates_dict = {
-                k: v for k, v in updates_dict.items() if k not in exclude_set
-            }
+            updates_dict = {k: v for k, v in updates_dict.items() if k not in exclude_set}
 
         # Apply merge based on strategy
-        return DynamoDBSerializer.merge(
-            updates=updates_dict, target=self, strategy=strategy
-        )
+        return DynamoDBSerializer.merge(updates=updates_dict, target=self, strategy=strategy)
 
     def to_client_dictionary(self, include_indexes: bool = True):
         """
         Convert the instance to a dictionary suitable for DynamoDB client.
         """
-        return DynamoDBSerializer.to_client_dictionary(
-            self, include_indexes=include_indexes
-        )
+        return DynamoDBSerializer.to_client_dictionary(self, include_indexes=include_indexes)
 
-    def to_resource_dictionary(
-        self, include_indexes: bool = True, include_none: bool = False
-    ):
+    def to_resource_dictionary(self, include_indexes: bool = True, include_none: bool = False):
         """
         Convert the instance to a dictionary suitable for DynamoDB resource.
         """
@@ -368,9 +353,7 @@ class DynamoDBModelBase(SerializableModel):
         if isinstance(value, dt.datetime):
             return value.timestamp()
 
-        raise ValueError(
-            "Value must be a None, a string in a valid datetime format or datetime"
-        )
+        raise ValueError("Value must be a None, a string in a valid datetime format or datetime")
 
     def to_utc(self, value: str | dt.datetime | None) -> dt.datetime | None:
         """
@@ -462,26 +445,16 @@ class DynamoDBSerializer:
         primary = instance.indexes.primary
 
         if primary:
-            instance_dict[primary.partition_key.attribute_name] = (
-                primary.partition_key.value
-            )
-            if (
-                primary.sort_key.attribute_name is not None
-                and primary.sort_key.value is not None
-            ):
+            instance_dict[primary.partition_key.attribute_name] = primary.partition_key.value
+            if primary.sort_key.attribute_name is not None and primary.sort_key.value is not None:
                 instance_dict[primary.sort_key.attribute_name] = primary.sort_key.value
 
         secondaries = instance.indexes.secondaries
 
         key: DynamoDBIndex
         for _, key in secondaries.items():
-            if (
-                key.partition_key.attribute_name is not None
-                and key.partition_key.value is not None
-            ):
-                instance_dict[key.partition_key.attribute_name] = (
-                    key.partition_key.value
-                )
+            if key.partition_key.attribute_name is not None and key.partition_key.value is not None:
+                instance_dict[key.partition_key.attribute_name] = key.partition_key.value
             if key.sort_key.value is not None and key.sort_key.value is not None:
                 instance_dict[key.sort_key.attribute_name] = key.sort_key.value
 
@@ -538,12 +511,8 @@ class DynamoDBSerializer:
                         and strategy != MergeStrategy.UPDATES_WIN
                     ):
                         # Recursively merge dicts
-                        DynamoDBSerializer._merge_dict(
-                            current_value, update_value, strategy
-                        )
-                    elif hasattr(current_value, "__dict__") and isinstance(
-                        update_value, dict
-                    ):
+                        DynamoDBSerializer._merge_dict(current_value, update_value, strategy)
+                    elif hasattr(current_value, "__dict__") and isinstance(update_value, dict):
                         # Nested object - recursively merge
                         DynamoDBSerializer.merge(
                             updates=update_value,
@@ -594,8 +563,6 @@ class DynamoDBSerializer:
                     and isinstance(update_value, dict)
                     and strategy != MergeStrategy.UPDATES_WIN
                 ):
-                    DynamoDBSerializer._merge_dict(
-                        current_value, update_value, strategy
-                    )
+                    DynamoDBSerializer._merge_dict(current_value, update_value, strategy)
                 else:
                     target_dict[key] = update_value

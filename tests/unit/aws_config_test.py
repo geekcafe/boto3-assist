@@ -5,9 +5,7 @@ from pathlib import Path
 class AWSConfigTest(unittest.TestCase):
 
     def setUp(self):
-        config_path_dir = (
-            Path(__file__).parent.joinpath(".outputs", "aws_config").resolve()
-        )
+        config_path_dir = Path(__file__).parent.joinpath(".outputs", "aws_config").resolve()
 
         if not config_path_dir.exists():
             config_path_dir.mkdir(parents=True, exist_ok=True)
@@ -20,15 +18,17 @@ class AWSConfigTest(unittest.TestCase):
         self.assertTrue(AWSConfig)
 
     def test_init(self):
-        from boto3_assist.aws_config import AWSConfig
         import os
+
+        from boto3_assist.aws_config import AWSConfig
 
         aws_config = AWSConfig()
         self.assertTrue(aws_config)
 
     def test_path(self):
-        from boto3_assist.aws_config import AWSConfig
         import os
+
+        from boto3_assist.aws_config import AWSConfig
 
         aws_config = AWSConfig()
         path = aws_config.get_path()
@@ -36,8 +36,7 @@ class AWSConfigTest(unittest.TestCase):
         self.assertTrue(os.path.exists(path))
 
     def test_config_upsert_profile(self):
-        from boto3_assist.aws_config import AWSConfig
-        from boto3_assist.aws_config import AWSConfigProfile
+        from boto3_assist.aws_config import AWSConfig, AWSConfigProfile
 
         aws_config = AWSConfig()
         profile = AWSConfigProfile("us-east-2", "json")
@@ -46,8 +45,7 @@ class AWSConfigTest(unittest.TestCase):
         aws_config.upsert_profile("unit-test-profile", profile)
 
     def test_config_upsert_sso(self):
-        from boto3_assist.aws_config import AWSConfig
-        from boto3_assist.aws_config import AWSConfigSSOSession
+        from boto3_assist.aws_config import AWSConfig, AWSConfigSSOSession
 
         aws_config = AWSConfig()
         sso = AWSConfigSSOSession("us-east-1", "json")
@@ -57,9 +55,7 @@ class AWSConfigTest(unittest.TestCase):
         aws_config.upsert_sso_session("unit-test-sso", sso)
 
     def test_config_upsert_sso_with_profile(self):
-        from boto3_assist.aws_config import AWSConfig
-        from boto3_assist.aws_config import AWSConfigSSOSession
-        from boto3_assist.aws_config import AWSConfigProfile
+        from boto3_assist.aws_config import AWSConfig, AWSConfigProfile, AWSConfigSSOSession
 
         aws_config = AWSConfig()
         sso = AWSConfigSSOSession("us-east-1", "json")

@@ -4,8 +4,9 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import List, Dict, Any
 import datetime as dt
+from typing import Any, Dict, List
+
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBKey
 from tests.unit.dynamodb_tests.db_models.cms.base import BaseCMSDBModel
 

@@ -4,18 +4,16 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import Optional, List
 import warnings
+from typing import List, Optional
 
 from aws_lambda_powertools import Logger
 from botocore.config import Config
-from boto3_assist.boto3session import Boto3SessionManager
-from boto3_assist.environment_services.environment_variables import (
-    EnvironmentVariables,
-)
-from boto3_assist.connection_tracker import ConnectionTracker
-from boto3_assist.connection_pool import ConnectionPool
 
+from boto3_assist.boto3session import Boto3SessionManager
+from boto3_assist.connection_pool import ConnectionPool
+from boto3_assist.connection_tracker import ConnectionTracker
+from boto3_assist.environment_services.environment_variables import EnvironmentVariables
 
 logger = Logger()
 tracker: ConnectionTracker = ConnectionTracker()
@@ -53,9 +51,7 @@ class Connection:
         self.__use_connection_pool = use_connection_pool
 
         if self.__service_name is None:
-            raise RuntimeError(
-                "Service Name is not available. The service name is required."
-            )
+            raise RuntimeError("Service Name is not available. The service name is required.")
 
         self.raise_on_error: bool = True
 
@@ -135,10 +131,7 @@ class Connection:
     @property
     def aws_secret_access_key(self) -> str | None:
         """The AWS Access Key"""
-        return (
-            self.__aws_secret_access_key
-            or EnvironmentVariables.AWS.aws_secret_access_key()
-        )
+        return self.__aws_secret_access_key or EnvironmentVariables.AWS.aws_secret_access_key()
 
     @aws_secret_access_key.setter
     def aws_secret_access_key(self, value: str | None):

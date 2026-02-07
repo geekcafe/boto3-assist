@@ -25,9 +25,7 @@ class CognitoCustomAuthorizer:
     def __init__(self):
         self.__client_connections: Dict[str, Any] = {}
 
-    def __get_client_connection(
-        self, user_pool_id: str, refresh_client: bool = False
-    ) -> Any:
+    def __get_client_connection(self, user_pool_id: str, refresh_client: bool = False) -> Any:
         """Get the client connection to cognito"""
         region = user_pool_id.split("_")[0]
         client = self.__client_connections.get(region)
@@ -41,9 +39,7 @@ class CognitoCustomAuthorizer:
 
         return client
 
-    def generate_policy(
-        self, user_pools: str | List[str], event: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def generate_policy(self, user_pools: str | List[str], event: Dict[str, Any]) -> Dict[str, Any]:
         """Generates the policy for the authorizer"""
 
         token = event["authorizationToken"]
@@ -111,9 +107,7 @@ class CognitoCustomAuthorizer:
         elif isinstance(user_pools, list):
             pass
         else:
-            logger.warning(
-                f"Missing/ Invalid user pool: {user_pools}, type: {type(user_pools)}"
-            )
+            logger.warning(f"Missing/ Invalid user pool: {user_pools}, type: {type(user_pools)}")
 
         return user_pools
 

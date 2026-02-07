@@ -53,7 +53,7 @@ aws dynamodb list-tables --endpoint-url http://localhost:8000
 import boto3
 dynamodb = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')
 ```
-- 
+-
 
 
 

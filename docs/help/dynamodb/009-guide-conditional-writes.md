@@ -163,16 +163,16 @@ def update_document_with_locking(doc_id, new_content):
     """Update document with optimistic locking"""
     db = DynamoDB()
     table_name = "documents"
-    
+
     # 1. Read current version
     response = db.get(
         key={"pk": f"doc#{doc_id}", "sk": f"doc#{doc_id}"},
         table_name=table_name
     )
-    
+
     current_version = response["Item"]["version"]
     current_doc = response["Item"]
-    
+
     # 2. Prepare update with incremented version
     updated_doc = {
         "pk": f"doc#{doc_id}",
@@ -181,7 +181,7 @@ def update_document_with_locking(doc_id, new_content):
         "content": new_content,
         "version": current_version + 1  # Increment version
     }
-    
+
     # 3. Save with version check
     try:
         db.save(
@@ -203,7 +203,7 @@ def update_with_retry(doc_id, new_content, max_retries=3):
     """Update with automatic retry on version conflicts"""
     db = DynamoDB()
     table_name = "documents"
-    
+
     for attempt in range(max_retries):
         try:
             # Read current state
@@ -212,7 +212,7 @@ def update_with_retry(doc_id, new_content, max_retries=3):
                 table_name=table_name
             )
             current_version = response["Item"]["version"]
-            
+
             # Prepare update
             updated_doc = {
                 "pk": f"doc#{doc_id}",
@@ -221,7 +221,7 @@ def update_with_retry(doc_id, new_content, max_retries=3):
                 "content": new_content,
                 "version": current_version + 1
             }
-            
+
             # Attempt save
             db.save(
                 item=updated_doc,
@@ -230,9 +230,9 @@ def update_with_retry(doc_id, new_content, max_retries=3):
                 expression_attribute_names={"#version": "version"},
                 expression_attribute_values={":expected_version": current_version}
             )
-            
+
             return {"success": True, "attempt": attempt + 1}
-            
+
         except RuntimeError:
             if attempt < max_retries - 1:
                 continue  # Retry
@@ -248,25 +248,25 @@ def update_with_retry(doc_id, new_content, max_retries=3):
 def register_user(email, user_data):
     """Register user with unique email check"""
     db = DynamoDB()
-    
+
     # Create user record
     user = {
         "pk": f"user#{user_data['id']}",
         "sk": f"user#{user_data['id']}",
         **user_data
     }
-    
+
     # Create email index
     email_record = {
         "pk": "emails#",
         "sk": f"email#{email}",
         "user_id": user_data['id']
     }
-    
+
     # Save user
     try:
         db.save(item=user, table_name="users", fail_if_exists=True)
-        
+
         # Save email (must be unique)
         db.save(
             item=email_record,
@@ -285,21 +285,21 @@ def reserve_inventory(product_id, quantity):
     """Reserve inventory with stock check"""
     db = DynamoDB()
     table_name = "products"
-    
+
     # Read current stock
     response = db.get(
         key={"pk": f"product#{product_id}", "sk": f"product#{product_id}"},
         table_name=table_name
     )
     current_stock = response["Item"]["stock"]
-    
+
     # Decrement stock
     updated_product = {
         "pk": f"product#{product_id}",
         "sk": f"product#{product_id}",
         "stock": current_stock - quantity
     }
-    
+
     try:
         # Only update if sufficient stock
         db.save(
@@ -320,7 +320,7 @@ def transition_order_status(order_id, from_status, to_status):
     """Transition order status with validation"""
     db = DynamoDB()
     table_name = "orders"
-    
+
     # Read order
     response = db.get(
         key={"pk": f"order#{order_id}", "sk": f"order#{order_id}"},
@@ -328,7 +328,7 @@ def transition_order_status(order_id, from_status, to_status):
     )
     order = response["Item"]
     order["status"] = to_status
-    
+
     try:
         # Only transition if currently in expected status
         db.save(
@@ -350,14 +350,14 @@ def log_event_once(event_id, event_data):
     """Log event exactly once (idempotent)"""
     db = DynamoDB()
     table_name = "events"
-    
+
     event = {
         "pk": f"event#{event_id}",
         "sk": f"event#{event_id}",
         "id": event_id,
         **event_data
     }
-    
+
     try:
         # Only create if doesn't exist
         db.save(
@@ -384,7 +384,7 @@ try:
         expression_attribute_values={":v": 5}
     )
     print("✅ Save successful")
-    
+
 except RuntimeError as e:
     if "Conditional check failed" in str(e):
         print("⚠️ Condition not met - refresh and retry")
@@ -398,7 +398,7 @@ except RuntimeError as e:
 def safe_update(item, table_name, max_attempts=3):
     """Update with graceful failure"""
     db = DynamoDB()
-    
+
     for attempt in range(max_attempts):
         try:
             db.save(
@@ -411,7 +411,7 @@ def safe_update(item, table_name, max_attempts=3):
             if attempt < max_attempts - 1:
                 time.sleep(0.1 * (2 ** attempt))  # Exponential backoff
                 continue
-    
+
     return {"success": False, "error": "Update failed after retries"}
 ```
 

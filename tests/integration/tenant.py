@@ -3,16 +3,10 @@ Tenant Model
 """
 
 import datetime
-from typing import Optional, Literal
-from boto3_assist.dynamodb.dynamodb_index import (
-    DynamoDBIndex,
-    DynamoDBKey,
-)
-from boto3_assist.dynamodb.dynamodb_model_base import (
-    DynamoDBModelBase,
-    exclude_from_serialization,
-)
+from typing import Literal, Optional
 
+from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBKey
+from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase, exclude_from_serialization
 from boto3_assist.utilities.datetime_utility import DatetimeUtility
 
 

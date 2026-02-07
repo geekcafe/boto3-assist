@@ -4,10 +4,11 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import List, Any, Dict
+from typing import Any, Dict, List
 
-from boto3.dynamodb.conditions import ConditionBase, Key, And, Equals
 from aws_lambda_powertools import Logger
+from boto3.dynamodb.conditions import And, ConditionBase, Equals, Key
+
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex
 
 logger = Logger()
@@ -19,9 +20,7 @@ class DynamoDBHelpers:
     def __init__(self) -> None:
         pass
 
-    def get_filter_expressions(
-        self, key: ConditionBase | And | Equals
-    ) -> Dict[str, Any] | None:
+    def get_filter_expressions(self, key: ConditionBase | And | Equals) -> Dict[str, Any] | None:
         """Get the filter expression"""
         value = None
         try:
@@ -79,9 +78,7 @@ class DynamoDBHelpers:
                 index = 0
                 sub_values = value.get_expression()["values"]
                 if sub_values:
-                    for (
-                        v
-                    ) in sub_values:  # value._values:  # pylint: disable=w0212,w0012,
+                    for v in sub_values:  # value._values:  # pylint: disable=w0212,w0012,
                         if index > 0:
                             values[f"value_{index}"] = v
                         index += 1
@@ -91,9 +88,7 @@ class DynamoDBHelpers:
         key_info: Dict[str, Any] = {
             "name": key_name,
             "key": key_value,
-            "expression_format": (
-                None if not isinstance(value, And) else value.expression_format
-            ),
+            "expression_format": (None if not isinstance(value, And) else value.expression_format),
             "expression_operator": (
                 None if not isinstance(value, And) else value.expression_operator
             ),
@@ -219,8 +214,7 @@ class DynamoDBHelpers:
                     f"Error at {path}: Expected bytes for type 'B', got {type(type_value).__name__}",
                 )
             if type_key == "SS" and not (
-                isinstance(type_value, list)
-                and all(isinstance(i, str) for i in type_value)
+                isinstance(type_value, list) and all(isinstance(i, str) for i in type_value)
             ):
                 return (
                     False,
@@ -235,8 +229,7 @@ class DynamoDBHelpers:
                     f"Error at {path}: Expected a list of numbers for type 'NS', got {type(type_value).__name__}",
                 )
             if type_key == "BS" and not (
-                isinstance(type_value, list)
-                and all(isinstance(i, bytes) for i in type_value)
+                isinstance(type_value, list) and all(isinstance(i, bytes) for i in type_value)
             ):
                 return (
                     False,
@@ -259,9 +252,7 @@ class DynamoDBHelpers:
                         f"Error at {path}: Expected a list for type 'L', got {type(type_value).__name__}",
                     )
                 for index, item in enumerate(type_value):
-                    valid, error = validate_attribute(
-                        f"{index}", item, f"{path}[{index}]"
-                    )
+                    valid, error = validate_attribute(f"{index}", item, f"{path}[{index}]")
                     if not valid:
                         return False, error
             if type_key == "NULL" and type_value is not True:

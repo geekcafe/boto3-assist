@@ -78,17 +78,17 @@ def query_tickets(category: str, status: str):
     ticket = SupportTicket()
     ticket.category = category
     ticket.status = status
-    
+
     index = ticket.indexes.get("gsi1")
     key_expr = index.key(query_key=True, condition="begins_with")
-    
+
     # Debug: See exactly what you're querying (with index name)
     debug = DynamoDBIndex.extract_key_values(key_expr, index)
     logger.debug(f"Querying {debug['index_name']}")
     logger.debug(f"  PK={debug['partition_key']['value']}")
     logger.debug(f"  SK={debug['sort_key']['value']}")
     logger.debug(f"  Condition: {debug['sort_key']['operator']}")
-    
+
     return db.query(table_name="tickets", index_name="gsi1", key=key_expr)
 ```
 
@@ -115,10 +115,10 @@ def test_query_key_format():
     ticket = SupportTicket()
     ticket.category = "support"
     ticket.status = "open"
-    
+
     key_expr = ticket.indexes.get("gsi1").key(query_key=True)
     debug = DynamoDBIndex.extract_key_values(key_expr)
-    
+
     # Assert the key format is correct
     assert debug['partition_key']['value'] == "inbox#support#status#open"
     assert debug['sort_key']['attribute'] == "gsi1_sk"

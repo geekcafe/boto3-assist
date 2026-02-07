@@ -4,8 +4,9 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-import boto3
 from typing import List
+
+import boto3
 
 
 class RoleAssumptionMixin:

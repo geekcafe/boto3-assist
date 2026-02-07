@@ -25,7 +25,7 @@ tests/
 ### Test File Naming
 
 - **Pattern**: `test_<feature_name>.py` or `<feature_name>_test.py`
-- **Examples**: 
+- **Examples**:
   - `test_decimal_conversion.py`
   - `dynamodb_model_base_test.py`
   - `decimal_backward_compatibility_test.py`
@@ -56,17 +56,17 @@ When introducing enhancements or changes, always create tests that verify existi
 def test_legacy_pattern_still_works(self):
     """
     Test that legacy pattern with manual conversion still works
-    
+
     This ensures backward compatibility for existing code.
     """
     # Arrange - Create data in legacy format
     legacy_data = {
         "field": Decimal("4.5")
     }
-    
+
     # Act - Use legacy pattern
     result = LegacyModel().map(legacy_data)
-    
+
     # Assert - Verify behavior unchanged
     self.assertIsInstance(result.field, float)
     self.assertEqual(result.field, 4.5)
@@ -77,10 +77,10 @@ def test_new_pattern_works(self):
     data = {
         "field": Decimal("4.5")
     }
-    
+
     # Act - Use new pattern
     result = ModernModel().map(data)
-    
+
     # Assert - Verify enhancement works
     self.assertIsInstance(result.field, float)
     self.assertEqual(result.field, 4.5)
@@ -88,10 +88,10 @@ def test_new_pattern_works(self):
 def test_legacy_and_modern_produce_same_results(self):
     """Verify legacy and modern patterns produce equivalent results"""
     data = {"field": Decimal("4.5")}
-    
+
     legacy = LegacyModel().map(data)
     modern = ModernModel().map(data)
-    
+
     # Both should produce identical results
     self.assertEqual(legacy.field, modern.field)
     self.assertEqual(type(legacy.field), type(modern.field))
@@ -110,10 +110,10 @@ def test_model_map_basic(self):
         "name": "Test",
         "age": 30
     }
-    
+
     # Act
     model = UserModel().map(data)
-    
+
     # Assert
     self.assertEqual(model.id, "123")
     self.assertEqual(model.name, "Test")
@@ -132,9 +132,9 @@ def test_model_map_with_dynamodb_response_structure(self):
             "HTTPStatusCode": 200
         }
     }
-    
+
     model = UserModel().map(dynamodb_response)
-    
+
     self.assertEqual(model.id, "456")
     self.assertEqual(model.name, "Test")
 ```
@@ -147,18 +147,18 @@ Test that type conversions work correctly, especially for numeric types.
 def test_decimal_to_float_conversion(self):
     """Test Decimal to float conversion"""
     data = {"price": Decimal("19.99")}
-    
+
     product = ProductModel().map(data)
-    
+
     self.assertIsInstance(product.price, float)
     self.assertEqual(product.price, 19.99)
 
 def test_decimal_whole_number_to_int_conversion(self):
     """Test that whole number Decimals convert to int"""
     data = {"quantity": Decimal("5")}
-    
+
     product = ProductModel().map(data)
-    
+
     self.assertIsInstance(product.quantity, int)
     self.assertEqual(product.quantity, 5)
 
@@ -169,9 +169,9 @@ def test_mixed_types_handled_correctly(self):
         "quantity": 10,              # Already int
         "weight": 2.5                # Already float
     }
-    
+
     product = ProductModel().map(data)
-    
+
     self.assertIsInstance(product.price, float)
     self.assertIsInstance(product.quantity, int)
     self.assertIsInstance(product.weight, float)
@@ -190,9 +190,9 @@ def test_nested_dict_conversion(self):
             "orders": Decimal("10")
         }
     }
-    
+
     report = ReportModel().map(data)
-    
+
     self.assertIsInstance(report.metrics["revenue"], float)
     self.assertIsInstance(report.metrics["orders"], int)
 
@@ -201,9 +201,9 @@ def test_nested_list_conversion(self):
     data = {
         "scores": [Decimal("1.5"), Decimal("2.0"), Decimal("3")]
     }
-    
+
     metrics = MetricsModel().map(data)
-    
+
     self.assertIsInstance(metrics.scores[0], float)
     self.assertIsInstance(metrics.scores[1], float)
     self.assertIsInstance(metrics.scores[2], int)
@@ -218,9 +218,9 @@ def test_complex_nested_structure(self):
             ]
         }
     }
-    
+
     result = Model().map(data)
-    
+
     # Verify all nested values converted
     for item in result.data["items"]:
         self.assertIsInstance(item["price"], float)
@@ -235,18 +235,18 @@ Test boundary conditions and edge cases.
 def test_empty_collections(self):
     """Test empty collections handled correctly"""
     data = {"items": [], "metadata": {}}
-    
+
     model = Model().map(data)
-    
+
     self.assertEqual(model.items, [])
     self.assertEqual(model.metadata, {})
 
 def test_none_values_preserved(self):
     """Test that None values are preserved"""
     data = {"id": "123", "name": None}
-    
+
     model = Model().map(data)
-    
+
     self.assertEqual(model.id, "123")
     self.assertIsNone(model.name)
 
@@ -256,9 +256,9 @@ def test_boolean_values_not_affected(self):
         "enabled": True,
         "count": Decimal("5")
     }
-    
+
     model = Model().map(data)
-    
+
     self.assertIsInstance(model.enabled, bool)
     self.assertTrue(model.enabled)
     self.assertIsInstance(model.count, int)
@@ -276,22 +276,22 @@ def test_arithmetic_operations_no_typeerror(self):
         "cost": Decimal("12.50"),
         "quantity": Decimal("10")
     }
-    
+
     product = ProductModel().map(data)
-    
+
     # These should not raise TypeError
     profit = product.price - product.cost
     total = product.price * product.quantity
-    
+
     self.assertAlmostEqual(profit, 7.49, places=2)
     self.assertAlmostEqual(total, 199.9, places=1)
 
 def test_comparison_operations_work(self):
     """Test comparison operations work without conversion"""
     data = {"price": Decimal("19.99")}
-    
+
     product = ProductModel().map(data)
-    
+
     # All comparisons should work
     self.assertTrue(product.price > 10.0)
     self.assertTrue(product.price < 25.0)
@@ -310,13 +310,13 @@ def test_round_trip_compatibility(self):
         "name": "Test",
         "price": 24.99
     }
-    
+
     # Map to model
     model = Model().map(original_data)
-    
+
     # Convert back to dictionary
     result_dict = model.to_dictionary()
-    
+
     # Values should match
     self.assertEqual(result_dict["id"], original_data["id"])
     self.assertEqual(result_dict["name"], original_data["name"])
@@ -331,9 +331,9 @@ Test DynamoDB index generation and key handling.
 def test_primary_key_generation(self):
     """Test primary key is generated correctly"""
     data = {"id": "123"}
-    
+
     user = UserModel().map(data)
-    
+
     primary = user.indexes.primary
     self.assertEqual(primary.partition_key.value, "user#123")
     self.assertEqual(primary.sort_key.value, "user#123")
@@ -341,12 +341,12 @@ def test_primary_key_generation(self):
 def test_gsi_key_generation(self):
     """Test GSI keys are generated correctly"""
     data = {"id": "123", "email": "test@example.com"}
-    
+
     user = UserModel().map(data)
-    
+
     gsi = user.get_key("gsi1")
     key = gsi.key()
-    
+
     self.assertEqual(key["gsi1_pk"], "users#")
     self.assertEqual(key["gsi1_sk"], "email#test@example.com")
 ```
@@ -358,7 +358,7 @@ def test_gsi_key_generation(self):
 ```python
 class TestMyFeature(unittest.TestCase):
     """Test suite for my feature"""
-    
+
     def setUp(self):
         """Set up test fixtures before each test"""
         self.test_data = {
@@ -366,12 +366,12 @@ class TestMyFeature(unittest.TestCase):
             "name": "Test"
         }
         self.model = MyModel()
-    
+
     def tearDown(self):
         """Clean up after each test"""
         # Reset state if needed
         pass
-    
+
     def test_something(self):
         """Test something"""
         result = self.model.map(self.test_data)
@@ -385,7 +385,7 @@ from unittest.mock import Mock, patch
 
 class TestDynamoDBOperations(unittest.TestCase):
     """Test DynamoDB operations with mocking"""
-    
+
     @patch('boto3_assist.dynamodb.dynamodb.DynamoDB.dynamodb_resource')
     def test_get_method(self, mock_resource):
         """Test get method with mocked DynamoDB"""
@@ -395,15 +395,15 @@ class TestDynamoDBOperations(unittest.TestCase):
         mock_table.get_item.return_value = {
             'Item': {'id': 'test', 'price': Decimal('99.99')}
         }
-        
+
         dynamodb = DynamoDB()
-        
+
         # Act
         result = dynamodb.get(
             key={'id': 'test'},
             table_name='test_table'
         )
-        
+
         # Assert
         self.assertEqual(result['Item']['id'], 'test')
         self.assertIsInstance(result['Item']['price'], float)
@@ -466,7 +466,7 @@ Every test should have a clear docstring explaining what it tests:
 def test_feature_behavior(self):
     """
     Test that feature behaves correctly under specific conditions
-    
+
     This test verifies that:
     1. Input data is processed correctly
     2. Output matches expected format
@@ -485,10 +485,10 @@ def test_complex_scenario(self):
     # Arrange - Set up test data and conditions
     data = {"id": "123"}
     model = Model()
-    
+
     # Act - Execute the code being tested
     result = model.map(data)
-    
+
     # Assert - Verify the results
     self.assertEqual(result.id, "123")
 ```
@@ -616,7 +616,7 @@ class ProductModel(DynamoDBModelBase):
 
 class TestProductModel(unittest.TestCase):
     """Test suite for ProductModel"""
-    
+
     def setUp(self):
         """Set up test fixtures"""
         self.test_product_data = {
@@ -625,36 +625,36 @@ class TestProductModel(unittest.TestCase):
             "price": Decimal("19.99"),
             "quantity": Decimal("5")
         }
-    
+
     def test_basic_mapping(self):
         """Test basic model mapping"""
         product = ProductModel().map(self.test_product_data)
-        
+
         self.assertEqual(product.id, "prod_123")
         self.assertEqual(product.name, "Test Product")
         self.assertIsInstance(product, ProductModel)
-    
+
     def test_decimal_conversion(self):
         """Test Decimal values are converted correctly"""
         product = ProductModel().map(self.test_product_data)
-        
+
         self.assertIsInstance(product.price, float)
         self.assertEqual(product.price, 19.99)
         self.assertIsInstance(product.quantity, int)
         self.assertEqual(product.quantity, 5)
-    
+
     def test_arithmetic_operations(self):
         """Test arithmetic operations work correctly"""
         product = ProductModel().map(self.test_product_data)
-        
+
         total = product.price * product.quantity
         self.assertAlmostEqual(total, 99.95, places=2)
-    
+
     def test_empty_product(self):
         """Test mapping empty product data"""
         empty_data = {}
         product = ProductModel().map(empty_data)
-        
+
         self.assertIsNone(product.id)
         self.assertIsNone(product.name)
 

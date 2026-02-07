@@ -1,11 +1,12 @@
-import os
-import json
 import csv
-from typing import List, Dict, Any
+import json
+import os
 from pathlib import Path
-from boto3_assist.environment_services.environment_loader import EnvironmentLoader
-from boto3_assist.ec2.ec2_connection import EC2Connection
+from typing import Any, Dict, List
+
 from boto3_assist.cloudwatch.cloudwatch_query import CloudWatchQuery
+from boto3_assist.ec2.ec2_connection import EC2Connection
+from boto3_assist.environment_services.environment_loader import EnvironmentLoader
 
 
 class LogReport(CloudWatchQuery):
@@ -31,9 +32,7 @@ class LogReport(CloudWatchQuery):
             for region in regions:
                 writer.writerow([region["RegionName"], region["OptInStatus"]])
 
-    def __export_regions_to_json(
-        self, regions, filename="aws_regions_with_status.json"
-    ):
+    def __export_regions_to_json(self, regions, filename="aws_regions_with_status.json"):
         with open(filename, "w", encoding="utf-8") as jsonfile:
             json.dump(regions, jsonfile, indent=4)
 

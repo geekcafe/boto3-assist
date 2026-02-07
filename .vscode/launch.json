@@ -11,10 +11,10 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "env": {
-                
+
                 "ENVRIONMENT": "dev",
                 "DEBUG_MODE": "True",
-                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/src:${workspaceFolder}/devops:${workspaceFolder}/tests"                                           
+                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/src:${workspaceFolder}/devops:${workspaceFolder}/tests"
             }
         },
         {
@@ -28,7 +28,7 @@
                 "ENVRIONMENT_FILE": ".env.docker",
                 "ENVRIONMENT": "dev",
                 "DEBUG_MODE": "True",
-                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/src"                                           
+                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/src"
             }
         },
         {
@@ -42,7 +42,7 @@
                 "ENVRIONMENT_FILE": ".env.docker.nosql.workbench",
                 "ENVRIONMENT": "dev",
                 "DEBUG_MODE": "True",
-                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/src"                                           
+                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/src"
             }
         },
         {
@@ -55,11 +55,11 @@
                 "ENVRIONMENT_FILE": ".env.development",
                 "ENVRIONMENT": "dev",
                 "DEBUG_MODE": "True",
-                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/src"                                           
+                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/src"
             }
         },
 
-        
+
         {
             "name": "Install Requirements",
             "type": "debugpy",
@@ -74,6 +74,6 @@
             "program": "${workspaceFolder}/devops/build.py",
             "console": "integratedTerminal"
         },
-        
+
     ]
 }

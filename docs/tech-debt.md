@@ -1,6 +1,6 @@
 # Technical Debt & Improvement Areas
 
-**Last Updated**: 2025-10-12  
+**Last Updated**: 2025-10-12
 **Version**: 0.30.0
 
 This document tracks technical debt, areas for improvement, and refactoring opportunities identified in the boto3-assist codebase. Items are prioritized by impact and effort.
@@ -25,7 +25,7 @@ This document tracks technical debt, areas for improvement, and refactoring oppo
 - Commented-out imports in several files (e.g., `dynamodb.py` lines 15-16)
 - Inconsistent import ordering
 
-**Impact**: 
+**Impact**:
 - Code readability
 - Potential for import errors
 - Difficult to track dependencies
@@ -45,7 +45,7 @@ from boto3_assist.dynamodb import DynamoDBConnection
 from boto3_assist.utilities import StringUtility
 ```
 
-**Effort**: Low  
+**Effort**: Low
 **Files Affected**: Most modules
 
 ---
@@ -56,7 +56,7 @@ from boto3_assist.utilities import StringUtility
 - `dynamodb_reindexer.py` and `dynamodb_re_indexer.py` both exist
 - Potential confusion about which is canonical
 
-**Impact**: 
+**Impact**:
 - Developer confusion
 - Maintenance overhead
 - Potential bugs from using wrong file
@@ -66,7 +66,7 @@ from boto3_assist.utilities import StringUtility
 - Add deprecation warning if one is legacy
 - Update all references
 
-**Effort**: Low  
+**Effort**: Low
 **Files Affected**: `src/boto3_assist/dynamodb/`
 
 ---
@@ -87,7 +87,7 @@ from boto3_assist.utilities import StringUtility
 - Keep serialization functions in `utilities/serialization_utility.py`
 - Clear separation of concerns
 
-**Effort**: Medium  
+**Effort**: Medium
 **Files Affected**: Multiple modules, extensive testing needed
 
 ---
@@ -122,7 +122,7 @@ def get_path(self) -> Path:
 - Use Python 3.10+ union syntax consistently (`str | None` vs `Optional[str]`)
 - Run mypy in CI/CD pipeline
 
-**Effort**: Medium-High  
+**Effort**: Medium-High
 **Files Affected**: ~30% of codebase
 
 ---
@@ -160,7 +160,7 @@ class SerializationError(Boto3AssistError):
     pass
 ```
 
-**Effort**: Medium  
+**Effort**: Medium
 **Files Affected**: All service modules
 
 ---
@@ -189,7 +189,7 @@ logger.info("Operation", extra={"operation": "save", "table": table_name})
 logger.error("Error occurred", exc_info=True)
 ```
 
-**Effort**: Low  
+**Effort**: Low
 **Files Affected**: All modules
 
 ---
@@ -212,7 +212,7 @@ logger.error("Error occurred", exc_info=True)
 - Or remove and handle properly
 - Add pre-commit hook to prevent new TODOs without issues
 
-**Effort**: Low  
+**Effort**: Low
 **Files Affected**: 2 files currently
 
 ---
@@ -238,7 +238,7 @@ logger.error("Error occurred", exc_info=True)
 - Test error conditions thoroughly
 - Add property-based tests for serialization
 
-**Effort**: High  
+**Effort**: High
 **Files Affected**: Test suite expansion
 
 ---
@@ -266,17 +266,17 @@ logger.error("Error occurred", exc_info=True)
 def get_user(self, user_id: str) -> User:
     """
     Retrieve a user by their ID.
-    
+
     Args:
         user_id: The unique identifier for the user.
-        
+
     Returns:
         User object with populated fields.
-        
+
     Raises:
         UserNotFoundError: If user_id doesn't exist.
         DynamoDBError: If database operation fails.
-        
+
     Example:
         >>> user = service.get_user("user_123")
         >>> print(user.email)
@@ -284,7 +284,7 @@ def get_user(self, user_id: str) -> User:
     """
 ```
 
-**Effort**: Medium  
+**Effort**: Medium
 **Files Affected**: All modules
 
 ---
@@ -313,7 +313,7 @@ class Boto3AssistConfig(BaseSettings):
     log_level: str = "INFO"
     aws_profile: str | None = None
     aws_region: str = "us-east-1"
-    
+
     class Config:
         env_prefix = "BOTO3_ASSIST_"
         case_sensitive = False
@@ -322,7 +322,7 @@ class Boto3AssistConfig(BaseSettings):
 config = Boto3AssistConfig()
 ```
 
-**Effort**: Medium  
+**Effort**: Medium
 **Files Affected**: All service modules
 
 ---
@@ -345,7 +345,7 @@ config = Boto3AssistConfig()
 - Optimize serialization hot paths
 - Add performance benchmarks
 
-**Effort**: High  
+**Effort**: High
 **Files Affected**: Core modules
 
 ---
@@ -369,7 +369,7 @@ config = Boto3AssistConfig()
 - Create decorator for common operations
 - Consolidate similar functions
 
-**Effort**: Low-Medium  
+**Effort**: Low-Medium
 **Files Affected**: Various
 
 ---
@@ -406,7 +406,7 @@ utilities/
     └── numbers.py
 ```
 
-**Effort**: Medium  
+**Effort**: Medium
 **Files Affected**: Utilities module
 
 ---
@@ -456,7 +456,7 @@ jobs:
         run: black --check . && flake8
 ```
 
-**Effort**: Medium  
+**Effort**: Medium
 **Files Affected**: New CI/CD files
 
 ---
@@ -479,7 +479,7 @@ jobs:
 - Document how to run integration tests
 - Optional in CI (manual trigger)
 
-**Effort**: High  
+**Effort**: High
 **Files Affected**: New test modules
 
 ---
@@ -510,7 +510,7 @@ dependencies = [
 ]
 ```
 
-**Effort**: Low  
+**Effort**: Low
 **Files Affected**: `pyproject.toml`
 
 ---
@@ -532,7 +532,7 @@ dependencies = [
 - Consider 3.8+ compatibility if possible
 - Test against multiple Python versions in CI
 
-**Effort**: Medium  
+**Effort**: Medium
 **Files Affected**: Multiple modules
 
 ---
@@ -559,7 +559,7 @@ dependencies = [
 - Add warnings about credential handling
 - Consider AWS Secrets Manager integration
 
-**Effort**: Low (documentation)  
+**Effort**: Low (documentation)
 **Files Affected**: Documentation
 
 ---
@@ -591,7 +591,7 @@ class UserInput(BaseModel):
     email: EmailStr
     name: str
     age: int
-    
+
     @validator('age')
     def age_must_be_positive(cls, v):
         if v < 0:
@@ -599,7 +599,7 @@ class UserInput(BaseModel):
         return v
 ```
 
-**Effort**: Medium-High  
+**Effort**: Medium-High
 **Files Affected**: Service layer
 
 ---
@@ -626,7 +626,7 @@ class UserInput(BaseModel):
 - Add batch operation progress tracking
 - Document best practices
 
-**Effort**: Medium  
+**Effort**: Medium
 **Files Affected**: DynamoDB module
 
 ---
@@ -649,7 +649,7 @@ class UserInput(BaseModel):
 - Consider streaming for large objects
 - Document memory considerations
 
-**Effort**: High  
+**Effort**: High
 **Files Affected**: Serialization utilities
 
 ---
@@ -676,7 +676,7 @@ class UserInput(BaseModel):
 - Semantic versioning enforcement
 - Changelog generation
 
-**Effort**: Low  
+**Effort**: Low
 **Files Affected**: Documentation
 
 ---
@@ -699,7 +699,7 @@ class UserInput(BaseModel):
 - CloudWatch metrics
 - Usage analytics
 
-**Effort**: Medium  
+**Effort**: Medium
 **Files Affected**: All service modules
 
 ---
@@ -778,6 +778,6 @@ _No items resolved yet - tracking begins with v0.30.0_
 
 ---
 
-**Last Review**: 2025-10-12  
-**Next Review**: Before 1.0.0 release  
+**Last Review**: 2025-10-12
+**Next Review**: Before 1.0.0 release
 **Maintained By**: Eric Wilson

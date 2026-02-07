@@ -5,6 +5,7 @@ MIT License.  See Project Root for the license information.
 """
 
 from typing import Any
+
 from boto3_assist.dynamodb.dynamodb import DynamoDB
 
 

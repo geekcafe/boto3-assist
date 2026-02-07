@@ -71,7 +71,7 @@ class Product(DynamoDBModelBase):
         self.name = name
         self.price = price
         self._setup_indexes()
-    
+
     def _setup_indexes(self):
         primary = DynamoDBIndex()
         primary.partition_key.attribute_name = "pk"
@@ -120,7 +120,7 @@ class Order(DynamoDBModelBase):
         self.user_id = None
         self.total = 0.0
         self._setup_indexes()
-    
+
     def _setup_indexes(self):
         primary = DynamoDBIndex()
         primary.partition_key.attribute_name = "pk"
@@ -137,7 +137,7 @@ class OrderItem(DynamoDBModelBase):
         self.product_id = None
         self.quantity = 0
         self._setup_indexes()
-    
+
     def _setup_indexes(self):
         primary = DynamoDBIndex()
         # Same partition key as the parent order
@@ -245,7 +245,7 @@ response = db.query(key=key, table_name=table_name)
 class OrderService:
     def get_order(self, order_id: str, include_items: bool = False):
         model = Order(id=order_id)
-        
+
         if include_items:
             # Query with pk only - gets order + items
             key = model.indexes.primary.key(include_sort_key=False)
@@ -255,7 +255,7 @@ class OrderService:
             # Get with pk + sk - gets just the order
             response = self.db.get(model=model, table_name=self.table_name)
             # Returns: {'Item': order}
-        
+
         return response
 ```
 
@@ -272,7 +272,7 @@ class User(DynamoDBModelBase):
         self.id = id
         self.name = None
         self._setup_indexes()
-    
+
     def _setup_indexes(self):
         primary = DynamoDBIndex()
         primary.partition_key.attribute_name = "pk"
@@ -290,7 +290,7 @@ class Post(DynamoDBModelBase):
         self.content = None
         self.created_at = None
         self._setup_indexes()
-    
+
     def _setup_indexes(self):
         primary = DynamoDBIndex()
         # Share partition key with user
@@ -380,7 +380,7 @@ class Product(DynamoDBModelBase):
         primary.sort_key.attribute_name = "sk"
         primary.sort_key.value = lambda: DynamoDBKey.build_key(("product", self.id))
         self.indexes.add_primary(primary)
-        
+
         # GSI to query all products
         self.indexes.add_secondary(
             DynamoDBIndex(

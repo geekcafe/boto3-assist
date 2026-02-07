@@ -1,4 +1,3 @@
-
 """
 Geek Cafe, LLC
 Maintainers: Eric Wilson
@@ -6,7 +5,9 @@ MIT License.  See Project Root for the license information.
 """
 
 from typing import List
+
 from boto3_assist.models.serializable_model import SerializableModel
+
 
 class Person(SerializableModel):
     """A model that inherits the serializable"""

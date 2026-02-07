@@ -1,8 +1,8 @@
 # boto3-assist Overview
 
-**Version**: 0.30.0  
-**Status**: Beta (Pre-1.0.0)  
-**License**: MIT  
+**Version**: 0.30.0
+**Status**: Beta (Pre-1.0.0)
+**License**: MIT
 **Python**: >=3.10
 
 ## What is boto3-assist?
@@ -263,15 +263,15 @@ from boto3_assist.aws_lambda import EventInfo
 
 def lambda_handler(event, context):
     event_info = EventInfo(event)
-    
+
     # Parse API Gateway event
     body = event_info.get_body()
     headers = event_info.get_headers()
-    
+
     # Parse S3 event
     if event_info.is_s3_event():
         s3_records = event_info.get_s3_records()
-    
+
     # Parse DynamoDB Stream event
     if event_info.is_dynamodb_stream_event():
         records = event_info.get_dynamodb_records()
@@ -307,14 +307,14 @@ class User(DynamoDBModelBase):
         self.id: str = None
         self.email: str = ""
         self.__setup_indexes()
-    
+
     def __setup_indexes(self):
         # Primary key
         primary = DynamoDBIndex()
         primary.partition_key.value = lambda: f"user#{self.id}"
         primary.sort_key.value = lambda: f"user#{self.id}"
         self.indexes.add_primary(primary)
-        
+
         # GSI for email lookup
         gsi = DynamoDBIndex(index_name="gsi1")
         gsi.partition_key.value = lambda: "users#"
@@ -331,13 +331,13 @@ class UserService:
     def __init__(self, db: DynamoDB, table_name: str):
         self.db = db
         self.table_name = table_name
-    
+
     def get_user(self, user_id: str) -> User:
         """Get user by ID"""
         key = {"pk": f"user#{user_id}", "sk": f"user#{user_id}"}
         result = self.db.get(table_name=self.table_name, key=key)
         return User().map(result)
-    
+
     def get_user_by_email(self, email: str) -> User:
         """Get user by email using GSI"""
         from boto3.dynamodb.conditions import Key
@@ -348,7 +348,7 @@ class UserService:
         )
         items = result.get("Items", [])
         return User().map(items[0]) if items else None
-    
+
     def create_user(self, user: User) -> User:
         """Create new user"""
         self.db.save(item=user, table_name=self.table_name, fail_if_exists=True)

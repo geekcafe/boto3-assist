@@ -4,9 +4,10 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import Optional, Literal
+from typing import Literal, Optional
 
 from botocore.exceptions import ClientError
+
 from boto3_assist.ssm.connection import SSMConnection
 
 
@@ -22,9 +23,7 @@ class ParameterStore(SSMConnection):
         :return: The parameter value or None if an error occurs.
         """
         try:
-            response = self.client.get_parameter(
-                Name=name, WithDecryption=with_decryption
-            )
+            response = self.client.get_parameter(Name=name, WithDecryption=with_decryption)
             return response["Parameter"]["Value"]
         except ClientError as e:
             print(f"Error getting parameter {name}: {e}")
@@ -34,7 +33,9 @@ class ParameterStore(SSMConnection):
         self,
         name: str,
         value: str,
-        type: Literal["String", "StringList", "SecureString"] = "String",  # pylint: disable=redefined-builtin
+        type: Literal[
+            "String", "StringList", "SecureString"
+        ] = "String",  # pylint: disable=redefined-builtin
         overwrite=True,
     ):
         """

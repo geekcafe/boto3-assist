@@ -2,10 +2,12 @@
 Tests for ConnectionPool functionality.
 """
 
-import pytest
 import warnings
-from boto3_assist.connection_pool import ConnectionPool
+
+import pytest
+
 from boto3_assist import Connection
+from boto3_assist.connection_pool import ConnectionPool
 from boto3_assist.dynamodb import DynamoDB
 from boto3_assist.s3 import S3
 from boto3_assist.sqs import SQSConnection
@@ -50,12 +52,8 @@ class TestConnectionPool:
         """Test that different regions get different sessions."""
         pool = ConnectionPool.get_instance()
 
-        us_east_session = pool.get_session(
-            service_name="dynamodb", aws_region="us-east-1"
-        )
-        us_west_session = pool.get_session(
-            service_name="dynamodb", aws_region="us-west-2"
-        )
+        us_east_session = pool.get_session(service_name="dynamodb", aws_region="us-east-1")
+        us_west_session = pool.get_session(service_name="dynamodb", aws_region="us-west-2")
 
         assert us_east_session is not us_west_session
 
@@ -127,9 +125,7 @@ class TestConnectionWithPool:
 
             # Should see deprecation warnings
             assert len(w) == 2
-            assert all(
-                issubclass(warning.category, DeprecationWarning) for warning in w
-            )
+            assert all(issubclass(warning.category, DeprecationWarning) for warning in w)
             assert "connection pooling" in str(w[0].message).lower()
 
             # Should create separate sessions (legacy behavior)
@@ -184,9 +180,7 @@ class TestDynamoDBWithPool:
 
             # Should see deprecation warnings
             assert len(w) == 2
-            assert all(
-                issubclass(warning.category, DeprecationWarning) for warning in w
-            )
+            assert all(issubclass(warning.category, DeprecationWarning) for warning in w)
 
             # Should create separate sessions (legacy behavior)
             assert db1.session is not db2.session
@@ -225,9 +219,7 @@ class TestBackwardCompatibility:
 
     def test_connection_parameters_preserved(self):
         """Test that connection parameters work with pool."""
-        db = DynamoDB.from_pool(
-            aws_region="us-west-2", aws_end_point_url="http://localhost:5000"
-        )
+        db = DynamoDB.from_pool(aws_region="us-west-2", aws_end_point_url="http://localhost:5000")
 
         assert db is not None
         assert db.session is not None
@@ -271,9 +263,7 @@ class TestS3WithPool:
 
             # Should see deprecation warnings
             assert len(w) == 2
-            assert all(
-                issubclass(warning.category, DeprecationWarning) for warning in w
-            )
+            assert all(issubclass(warning.category, DeprecationWarning) for warning in w)
 
             # Should create separate sessions (legacy behavior)
             assert s3_1.session is not s3_2.session
@@ -317,9 +307,7 @@ class TestSQSWithPool:
 
             # Should see deprecation warnings
             assert len(w) == 2
-            assert all(
-                issubclass(warning.category, DeprecationWarning) for warning in w
-            )
+            assert all(issubclass(warning.category, DeprecationWarning) for warning in w)
 
             # Should create separate sessions (legacy behavior)
             assert sqs1.session is not sqs2.session

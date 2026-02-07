@@ -4,8 +4,8 @@ import shutil
 import subprocess
 from pathlib import Path
 from typing import List
-import toml
 
+import toml
 from aws_lambda_powertools import Logger
 
 logger = Logger()
@@ -92,9 +92,7 @@ def get_url(payload: str):
     return url
 
 
-def run_commands(
-    commands: List[str], capture_output: bool = False, env=None
-) -> str | None:
+def run_commands(commands: List[str], capture_output: bool = False, env=None) -> str | None:
     """centralized area for running process commands"""
     try:
         # Run the publish command

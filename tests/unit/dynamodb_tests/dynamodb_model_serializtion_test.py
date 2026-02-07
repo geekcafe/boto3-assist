@@ -6,7 +6,6 @@ MIT License.  See Project Root for the license information.
 
 import unittest
 
-
 from tests.unit.dynamodb_tests.db_models.user_model import User
 from tests.unit.dynamodb_tests.db_models.user_required_fields_model import User as User2
 

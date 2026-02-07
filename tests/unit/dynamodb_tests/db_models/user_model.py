@@ -6,9 +6,9 @@ MIT License.  See Project Root for the license information.
 
 from typing import Optional
 
-from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex
 from boto3_assist.dynamodb.dynamodb_key import DynamoDBKey
+from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
 
 
 class User(DynamoDBModelBase):

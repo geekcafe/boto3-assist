@@ -52,19 +52,19 @@ from your_app.models.product_model import Product
 
 @mock_aws  # This decorator mocks all AWS services
 class TestProductService(unittest.TestCase):
-    
+
     def setUp(self):
         """Run before each test"""
         # DynamoDB is now mocked - no real AWS connection
         self.db = DynamoDB()
         self.table_name = "test-products"
-        
+
         # Create a mock table
         self._create_test_table()
-        
+
         # Create service
         self.service = ProductService(db=self.db, table_name=self.table_name)
-    
+
     def _create_test_table(self):
         """Create a mock DynamoDB table"""
         self.db.client.create_table(
@@ -91,7 +91,7 @@ class TestProductService(unittest.TestCase):
             ],
             BillingMode='PAY_PER_REQUEST'
         )
-    
+
     def test_create_product(self):
         """Test creating a product"""
         product = self.service.create_product({
@@ -99,11 +99,11 @@ class TestProductService(unittest.TestCase):
             "name": "Widget",
             "price": 29.99
         })
-        
+
         self.assertEqual(product.id, "prod-123")
         self.assertEqual(product.name, "Widget")
         self.assertEqual(product.price, 29.99)
-    
+
     def test_get_product(self):
         """Test retrieving a product"""
         # Create a product
@@ -112,13 +112,13 @@ class TestProductService(unittest.TestCase):
             "name": "Gadget",
             "price": 19.99
         })
-        
+
         # Retrieve it
         product = self.service.get_product("prod-456")
-        
+
         self.assertIsNotNone(product)
         self.assertEqual(product.name, "Gadget")
-    
+
     def test_get_nonexistent_product(self):
         """Test getting a product that doesn't exist"""
         product = self.service.get_product("does-not-exist")
@@ -141,11 +141,11 @@ The `@mock_aws` decorator can be used at class or method level:
 @mock_aws
 class TestProductService(unittest.TestCase):
     # All test methods automatically use mock
-    
+
     def test_one(self):
         # AWS is mocked
         pass
-    
+
     def test_two(self):
         # AWS is mocked
         pass
@@ -155,12 +155,12 @@ class TestProductService(unittest.TestCase):
 
 ```python
 class TestProductService(unittest.TestCase):
-    
+
     @mock_aws
     def test_with_mock(self):
         # AWS is mocked only in this test
         pass
-    
+
     def test_without_mock(self):
         # AWS is NOT mocked (would hit real AWS)
         pass
@@ -210,18 +210,18 @@ class TableHelper:
     @staticmethod
     def create_table_with_gsis(client, table_name: str, gsi_count: int = 4):
         """Create table with multiple GSIs"""
-        
+
         # Build attribute definitions
         attributes = [
             {'AttributeName': 'pk', 'AttributeType': 'S'},
             {'AttributeName': 'sk', 'AttributeType': 'S'}
         ]
-        
+
         # Add GSI attributes
         for i in range(gsi_count):
             attributes.append({'AttributeName': f'gsi{i}_pk', 'AttributeType': 'S'})
             attributes.append({'AttributeName': f'gsi{i}_sk', 'AttributeType': 'S'})
-        
+
         # Build GSIs
         gsis = []
         for i in range(gsi_count):
@@ -233,7 +233,7 @@ class TableHelper:
                 ],
                 'Projection': {'ProjectionType': 'ALL'}
             })
-        
+
         # Create table
         client.create_table(
             TableName=table_name,
@@ -259,11 +259,11 @@ class TestUserService(unittest.TestCase):
     def setUp(self):
         self.db = DynamoDB()
         self.table_name = "test-users"
-        
+
         # Use the table service
         table_service = DynamoDBTableService(self.db)
         table_service.create_a_table(table_name=self.table_name)
-        
+
         self.service = UserService(db=self.db, table_name=self.table_name)
 ```
 
@@ -279,14 +279,14 @@ from your_app.models.user_model import User
 @mock_aws
 class TestUserService(unittest.TestCase):
     """Comprehensive user service tests"""
-    
+
     def setUp(self):
         """Initialize test environment"""
         self.db = DynamoDB()
         self.table_name = "test-users"
         self._create_table()
         self.service = UserService(db=self.db, table_name=self.table_name)
-    
+
     def _create_table(self):
         """Create mock table"""
         self.db.client.create_table(
@@ -323,7 +323,7 @@ class TestUserService(unittest.TestCase):
             ],
             BillingMode='PAY_PER_REQUEST'
         )
-    
+
     def test_create_user(self):
         """Test user creation"""
         user = self.service.create_user({
@@ -332,14 +332,14 @@ class TestUserService(unittest.TestCase):
             "last_name": "Doe",
             "email": "john@example.com"
         })
-        
+
         # Verify user was created correctly
         self.assertEqual(user.id, "user-001")
         self.assertEqual(user.first_name, "John")
         self.assertEqual(user.last_name, "Doe")
         self.assertEqual(user.email, "john@example.com")
         self.assertEqual(user.status, "active")  # Default value
-    
+
     def test_get_user_by_id(self):
         """Test retrieving user by ID"""
         # Create user
@@ -349,19 +349,19 @@ class TestUserService(unittest.TestCase):
             "last_name": "Smith",
             "email": "jane@example.com"
         })
-        
+
         # Retrieve user
         user = self.service.get_user("user-002")
-        
+
         self.assertIsNotNone(user)
         self.assertEqual(user.first_name, "Jane")
         self.assertEqual(user.last_name, "Smith")
-    
+
     def test_get_nonexistent_user(self):
         """Test getting user that doesn't exist"""
         user = self.service.get_user("does-not-exist")
         self.assertIsNone(user)
-    
+
     def test_update_user(self):
         """Test updating a user"""
         # Create user
@@ -371,16 +371,16 @@ class TestUserService(unittest.TestCase):
             "last_name": "Jones",
             "email": "bob@example.com"
         })
-        
+
         # Update user
         updated = self.service.update_user("user-003", {
             "first_name": "Robert"
         })
-        
+
         self.assertIsNotNone(updated)
         self.assertEqual(updated.first_name, "Robert")
         self.assertEqual(updated.last_name, "Jones")  # Unchanged
-    
+
     def test_list_users(self):
         """Test listing all users"""
         # Create multiple users
@@ -391,12 +391,12 @@ class TestUserService(unittest.TestCase):
                 "last_name": "Test",
                 "email": f"user{i}@example.com"
             })
-        
+
         # List all users
         users = self.service.list_users()
-        
+
         self.assertEqual(len(users), 5)
-    
+
     def test_search_by_name(self):
         """Test searching users by name"""
         # Create users with different names
@@ -418,14 +418,14 @@ class TestUserService(unittest.TestCase):
             "last_name": "Jones",
             "email": "charlie@example.com"
         })
-        
+
         # Search for Smiths
         smiths = self.service.search_by_name("Smith")
-        
+
         self.assertEqual(len(smiths), 2)
         for user in smiths:
             self.assertEqual(user.last_name, "Smith")
-    
+
     def test_delete_user(self):
         """Test deleting a user"""
         # Create user
@@ -435,15 +435,15 @@ class TestUserService(unittest.TestCase):
             "last_name": "Me",
             "email": "delete@example.com"
         })
-        
+
         # Verify it exists
         user = self.service.get_user("user-delete")
         self.assertIsNotNone(user)
-        
+
         # Delete it
         result = self.service.delete_user("user-delete")
         self.assertTrue(result)
-        
+
         # Verify it's gone
         user = self.service.get_user("user-delete")
         self.assertIsNone(user)
@@ -463,7 +463,7 @@ class TestOrderService(unittest.TestCase):
         self.table_name = "test-orders"
         self._create_table()
         self.service = OrderService(db=self.db, table_name=self.table_name)
-    
+
     def test_get_order_with_items(self):
         """Test retrieving order with all its items"""
         # Create order
@@ -474,7 +474,7 @@ class TestOrderService(unittest.TestCase):
             item=order.to_resource_dictionary(),
             table_name=self.table_name
         )
-        
+
         # Create order items
         for i in range(3):
             item = OrderItem()
@@ -485,13 +485,13 @@ class TestOrderService(unittest.TestCase):
                 item=item.to_resource_dictionary(),
                 table_name=self.table_name
             )
-        
+
         # Get order with items
         response = self.service.get(
             order_id="order-001",
             include_order_items=True
         )
-        
+
         # Separate order from items
         order = None
         order_items = []
@@ -500,7 +500,7 @@ class TestOrderService(unittest.TestCase):
                 order = Order().map(item)
             elif item['sk'].startswith('item#'):
                 order_items.append(OrderItem().map(item))
-        
+
         self.assertIsNotNone(order)
         self.assertEqual(len(order_items), 3)
         self.assertEqual(order.id, "order-001")
@@ -522,7 +522,7 @@ def mock_dynamodb():
     """Fixture to create mock DynamoDB"""
     db = DynamoDB()
     table_name = "test-products"
-    
+
     # Create table
     db.client.create_table(
         TableName=table_name,
@@ -536,20 +536,20 @@ def mock_dynamodb():
         ],
         BillingMode='PAY_PER_REQUEST'
     )
-    
+
     return db, table_name
 
 def test_create_product(mock_dynamodb):
     """Test creating a product"""
     db, table_name = mock_dynamodb
     service = ProductService(db=db, table_name=table_name)
-    
+
     product = service.create_product({
         "id": "prod-123",
         "name": "Widget",
         "price": 29.99
     })
-    
+
     assert product.id == "prod-123"
     assert product.name == "Widget"
     assert product.price == 29.99
@@ -581,11 +581,11 @@ class TestService(unittest.TestCase):
         self.db = DynamoDB()
         self._create_table()
         self.service = MyService(db=self.db)
-    
+
     def test_one(self):
         # Fresh environment
         pass
-    
+
     def test_two(self):
         # Fresh environment (setUp ran again)
         pass
@@ -603,7 +603,7 @@ class TestUserService(unittest.TestCase):
             "last_name": "User",
             "email": f"{user_id}@example.com"
         })
-    
+
     def test_something(self):
         user = self._create_test_user("user-001")
         # Now test something with this user
@@ -636,10 +636,10 @@ def test_list_returns_correct_count(self):
     # Create 10 products
     for i in range(10):
         self._create_test_product(f"prod-{i}")
-    
+
     # List all
     products = self.service.list_all_products()
-    
+
     self.assertEqual(len(products), 10)
 
 def test_list_returns_sorted_results(self):
@@ -648,10 +648,10 @@ def test_list_returns_sorted_results(self):
     self._create_test_product("prod-1", name="Zebra")
     self._create_test_product("prod-2", name="Apple")
     self._create_test_product("prod-3", name="Mango")
-    
+
     # List ascending
     products = self.service.list_all_products(ascending=True)
-    
+
     self.assertEqual(products[0].name, "Apple")
     self.assertEqual(products[1].name, "Mango")
     self.assertEqual(products[2].name, "Zebra")
@@ -738,20 +738,20 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v2
-      
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
-      
+
       - name: Run tests
         run: |
           pytest tests/ -v
@@ -770,10 +770,10 @@ class TestErrorHandling(unittest.TestCase):
         """Test handling of missing table"""
         db = DynamoDB()
         # Don't create table
-        
+
         with self.assertRaises(ClientError) as context:
             db.save(item={}, table_name="nonexistent-table")
-        
+
         self.assertEqual(
             context.exception.response['Error']['Code'],
             'ResourceNotFoundException'
@@ -790,7 +790,7 @@ When testing DynamoDB operations, you'll often want to verify **key structure** 
 
 ```python
 class OrderService:
-    def get(self, order_id: str, include_order_items: bool = False, 
+    def get(self, order_id: str, include_order_items: bool = False,
             do_projections: bool = True):
         """
         Args:
@@ -810,7 +810,7 @@ def test_verify_key_structure(self):
         order_id="order-001",
         do_projections=False  # ← Get ALL fields including keys
     )
-    
+
     # Now we can verify key structure
     self.assertEqual(result["Item"]["pk"], "order#order-001")
     self.assertEqual(result["Item"]["sk"], "order#order-001")

@@ -4,8 +4,8 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
+from typing import Any, Dict
 from urllib.parse import unquote
-from typing import Dict, Any
 
 
 class HttpUtility:

@@ -5,13 +5,9 @@ MIT License.  See Project Root for the license information.
 """
 
 import unittest
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
-from boto3_assist.dynamodb.dynamodb_model_base import (
-    DynamoDBModelBase,
-    MergeStrategy,
-    CLEAR_FIELD,
-)
+from boto3_assist.dynamodb.dynamodb_model_base import CLEAR_FIELD, DynamoDBModelBase, MergeStrategy
 
 
 class SimpleModel(DynamoDBModelBase):

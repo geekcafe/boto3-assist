@@ -5,24 +5,18 @@ MIT License.  See Project Root for the license information.
 """
 
 import os
-from typing import List, Optional, overload, Dict, Any
-from botocore.exceptions import ClientError
-from boto3.dynamodb.conditions import Attr
+from typing import Any, Dict, List, Optional, overload
 
 from aws_lambda_powertools import Logger
-from boto3.dynamodb.conditions import (
-    Key,
-    # And,
-    # Equals,
-    ComparisonCondition,
-    ConditionBase,
-)
+from boto3.dynamodb.conditions import Attr, ComparisonCondition, ConditionBase, Key  # And,; Equals,
+from botocore.exceptions import ClientError
+
+from ..utilities.decimal_conversion_utility import DecimalConversionUtility
+from ..utilities.string_utility import StringUtility
 from .dynamodb_connection import DynamoDBConnection
 from .dynamodb_helpers import DynamoDBHelpers
-from .dynamodb_model_base import DynamoDBModelBase
-from ..utilities.string_utility import StringUtility
-from ..utilities.decimal_conversion_utility import DecimalConversionUtility
 from .dynamodb_index import DynamoDBIndex
+from .dynamodb_model_base import DynamoDBModelBase
 
 logger = Logger()
 
@@ -217,9 +211,7 @@ class DynamoDB(DynamoDBConnection):
                     if expression_attribute_names:
                         params["ExpressionAttributeNames"] = expression_attribute_names
                     if expression_attribute_values:
-                        params["ExpressionAttributeValues"] = (
-                            expression_attribute_values
-                        )
+                        params["ExpressionAttributeValues"] = expression_attribute_values
                 elif fail_if_exists:
                     # only insert if the item does *not* already exist
                     params["ConditionExpression"] = (
@@ -242,13 +234,9 @@ class DynamoDB(DynamoDBConnection):
                     # Convert string condition to boto3 condition object if needed
                     put_params["ConditionExpression"] = condition_expression
                     if expression_attribute_names:
-                        put_params["ExpressionAttributeNames"] = (
-                            expression_attribute_names
-                        )
+                        put_params["ExpressionAttributeNames"] = expression_attribute_names
                     if expression_attribute_values:
-                        put_params["ExpressionAttributeValues"] = (
-                            expression_attribute_values
-                        )
+                        put_params["ExpressionAttributeValues"] = expression_attribute_values
                 elif fail_if_exists:
                     put_params["ConditionExpression"] = (
                         Attr("pk").not_exists() & Attr("sk").not_exists()
@@ -271,19 +259,13 @@ class DynamoDB(DynamoDBConnection):
                         f"Condition: {condition_expression}"
                     ) from e
                 else:
-                    raise RuntimeError(
-                        f"Conditional check failed for item in {table_name}"
-                    ) from e
+                    raise RuntimeError(f"Conditional check failed for item in {table_name}") from e
 
-            logger.exception(
-                {"source": f"{source}", "metric_filter": "put_item", "error": str(e)}
-            )
+            logger.exception({"source": f"{source}", "metric_filter": "put_item", "error": str(e)})
             raise
 
         except Exception as e:  # pylint: disable=w0718
-            logger.exception(
-                {"source": f"{source}", "metric_filter": "put_item", "error": str(e)}
-            )
+            logger.exception({"source": f"{source}", "metric_filter": "put_item", "error": str(e)})
             raise
 
         return response
@@ -404,9 +386,7 @@ class DynamoDB(DynamoDBConnection):
                     f"Unknown call_type of {call_type}. Supported call_types [resource | client]"
                 )
         except Exception as e:  # pylint: disable=w0718
-            logger.exception(
-                {"source": f"{source}", "metric_filter": "get_item", "error": str(e)}
-            )
+            logger.exception({"source": f"{source}", "metric_filter": "get_item", "error": str(e)})
 
             response = {"exception": str(e)}
             if self.raise_on_error:
@@ -595,9 +575,7 @@ class DynamoDB(DynamoDBConnection):
         try:
             response = dict(table.query(**kwargs))
         except Exception as e:  # pylint: disable=w0718
-            logger.exception(
-                {"source": f"{source}", "metric_filter": "query", "error": str(e)}
-            )
+            logger.exception({"source": f"{source}", "metric_filter": "query", "error": str(e)})
             response = {"exception": str(e)}
             if self.raise_on_error:
                 raise e
@@ -799,19 +777,13 @@ class DynamoDB(DynamoDBConnection):
             batch_keys = keys[i : i + BATCH_SIZE]
 
             # Build request parameters
-            request_items = {
-                table_name: {"Keys": batch_keys, "ConsistentRead": consistent_read}
-            }
+            request_items = {table_name: {"Keys": batch_keys, "ConsistentRead": consistent_read}}
 
             # Add projection if provided
             if projection_expression:
-                request_items[table_name][
-                    "ProjectionExpression"
-                ] = projection_expression
+                request_items[table_name]["ProjectionExpression"] = projection_expression
             if expression_attribute_names:
-                request_items[table_name][
-                    "ExpressionAttributeNames"
-                ] = expression_attribute_names
+                request_items[table_name]["ExpressionAttributeNames"] = expression_attribute_names
 
             # Retry logic for unprocessed keys
             max_retries = 5
@@ -935,9 +907,7 @@ class DynamoDB(DynamoDBConnection):
         import time
 
         if operation not in ["put", "delete"]:
-            raise ValueError(
-                f"Invalid operation '{operation}'. Must be 'put' or 'delete'"
-            )
+            raise ValueError(f"Invalid operation '{operation}'. Must be 'put' or 'delete'")
 
         # DynamoDB limit: 25 operations per batch_write_item call
         BATCH_SIZE = 25
@@ -1147,9 +1117,7 @@ class DynamoDB(DynamoDBConnection):
                                 f"Operation {idx}: {reason['Code']} - {reason.get('Message', '')}"
                             )
 
-                    raise RuntimeError(
-                        f"Transaction failed: {'; '.join(reason_messages)}"
-                    ) from e
+                    raise RuntimeError(f"Transaction failed: {'; '.join(reason_messages)}") from e
 
             logger.exception(f"Error in transact_write_items: {str(e)}")
             raise

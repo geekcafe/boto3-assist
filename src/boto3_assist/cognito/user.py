@@ -5,6 +5,7 @@ MIT License.  See Project Root for the license information.
 """
 
 from typing import Optional
+
 from boto3_assist.models.serializable_model import SerializableModel
 
 

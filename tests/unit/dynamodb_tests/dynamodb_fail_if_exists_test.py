@@ -5,12 +5,14 @@ MIT License.  See Project Root for the license information.
 """
 
 import unittest
-import moto
 from typing import Optional
-from tests.unit.dynamodb_tests.db_models.task import Task
-from boto3_assist.environment_services.environment_loader import EnvironmentLoader
+
+import moto
+
 from boto3_assist.dynamodb.dynamodb import DynamoDB
+from boto3_assist.environment_services.environment_loader import EnvironmentLoader
 from tests.unit.common.db_test_helpers import DbTestHelper
+from tests.unit.dynamodb_tests.db_models.task import Task
 
 
 @moto.mock_aws

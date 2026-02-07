@@ -5,8 +5,10 @@ MIT License.  See Project Root for the license information.
 """
 
 import os
-import boto3
 from typing import Optional
+
+import boto3
+
 from boto3_assist.aws_config import AWSConfig
 
 
@@ -42,10 +44,7 @@ class SessionSetupMixin:
                         "You can install the AWS CLI by running 'pip install awscli' or 'pip install awscli --upgrade'. "
                     )
 
-                    if (
-                        os.getenv("HOME") == "/tmp"
-                        or os.getenv("AWS_CONFIG_FILE") == "/tmp"
-                    ):
+                    if os.getenv("HOME") == "/tmp" or os.getenv("AWS_CONFIG_FILE") == "/tmp":
                         error_message += (
                             f'The environment HOME path is set to {os.getenv("HOME")}. '
                         )

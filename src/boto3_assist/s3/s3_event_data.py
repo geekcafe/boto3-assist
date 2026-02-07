@@ -4,7 +4,8 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 from boto3_assist.utilities.numbers_utility import NumberUtility
 
 

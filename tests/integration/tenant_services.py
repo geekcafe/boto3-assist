@@ -1,6 +1,8 @@
 from typing import Optional
-from .tenant import Tenant
+
 from boto3_assist.dynamodb.dynamodb import DynamoDB
+
+from .tenant import Tenant
 
 
 class TenantServices:

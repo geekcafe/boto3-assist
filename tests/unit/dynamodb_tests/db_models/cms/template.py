@@ -5,6 +5,7 @@ MIT License.  See Project Root for the license information.
 """
 
 from typing import List
+
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBKey
 from tests.unit.dynamodb_tests.db_models.cms.base import BaseCMSDBModel
 
@@ -44,9 +45,7 @@ class Template(BaseCMSDBModel):
         gsi1.partition_key.attribute_name = "gsi1_pk"
         gsi1.partition_key.value = lambda: DynamoDBKey.build_key(("site", self.id))
         gsi1.sort_key.attribute_name = "gsi1_sk"
-        gsi1.sort_key.value = lambda: DynamoDBKey.build_key(
-            ("template-type", self.type)
-        )
+        gsi1.sort_key.value = lambda: DynamoDBKey.build_key(("template-type", self.type))
         self.indexes.add_secondary(gsi1)
 
     @property

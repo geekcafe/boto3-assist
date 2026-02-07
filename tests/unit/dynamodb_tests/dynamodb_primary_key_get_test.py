@@ -5,12 +5,14 @@ MIT License.  See Project Root for the license information.
 """
 
 import unittest
-import moto
 from typing import Optional
-from tests.unit.dynamodb_tests.db_models.user_model import User
-from boto3_assist.environment_services.environment_loader import EnvironmentLoader
+
+import moto
+
 from boto3_assist.dynamodb.dynamodb import DynamoDB
+from boto3_assist.environment_services.environment_loader import EnvironmentLoader
 from tests.unit.common.db_test_helpers import DbTestHelper
+from tests.unit.dynamodb_tests.db_models.user_model import User
 
 
 @moto.mock_aws
@@ -50,9 +52,7 @@ class DbQueryTest(unittest.TestCase):
         user.last_name = last_name
         user.email = email
 
-        response = self.db.save(
-            table_name=self.__table_name, item=user, fail_if_exists=True
-        )
+        response = self.db.save(table_name=self.__table_name, item=user, fail_if_exists=True)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         return user
 

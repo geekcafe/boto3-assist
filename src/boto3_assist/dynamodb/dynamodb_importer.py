@@ -4,12 +4,14 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-import os
-import json
 import gzip
+import json
+import os
 from typing import List
+
 from aws_lambda_powertools import Logger
 from botocore.exceptions import ClientError
+
 from boto3_assist.dynamodb.dynamodb import DynamoDB
 from boto3_assist.dynamodb.dynamodb_helpers import DynamoDBHelpers
 

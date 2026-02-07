@@ -9,7 +9,6 @@ from typing import Any, Dict
 from aws_lambda_powertools import Logger
 from botocore.exceptions import ClientError
 
-
 from boto3_assist.s3.s3_connection import S3Connection
 
 logger = Logger(child=True)

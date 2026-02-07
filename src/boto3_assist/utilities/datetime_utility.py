@@ -7,10 +7,10 @@ MIT License.  See Project Root for the license information.
 import uuid
 from datetime import UTC, datetime, timedelta, timezone
 from typing import Any
+
 import pytz  # type: ignore
 from aws_lambda_powertools import Logger
 from dateutil.relativedelta import relativedelta
-
 
 logger = Logger()
 
@@ -117,9 +117,7 @@ class DatetimeUtility:
         return result
 
     @staticmethod
-    def to_datetime(
-        value, default: datetime | None = None, tzinfo=UTC
-    ) -> datetime | None:
+    def to_datetime(value, default: datetime | None = None, tzinfo=UTC) -> datetime | None:
         """
         Description: takes a value and attempts to turn it into a datetime object
         Returns: datetime or None
@@ -175,9 +173,7 @@ class DatetimeUtility:
         return result
 
     @staticmethod
-    def to_string(
-        value: datetime, date_format: str = "%Y-%m-%d-%H-%M-%S-%f"
-    ) -> str | None:
+    def to_string(value: datetime, date_format: str = "%Y-%m-%d-%H-%M-%S-%f") -> str | None:
         """
         Description: takes a string value and returns it as a datetime.
         If the value is already a datetime type, it will return it as is, otherwise
@@ -197,9 +193,7 @@ class DatetimeUtility:
         Converts a uuid1 to a datetime
         """
         ns = 0x01B21DD213814000
-        timestamp = datetime.fromtimestamp(
-            (uuid1.time - ns) * 100 / 1e9, tz=timezone.utc
-        )
+        timestamp = datetime.fromtimestamp((uuid1.time - ns) * 100 / 1e9, tz=timezone.utc)
         return timestamp
 
     @staticmethod

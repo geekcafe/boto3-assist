@@ -29,9 +29,7 @@ class DynamoDBExample:
         self.table_name = table_name
 
         self.order_service: OrderService = OrderService(self.db, table_name=table_name)
-        self.order_item_service: OrderItemService = OrderItemService(
-            self.db, table_name=table_name
-        )
+        self.order_item_service: OrderItemService = OrderItemService(self.db, table_name=table_name)
 
         self.__products: List[Product] = []
         self.order_ids: list[str] = []
@@ -70,18 +68,12 @@ class DynamoDBExample:
         low = five_days_ago - timedelta(hours=1)
         high = datetime.now(UTC)
         print(f"checking for orders between {low} and {high} for {user_1}. Expecting 2")
-        self.__list_orders_for_user(
-            user_id=user_1, start_date_range=low, end_date_range=high
-        )
+        self.__list_orders_for_user(user_id=user_1, start_date_range=low, end_date_range=high)
 
         low = four_days_ago
         high = low + timedelta(days=1)
-        print(
-            f"checking for orders between {low} and {high} for {user_1}. Expecting One"
-        )
-        self.__list_orders_for_user(
-            user_id=user_1, start_date_range=low, end_date_range=high
-        )
+        print(f"checking for orders between {low} and {high} for {user_1}. Expecting One")
+        self.__list_orders_for_user(user_id=user_1, start_date_range=low, end_date_range=high)
 
     def __generate_order(
         self,
@@ -122,9 +114,7 @@ class DynamoDBExample:
         print("######################################################")
         print("Listing orders - looping through Order Ids")
         for order_id in self.order_ids:
-            item: dict = self.order_service.get(
-                order_id=order_id, include_order_items=True
-            )
+            item: dict = self.order_service.get(order_id=order_id, include_order_items=True)
             print(json.dumps(item, indent=2, cls=JsonEncoder))
 
         print("End / Listing orders - looping through Order Ids")

@@ -4,8 +4,8 @@ Maintainers: Eric Wilson
 MIT License. See Project Root for the license information.
 """
 
-import traceback
 import os
+import traceback
 from typing import Dict
 
 
@@ -32,9 +32,7 @@ class ConnectionTracker:
         Args:
             service_name (str): Name of the AWS service.
         """
-        self.__connection_counter[service_name] = (
-            self.__connection_counter.get(service_name, 0) + 1
-        )
+        self.__connection_counter[service_name] = self.__connection_counter.get(service_name, 0) + 1
 
         self.check(service_name=service_name)
 
@@ -47,9 +45,7 @@ class ConnectionTracker:
             bool: True if stack trace logging is enabled, False otherwise.
         """
         if self.__issue_stack_trace is None:
-            self.__issue_stack_trace = (
-                os.getenv(self.__stack_trace_env_var, "").lower() == "true"
-            )
+            self.__issue_stack_trace = os.getenv(self.__stack_trace_env_var, "").lower() == "true"
         return self.__issue_stack_trace
 
     def check(self, service_name: str) -> None:
@@ -61,9 +57,7 @@ class ConnectionTracker:
         """
         connection_count = self.__connection_counter.get(service_name, 0)
         if connection_count > 1:
-            service_message = (
-                f"Your {service_name} service has more than one connection.\n"
-            )
+            service_message = f"Your {service_name} service has more than one connection.\n"
 
             if not self.issue_stack_trace:
                 stack_trace_message = (

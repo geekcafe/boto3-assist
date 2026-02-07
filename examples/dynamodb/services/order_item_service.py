@@ -5,6 +5,7 @@ MIT License.  See Project Root for the license information.
 """
 
 from typing import Optional
+
 from boto3_assist.dynamodb.dynamodb import DynamoDB
 from examples.dynamodb.models.order_item_model import OrderItem
 

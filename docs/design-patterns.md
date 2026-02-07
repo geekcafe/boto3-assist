@@ -106,7 +106,7 @@ class ServiceFactory:
     def __init__(self, db: Optional[DynamoDB] = None) -> None:
         self.__db: Optional[DynamoDB] = db
         # Lazy-loaded service instances
-    
+
     @property
     def group_service(self) -> "GroupService":
         if self.__group_service is None:
@@ -141,7 +141,7 @@ class User(BaseDBModel):
         super().__init__()
         self.email: str = ""
         self.name: str = ""
-    
+
     # Only transport methods allowed
     def to_ui_payload(self) -> Dict[str, Any]:
         return JsonConversions.json_snake_to_camel(self.to_dictionary())
@@ -220,7 +220,7 @@ from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBKey
 
 class Group(BaseTenantUserDBModel):  # Your custom tenant-aware base class
     """Group model with direct index setup in constructor"""
-    
+
     def __init__(self) -> None:
         super().__init__()
         self.name: str = ""
@@ -229,7 +229,7 @@ class Group(BaseTenantUserDBModel):  # Your custom tenant-aware base class
         self.icon: Optional[str] = None
         self.color: Optional[str] = None
         self.privacy_settings: Optional[Dict[str, Any]] = {"visibility": "private"}
-        
+
         # Setup indexes directly in constructor (boto3-assist pattern)
         self._setup_indexes()
 
@@ -262,8 +262,8 @@ class Group(BaseTenantUserDBModel):  # Your custom tenant-aware base class
         )
         self.indexes.add_primary(primary)
 
-    def _setup_user_type_index(self):        
-        """ 
+    def _setup_user_type_index(self):
+        """
         GSI1: User-Type-Name Index
         PK: group##user#user_id#type#group_type
         SK: name#group_name
@@ -272,8 +272,8 @@ class Group(BaseTenantUserDBModel):  # Your custom tenant-aware base class
         gsi1: DynamoDBIndex = DynamoDBIndex(index_name="gsi1")
         gsi1.partition_key.attribute_name = "gsi1_pk"
         gsi1.partition_key.value = lambda: DynamoDBKey.build_key(
-            (self.model_name, ""), 
-            ("user", self.user_id), 
+            (self.model_name, ""),
+            ("user", self.user_id),
             ("type", self.group_type)
         )
         gsi1.sort_key.attribute_name = "gsi1_sk"
@@ -281,7 +281,7 @@ class Group(BaseTenantUserDBModel):  # Your custom tenant-aware base class
            ("name", self.name or "")
         )
         self.indexes.add_secondary(gsi1)
-    
+
     def _setup_tenant_type_index(self):
         """
         GSI2: Tenant-Type-Name Index
@@ -292,8 +292,8 @@ class Group(BaseTenantUserDBModel):  # Your custom tenant-aware base class
         gsi2: DynamoDBIndex = DynamoDBIndex(index_name="gsi2")
         gsi2.partition_key.attribute_name = "gsi2_pk"
         gsi2.partition_key.value = lambda: DynamoDBKey.build_key(
-            (self.model_name, ""), 
-            ("tenant", self.tenant_id), 
+            (self.model_name, ""),
+            ("tenant", self.tenant_id),
             ("type", self.group_type)
         )
         gsi2.sort_key.attribute_name = "gsi2_sk"
@@ -313,7 +313,7 @@ class Group(BaseTenantUserDBModel):  # Your custom tenant-aware base class
         gsi3: DynamoDBIndex = DynamoDBIndex(index_name="gsi3")
         gsi3.partition_key.attribute_name = "gsi3_pk"
         gsi3.partition_key.value = lambda: DynamoDBKey.build_key(
-            (self.model_name, ""), 
+            (self.model_name, ""),
             ("tenant", self.tenant_id)
         )
         gsi3.sort_key.attribute_name = "gsi3_sk"
@@ -344,8 +344,8 @@ def _setup_user_type_index(self):
     gsi.name = "gsi1"
     gsi.partition_key.attribute_name = "gsi1_pk"
     gsi.partition_key.value = lambda: DynamoDBKey.build_key(
-        (self.model.model_name, ""), 
-        ("user", self.model.user_id), 
+        (self.model.model_name, ""),
+        ("user", self.model.user_id),
         ("type", self.model.group_type)
     )
     gsi.sort_key.attribute_name = "gsi1_sk"
@@ -366,8 +366,8 @@ def _setup_tenant_type_index(self):
     gsi.name = "gsi2"
     gsi.partition_key.attribute_name = "gsi2_pk"
     gsi.partition_key.value = lambda: DynamoDBKey.build_key(
-        (self.model.model_name, ""), 
-        ("tenant", self.model.tenant_id), 
+        (self.model.model_name, ""),
+        ("tenant", self.model.tenant_id),
         ("type", self.model.group_type)
     )
     gsi.sort_key.attribute_name = "gsi2_sk"
@@ -387,7 +387,7 @@ def _setup_tenant_time_index(self):
     gsi3: DynamoDBIndex = DynamoDBIndex(index_name="gsi3")
     gsi3.partition_key.attribute_name = "gsi3_pk"
     gsi3.partition_key.value = lambda: DynamoDBKey.build_key(
-        (self.model.model_name, ""), 
+        (self.model.model_name, ""),
         ("tenant", self.model.tenant_id)
     )
     gsi3.sort_key.attribute_name = "gsi3_sk"
@@ -417,11 +417,11 @@ class GroupService(BaseService):
     - Explicit parameter control for production robustness
     - Consistent ServiceResult error handling
     """
-    
+
     def __init__(self, db: Optional[DynamoDB] = None):
         self.db: DynamoDB = db or DynamoDB()
         self.table_name: str = os.environ.get("APP_TABLE_NAME", "default-table")
-    
+
     def get_by_id(self, resource_id: str, tenant_id: str, user_id: str) -> ServiceResult[Group]:
         """Get group by ID using enhanced model-based get method"""
         try:
@@ -452,7 +452,7 @@ class GroupService(BaseService):
 
         except Exception as e:
             return ServiceResult.error_result(f"Failed to get group: {str(e)}", "ERROR")
-    
+
     def list_by_user_and_type(self, user_id: str, group_type: str, tenant_id: str) -> ServiceResult[List[Group]]:
         """Query using GSI1 (User-Type-Name Index)"""
         try:
@@ -461,7 +461,7 @@ class GroupService(BaseService):
             model.user_id = user_id
             model.tenant_id = tenant_id
             model.group_type = group_type
-            
+
             # Use model-based query method
             result = self.db.query_by_criteria(
                 model=model,
@@ -478,17 +478,17 @@ class GroupService(BaseService):
 
         except Exception as e:
             return ServiceResult.error_result(f"Failed to get groups by user and type: {str(e)}", "ERROR")
-    
+
     def list_by_tenant_time_range(self, tenant_id: str, start_timestamp: int = None, end_timestamp: int = None) -> ServiceResult[List[Group]]:
         """Query using GSI3 (Tenant-Time Index) with timestamp range"""
         try:
             # Create model instance with query parameters
             model = Group()
             model.tenant_id = tenant_id
-            
+
             # Build key condition with timestamp range if provided
             key_condition = model.get_key("gsi3").key()
-            
+
             # Add range condition if timestamps provided
             filter_expression = None
             if start_timestamp or end_timestamp:
@@ -504,7 +504,7 @@ class GroupService(BaseService):
                 elif end_timestamp:
                     filter_expression = f"gsi3_sk <= :end_ts"
                     expression_values = {":end_ts": f"created#{end_timestamp}"}
-            
+
             # Use model-based query method
             result = self.db.query_by_criteria(
                 model=model,
@@ -522,7 +522,7 @@ class GroupService(BaseService):
 
         except Exception as e:
             return ServiceResult.error_result(f"Failed to get groups by time range: {str(e)}", "ERROR")
-    
+
     def create(self, tenant_id: str, user_id: str, **kwargs) -> ServiceResult[Group]:
         """Create new group"""
         try:
@@ -534,7 +534,7 @@ class GroupService(BaseService):
 
             # Save using model serialization
             self.db.save(
-                item=group.to_resource_dictionary(), 
+                item=group.to_resource_dictionary(),
                 table_name=self.table_name
             )
 
@@ -542,7 +542,7 @@ class GroupService(BaseService):
 
         except Exception as e:
             return ServiceResult.error_result(f"Failed to create group: {str(e)}", "ERROR")
-    
+
     def update(self, resource_id: str, tenant_id: str, user_id: str, updates: Dict[str, Any]) -> ServiceResult[Group]:
         """Update group using get-modify-save pattern"""
         try:
@@ -556,7 +556,7 @@ class GroupService(BaseService):
             # Apply updates and save
             group.map(updates)
             self.db.save(
-                item=group.to_resource_dictionary(), 
+                item=group.to_resource_dictionary(),
                 table_name=self.table_name
             )
 
@@ -564,7 +564,7 @@ class GroupService(BaseService):
 
         except Exception as e:
             return ServiceResult.error_result(f"Failed to update group: {str(e)}", "ERROR")
-    
+
     def delete(self, resource_id: str, tenant_id: str, user_id: str) -> ServiceResult[bool]:
         """Delete group"""
         try:
@@ -635,7 +635,7 @@ table = dynamodb.Table(
             projection_type=dynamodb.ProjectionType.ALL
         ),
         dynamodb.GlobalSecondaryIndex(
-            index_name="user-time-index", 
+            index_name="user-time-index",
             partition_key=dynamodb.Attribute(name="user_id", type=dynamodb.AttributeType.STRING),
             sort_key=dynamodb.Attribute(name="updated_utc", type=dynamodb.AttributeType.STRING),
             projection_type=dynamodb.ProjectionType.INCLUDE,
@@ -657,7 +657,7 @@ class BaseService:
     def __init__(self, db: DynamoDB, table_name: str):
         self.db = db
         self.table_name = table_name
-    
+
     def create(self, **kwargs) -> ServiceResult
     def get(self, id: str, **kwargs) -> ServiceResult
     def update(self, id: str, **kwargs) -> ServiceResult
@@ -830,7 +830,7 @@ def test_create_group():
     # Mock DynamoDB
     mock_db = Mock()
     factory = ServiceFactory(db=mock_db)
-    
+
     # Test with injected services
     result = lambda_handler(event, context, injected_services=factory)
 ```
@@ -875,12 +875,12 @@ class OptimizedDynamoDBConnection:
     """Singleton pattern for DynamoDB connection management"""
     _instance: Optional['OptimizedDynamoDBConnection'] = None
     _db: Optional[DynamoDB] = None
-    
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
-    
+
     @property
     def db(self) -> DynamoDB:
         if self._db is None:
@@ -918,21 +918,21 @@ from boto3_assist.dynamodb.dynamodb import DynamoDB
 
 class BatchOperationService:
     """Service implementing efficient batch operations"""
-    
+
     def __init__(self, db: DynamoDB, table_name: str):
         self.db = db
         self.table_name = table_name
         self.batch_size = 25  # DynamoDB batch limit
-    
+
     def batch_save_items(self, items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Save multiple items using batch_write_item"""
         results = []
         failed_items = []
-        
+
         # Process in batches of 25 (DynamoDB limit)
         for i in range(0, len(items), self.batch_size):
             batch = items[i:i + self.batch_size]
-            
+
             try:
                 # Prepare batch write request
                 request_items = {
@@ -940,43 +940,43 @@ class BatchOperationService:
                         {'PutRequest': {'Item': item}} for item in batch
                     ]
                 }
-                
+
                 response = self.db.client.batch_write_item(RequestItems=request_items)
-                
+
                 # Handle unprocessed items
                 unprocessed = response.get('UnprocessedItems', {})
                 if unprocessed:
                     failed_items.extend(unprocessed.get(self.table_name, []))
-                
+
                 results.extend(batch)
-                
+
             except Exception as e:
                 failed_items.extend(batch)
                 print(f"Batch write failed: {e}")
-        
+
         return results, failed_items
-    
+
     def batch_get_items(self, keys: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Retrieve multiple items using batch_get_item"""
         results = []
-        
+
         for i in range(0, len(keys), self.batch_size):
             batch_keys = keys[i:i + self.batch_size]
-            
+
             try:
                 request_items = {
                     self.table_name: {
                         'Keys': batch_keys
                     }
                 }
-                
+
                 response = self.db.client.batch_get_item(RequestItems=request_items)
                 items = response.get('Responses', {}).get(self.table_name, [])
                 results.extend(items)
-                
+
             except Exception as e:
                 print(f"Batch get failed: {e}")
-        
+
         return results
 ```
 
@@ -991,20 +991,20 @@ from boto3_assist.dynamodb.dynamodb import DynamoDB
 
 class OptimizedQueryService:
     """Service with optimized query patterns"""
-    
+
     def __init__(self, db: DynamoDB, table_name: str):
         self.db = db
         self.table_name = table_name
-    
+
     def paginated_query(
-        self, 
-        model: Any, 
+        self,
+        model: Any,
         index_name: str,
         page_size: int = 50,
         last_evaluated_key: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Implement efficient pagination with configurable page size"""
-        
+
         query_params = {
             'model': model,
             'index_name': index_name,
@@ -1013,29 +1013,29 @@ class OptimizedQueryService:
             'do_projections': True,  # Use projections to reduce data transfer
             'strongly_consistent': False,  # Use eventually consistent reads for better performance
         }
-        
+
         if last_evaluated_key:
             query_params['exclusive_start_key'] = last_evaluated_key
-        
+
         result = self.db.query_by_criteria(**query_params)
-        
+
         return {
             'items': result.get('Items', []),
             'last_evaluated_key': result.get('LastEvaluatedKey'),
             'count': result.get('Count', 0),
             'scanned_count': result.get('ScannedCount', 0)
         }
-    
+
     def stream_query_results(
-        self, 
-        model: Any, 
+        self,
+        model: Any,
         index_name: str,
         page_size: int = 100
     ) -> Iterator[Dict[str, Any]]:
         """Stream large result sets to avoid memory issues"""
-        
+
         last_evaluated_key = None
-        
+
         while True:
             result = self.paginated_query(
                 model=model,
@@ -1043,16 +1043,16 @@ class OptimizedQueryService:
                 page_size=page_size,
                 last_evaluated_key=last_evaluated_key
             )
-            
+
             # Yield each item
             for item in result['items']:
                 yield item
-            
+
             # Check if there are more results
             last_evaluated_key = result.get('last_evaluated_key')
             if not last_evaluated_key:
                 break
-    
+
     def optimized_filter_query(
         self,
         model: Any,
@@ -1061,18 +1061,18 @@ class OptimizedQueryService:
         projection_attributes: Optional[List[str]] = None
     ) -> List[Dict[str, Any]]:
         """Use filter expressions and projections for efficient queries"""
-        
+
         # Build filter expression
         filter_expression_parts = []
         expression_attribute_values = {}
         expression_attribute_names = {}
-        
+
         for attr, value in filter_conditions.items():
             if isinstance(value, dict) and 'operator' in value:
                 # Handle complex conditions like {'operator': 'begins_with', 'value': 'prefix'}
                 operator = value['operator']
                 attr_value = value['value']
-                
+
                 if operator == 'begins_with':
                     filter_expression_parts.append(f"begins_with(#{attr}, :{attr})")
                 elif operator == 'contains':
@@ -1082,7 +1082,7 @@ class OptimizedQueryService:
                     expression_attribute_values[f":{attr}_start"] = attr_value[0]
                     expression_attribute_values[f":{attr}_end"] = attr_value[1]
                     continue
-                
+
                 expression_attribute_names[f"#{attr}"] = attr
                 expression_attribute_values[f":{attr}"] = attr_value
             else:
@@ -1090,16 +1090,16 @@ class OptimizedQueryService:
                 filter_expression_parts.append(f"#{attr} = :{attr}")
                 expression_attribute_names[f"#{attr}"] = attr
                 expression_attribute_values[f":{attr}"] = value
-        
+
         filter_expression = " AND ".join(filter_expression_parts)
-        
+
         # Build projection expression if specified
         projection_expression = None
         if projection_attributes:
             projection_expression = ", ".join([f"#{attr}" for attr in projection_attributes])
             for attr in projection_attributes:
                 expression_attribute_names[f"#{attr}"] = attr
-        
+
         result = self.db.query_by_criteria(
             model=model,
             index_name=index_name,
@@ -1110,7 +1110,7 @@ class OptimizedQueryService:
             projection_expression=projection_expression,
             do_projections=False  # We're handling projections manually
         )
-        
+
         return result.get('Items', [])
 ```
 
@@ -1127,16 +1127,16 @@ from functools import wraps
 
 class CacheService:
     """Multi-layer caching service for DynamoDB operations"""
-    
+
     def __init__(self):
         self.memory_cache: Dict[str, Dict[str, Any]] = {}
         self.cache_ttl = 300  # 5 minutes default TTL
-    
+
     def get_cache_key(self, table_name: str, key: Dict[str, Any]) -> str:
         """Generate consistent cache key"""
         key_str = json.dumps(key, sort_keys=True)
         return f"{table_name}:{hash(key_str)}"
-    
+
     def get_from_cache(self, cache_key: str) -> Optional[Dict[str, Any]]:
         """Get item from memory cache with TTL check"""
         if cache_key in self.memory_cache:
@@ -1147,14 +1147,14 @@ class CacheService:
                 # Remove expired item
                 del self.memory_cache[cache_key]
         return None
-    
+
     def set_cache(self, cache_key: str, data: Dict[str, Any]) -> None:
         """Store item in memory cache with timestamp"""
         self.memory_cache[cache_key] = {
             'data': data,
             'timestamp': time.time()
         }
-    
+
     def invalidate_cache(self, cache_key: str) -> None:
         """Remove item from cache"""
         if cache_key in self.memory_cache:
@@ -1167,18 +1167,18 @@ def cached_dynamodb_operation(cache_service: CacheService, ttl: int = 300):
         def wrapper(self, *args, **kwargs):
             # Generate cache key based on function arguments
             cache_key = f"{func.__name__}:{hash(str(args) + str(sorted(kwargs.items())))}"
-            
+
             # Try to get from cache first
             cached_result = cache_service.get_from_cache(cache_key)
             if cached_result is not None:
                 return cached_result
-            
+
             # Execute the actual function
             result = func(self, *args, **kwargs)
-            
+
             # Cache the result
             cache_service.set_cache(cache_key, result)
-            
+
             return result
         return wrapper
     return decorator
@@ -1190,7 +1190,7 @@ class CachedUserService:
     def __init__(self, db: DynamoDB, table_name: str):
         self.db = db
         self.table_name = table_name
-    
+
     @cached_dynamodb_operation(cache_service, ttl=600)  # 10 minute cache
     def get_user_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Get user profile with caching"""
@@ -1217,22 +1217,22 @@ from functools import wraps
 
 class StructuredLogger:
     """Structured logging service for consistent log format"""
-    
+
     def __init__(self, service_name: str, log_level: str = "INFO"):
         self.service_name = service_name
         self.logger = logging.getLogger(service_name)
         self.logger.setLevel(getattr(logging, log_level.upper()))
-        
+
         # Configure JSON formatter
         handler = logging.StreamHandler()
         formatter = logging.Formatter('%(message)s')
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
-    
+
     def _create_log_entry(
-        self, 
-        level: str, 
-        message: str, 
+        self,
+        level: str,
+        message: str,
         correlation_id: Optional[str] = None,
         **kwargs
     ) -> Dict[str, Any]:
@@ -1245,15 +1245,15 @@ class StructuredLogger:
             "correlation_id": correlation_id,
             "data": kwargs
         }
-    
+
     def info(self, message: str, correlation_id: Optional[str] = None, **kwargs):
         log_entry = self._create_log_entry("INFO", message, correlation_id, **kwargs)
         self.logger.info(json.dumps(log_entry))
-    
+
     def error(self, message: str, correlation_id: Optional[str] = None, **kwargs):
         log_entry = self._create_log_entry("ERROR", message, correlation_id, **kwargs)
         self.logger.error(json.dumps(log_entry))
-    
+
     def warn(self, message: str, correlation_id: Optional[str] = None, **kwargs):
         log_entry = self._create_log_entry("WARN", message, correlation_id, **kwargs)
         self.logger.warning(json.dumps(log_entry))
@@ -1265,9 +1265,9 @@ def log_service_operation(logger: StructuredLogger):
         def wrapper(self, *args, **kwargs):
             correlation_id = kwargs.get('correlation_id', str(uuid.uuid4()))
             operation_name = f"{self.__class__.__name__}.{func.__name__}"
-            
+
             start_time = time.time()
-            
+
             logger.info(
                 f"Starting {operation_name}",
                 correlation_id=correlation_id,
@@ -1275,10 +1275,10 @@ def log_service_operation(logger: StructuredLogger):
                 args_count=len(args),
                 kwargs_keys=list(kwargs.keys())
             )
-            
+
             try:
                 result = func(self, *args, **kwargs)
-                
+
                 duration = time.time() - start_time
                 logger.info(
                     f"Completed {operation_name}",
@@ -1287,9 +1287,9 @@ def log_service_operation(logger: StructuredLogger):
                     duration_ms=round(duration * 1000, 2),
                     success=True
                 )
-                
+
                 return result
-                
+
             except Exception as e:
                 duration = time.time() - start_time
                 logger.error(
@@ -1302,7 +1302,7 @@ def log_service_operation(logger: StructuredLogger):
                     success=False
                 )
                 raise
-                
+
         return wrapper
     return decorator
 
@@ -1313,7 +1313,7 @@ class LoggedUserService:
     def __init__(self, db: DynamoDB, table_name: str):
         self.db = db
         self.table_name = table_name
-    
+
     @log_service_operation(logger)
     def create_user(self, user_data: Dict[str, Any], correlation_id: Optional[str] = None):
         """Create user with automatic logging"""
@@ -1339,30 +1339,30 @@ class MetricType(Enum):
 
 class MetricsCollector:
     """Metrics collection service for DynamoDB operations"""
-    
+
     def __init__(self, service_name: str):
         self.service_name = service_name
         self.metrics: Dict[str, Any] = {}
-    
+
     def increment_counter(self, metric_name: str, value: int = 1, tags: Optional[Dict[str, str]] = None):
         """Increment a counter metric"""
         key = f"{self.service_name}.{metric_name}"
         if key not in self.metrics:
             self.metrics[key] = {"type": MetricType.COUNTER, "value": 0, "tags": tags or {}}
         self.metrics[key]["value"] += value
-    
+
     def set_gauge(self, metric_name: str, value: float, tags: Optional[Dict[str, str]] = None):
         """Set a gauge metric value"""
         key = f"{self.service_name}.{metric_name}"
         self.metrics[key] = {"type": MetricType.GAUGE, "value": value, "tags": tags or {}}
-    
+
     def record_timer(self, metric_name: str, duration_ms: float, tags: Optional[Dict[str, str]] = None):
         """Record a timing metric"""
         key = f"{self.service_name}.{metric_name}"
         if key not in self.metrics:
             self.metrics[key] = {"type": MetricType.TIMER, "values": [], "tags": tags or {}}
         self.metrics[key]["values"].append(duration_ms)
-    
+
     def get_metrics(self) -> Dict[str, Any]:
         """Get all collected metrics"""
         return self.metrics
@@ -1374,35 +1374,35 @@ def track_performance_metrics(metrics_collector: MetricsCollector):
         def wrapper(self, *args, **kwargs):
             operation_name = f"{func.__name__}"
             start_time = time.time()
-            
+
             try:
                 result = func(self, *args, **kwargs)
-                
+
                 # Record success metrics
                 duration = (time.time() - start_time) * 1000
                 metrics_collector.record_timer(f"{operation_name}.duration", duration)
                 metrics_collector.increment_counter(f"{operation_name}.success")
-                
+
                 return result
-                
+
             except Exception as e:
                 # Record error metrics
                 metrics_collector.increment_counter(
-                    f"{operation_name}.error", 
+                    f"{operation_name}.error",
                     tags={"error_type": type(e).__name__}
                 )
                 raise
-                
+
         return wrapper
     return decorator
 
 # DynamoDB-specific metrics
 class DynamoDBMetrics:
     """DynamoDB-specific metrics collection"""
-    
+
     def __init__(self, metrics_collector: MetricsCollector):
         self.metrics = metrics_collector
-    
+
     def record_read_capacity(self, consumed_capacity: float, table_name: str):
         """Record DynamoDB read capacity consumption"""
         self.metrics.set_gauge(
@@ -1410,7 +1410,7 @@ class DynamoDBMetrics:
             consumed_capacity,
             tags={"table": table_name}
         )
-    
+
     def record_write_capacity(self, consumed_capacity: float, table_name: str):
         """Record DynamoDB write capacity consumption"""
         self.metrics.set_gauge(
@@ -1418,7 +1418,7 @@ class DynamoDBMetrics:
             consumed_capacity,
             tags={"table": table_name}
         )
-    
+
     def record_item_count(self, count: int, operation: str, table_name: str):
         """Record number of items processed"""
         self.metrics.increment_counter(
@@ -1445,30 +1445,30 @@ class HealthStatus(Enum):
 
 class HealthCheck:
     """Individual health check implementation"""
-    
+
     def __init__(self, name: str, check_function, timeout: int = 5):
         self.name = name
         self.check_function = check_function
         self.timeout = timeout
-    
+
     def execute(self) -> Dict[str, Any]:
         """Execute health check with timeout"""
         start_time = time.time()
-        
+
         try:
             result = self.check_function()
             duration = time.time() - start_time
-            
+
             return {
                 "name": self.name,
                 "status": HealthStatus.HEALTHY.value,
                 "duration_ms": round(duration * 1000, 2),
                 "details": result
             }
-            
+
         except Exception as e:
             duration = time.time() - start_time
-            
+
             return {
                 "name": self.name,
                 "status": HealthStatus.UNHEALTHY.value,
@@ -1478,28 +1478,28 @@ class HealthCheck:
 
 class HealthCheckService:
     """Service for managing and executing health checks"""
-    
+
     def __init__(self):
         self.checks: List[HealthCheck] = []
-    
+
     def add_check(self, health_check: HealthCheck):
         """Add a health check"""
         self.checks.append(health_check)
-    
+
     def execute_all_checks(self) -> Dict[str, Any]:
         """Execute all health checks and return aggregated status"""
         results = []
         overall_status = HealthStatus.HEALTHY
-        
+
         for check in self.checks:
             result = check.execute()
             results.append(result)
-            
+
             if result["status"] == HealthStatus.UNHEALTHY.value:
                 overall_status = HealthStatus.UNHEALTHY
             elif result["status"] == HealthStatus.DEGRADED.value and overall_status == HealthStatus.HEALTHY:
                 overall_status = HealthStatus.DEGRADED
-        
+
         return {
             "status": overall_status.value,
             "timestamp": time.time(),
@@ -1515,33 +1515,33 @@ class HealthCheckService:
 # DynamoDB health checks
 def create_dynamodb_health_checks(db: DynamoDB, table_name: str) -> List[HealthCheck]:
     """Create DynamoDB-specific health checks"""
-    
+
     def check_table_exists():
         """Check if DynamoDB table exists and is active"""
         try:
             response = db.client.describe_table(TableName=table_name)
             status = response['Table']['TableStatus']
-            
+
             if status == 'ACTIVE':
                 return {"table_status": status, "item_count": response['Table']['ItemCount']}
             else:
                 raise Exception(f"Table status is {status}, expected ACTIVE")
-                
+
         except Exception as e:
             raise Exception(f"Table check failed: {str(e)}")
-    
+
     def check_read_write_capacity():
         """Check DynamoDB read/write capacity"""
         try:
             # Perform a simple read operation
             test_key = {"pk": "health_check", "sk": "health_check"}
             db.client.get_item(TableName=table_name, Key=test_key)
-            
+
             return {"read_test": "success"}
-            
+
         except Exception as e:
             raise Exception(f"Capacity check failed: {str(e)}")
-    
+
     return [
         HealthCheck("dynamodb_table_status", check_table_exists),
         HealthCheck("dynamodb_read_capacity", check_read_write_capacity)
@@ -1562,12 +1562,12 @@ from typing import Dict, Any, Optional
 
 class FieldEncryption:
     """Field-level encryption for sensitive data"""
-    
+
     def __init__(self, kms_key_id: Optional[str] = None):
         self.kms_client = boto3.client('kms')
         self.kms_key_id = kms_key_id
         self._encryption_key = None
-    
+
     def get_encryption_key(self) -> bytes:
         """Get or generate encryption key using KMS"""
         if self._encryption_key is None:
@@ -1581,30 +1581,30 @@ class FieldEncryption:
             else:
                 # Generate local key (for development only)
                 self._encryption_key = Fernet.generate_key()
-        
+
         return self._encryption_key
-    
+
     def encrypt_field(self, value: str) -> str:
         """Encrypt a field value"""
         if not value:
             return value
-        
+
         fernet = Fernet(self.get_encryption_key())
         encrypted_bytes = fernet.encrypt(value.encode())
         return encrypted_bytes.decode()
-    
+
     def decrypt_field(self, encrypted_value: str) -> str:
         """Decrypt a field value"""
         if not encrypted_value:
             return encrypted_value
-        
+
         fernet = Fernet(self.get_encryption_key())
         decrypted_bytes = fernet.decrypt(encrypted_value.encode())
         return decrypted_bytes.decode()
 
 class SecureUserModel(DynamoDBModelBase):
     """User model with field-level encryption"""
-    
+
     def __init__(self):
         super().__init__()
         self.id: str = ""
@@ -1613,7 +1613,7 @@ class SecureUserModel(DynamoDBModelBase):
         self.phone: str = ""  # Will be encrypted
         self.encrypted_fields = ['email', 'phone']
         self.encryption_service = FieldEncryption()
-    
+
     def encrypt_sensitive_fields(self):
         """Encrypt sensitive fields before saving"""
         for field in self.encrypted_fields:
@@ -1624,7 +1624,7 @@ class SecureUserModel(DynamoDBModelBase):
                     setattr(self, f"encrypted_{field}", encrypted_value)
                     # Clear the original field
                     setattr(self, field, "")
-    
+
     def decrypt_sensitive_fields(self):
         """Decrypt sensitive fields after loading"""
         for field in self.encrypted_fields:
@@ -1654,7 +1654,7 @@ class AuditAction(Enum):
 
 class AuditLog(DynamoDBModelBase):
     """Immutable audit log entry"""
-    
+
     def __init__(self):
         super().__init__()
         self.audit_id: str = StringUtility.generate_sortable_uuid()
@@ -1669,7 +1669,7 @@ class AuditLog(DynamoDBModelBase):
         self.ip_address: Optional[str] = None
         self.user_agent: Optional[str] = None
         self._setup_audit_indexes()
-    
+
     def _setup_audit_indexes(self):
         """Setup indexes for audit queries"""
         # Primary key: audit_id
@@ -1680,7 +1680,7 @@ class AuditLog(DynamoDBModelBase):
         primary.sort_key.attribute_name = "sk"
         primary.sort_key.value = lambda: f"audit#{self.audit_id}"
         self.indexes.add_primary(primary)
-        
+
         # GSI1: Entity-based queries
         gsi1 = DynamoDBIndex(index_name="gsi1")
         gsi1.partition_key.attribute_name = "gsi1_pk"
@@ -1691,11 +1691,11 @@ class AuditLog(DynamoDBModelBase):
 
 class AuditService:
     """Service for managing audit logs"""
-    
+
     def __init__(self, db: DynamoDB, table_name: str):
         self.db = db
         self.table_name = table_name
-    
+
     def log_action(
         self,
         action: AuditAction,
@@ -1717,11 +1717,11 @@ class AuditService:
         audit_log.timestamp = str(int(time.time()))
         audit_log.old_values = old_values
         audit_log.new_values = new_values
-        
+
         if context:
             audit_log.ip_address = context.get('ip_address')
             audit_log.user_agent = context.get('user_agent')
-        
+
         # Save audit log (immutable)
         self.db.save(
             item=audit_log.to_resource_dictionary(),
@@ -1737,7 +1737,7 @@ def audit_data_changes(audit_service: AuditService):
             entity_id = kwargs.get('id') or (args[0] if args else None)
             user_id = kwargs.get('user_id', 'system')
             tenant_id = kwargs.get('tenant_id', 'default')
-            
+
             # Get old values for updates
             old_values = None
             if func.__name__ in ['update', 'delete'] and entity_id:
@@ -1747,10 +1747,10 @@ def audit_data_changes(audit_service: AuditService):
                         old_values = old_item.data.to_dictionary()
                 except:
                     pass
-            
+
             # Execute the operation
             result = func(self, *args, **kwargs)
-            
+
             # Log the action if successful
             if hasattr(result, 'success') and result.success:
                 action_map = {
@@ -1758,13 +1758,13 @@ def audit_data_changes(audit_service: AuditService):
                     'update': AuditAction.UPDATE,
                     'delete': AuditAction.DELETE
                 }
-                
+
                 action = action_map.get(func.__name__)
                 if action:
                     new_values = None
                     if hasattr(result, 'data') and result.data:
                         new_values = result.data.to_dictionary()
-                    
+
                     audit_service.log_action(
                         action=action,
                         entity_type=self.__class__.__name__.replace('Service', '').lower(),
@@ -1774,7 +1774,7 @@ def audit_data_changes(audit_service: AuditService):
                         old_values=old_values,
                         new_values=new_values
                     )
-            
+
             return result
         return wrapper
     return decorator
@@ -1798,32 +1798,32 @@ class ModelVersion(Enum):
 
 class VersionedModel(DynamoDBModelBase):
     """Base class for versioned models"""
-    
+
     def __init__(self):
         super().__init__()
         self.model_version: str = ModelVersion.V3.value  # Current version
         self.migration_status: Optional[str] = None
-    
+
     def migrate_from_version(self, old_data: Dict[str, Any], from_version: str) -> Dict[str, Any]:
         """Migrate data from older version to current version"""
         migrated_data = old_data.copy()
-        
+
         if from_version == ModelVersion.V1.value:
             migrated_data = self._migrate_v1_to_v2(migrated_data)
             migrated_data = self._migrate_v2_to_v3(migrated_data)
         elif from_version == ModelVersion.V2.value:
             migrated_data = self._migrate_v2_to_v3(migrated_data)
-        
+
         migrated_data['model_version'] = ModelVersion.V3.value
         return migrated_data
-    
+
     def _migrate_v1_to_v2(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Migration logic from v1 to v2"""
         # Example: rename field
         if 'old_field_name' in data:
             data['new_field_name'] = data.pop('old_field_name')
         return data
-    
+
     def _migrate_v2_to_v3(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Migration logic from v2 to v3"""
         # Example: add new required field with default
@@ -1833,29 +1833,29 @@ class VersionedModel(DynamoDBModelBase):
 
 class MigrationService:
     """Service for handling data migrations"""
-    
+
     def __init__(self, db: DynamoDB, table_name: str):
         self.db = db
         self.table_name = table_name
-    
+
     def migrate_item(self, item: Dict[str, Any], target_model_class) -> Dict[str, Any]:
         """Migrate a single item to the latest version"""
         current_version = item.get('model_version', ModelVersion.V1.value)
-        
+
         if current_version != ModelVersion.V3.value:
             # Create instance of target model
             model_instance = target_model_class()
-            
+
             # Perform migration
             migrated_data = model_instance.migrate_from_version(item, current_version)
-            
+
             # Update the item in DynamoDB
             self.db.save(item=migrated_data, table_name=self.table_name)
-            
+
             return migrated_data
-        
+
         return item
-    
+
     def batch_migrate_items(self, model_class, batch_size: int = 25):
         """Migrate all items of a specific model type"""
         # Scan for items that need migration
@@ -1866,23 +1866,23 @@ class MigrationService:
                 ':current_version': ModelVersion.V3.value
             }
         }
-        
+
         items_to_migrate = []
         response = self.db.client.scan(**scan_params)
-        
+
         for item in response.get('Items', []):
             migrated_item = self.migrate_item(item, model_class)
             items_to_migrate.append(migrated_item)
-            
+
             # Process in batches
             if len(items_to_migrate) >= batch_size:
                 self._process_migration_batch(items_to_migrate)
                 items_to_migrate = []
-        
+
         # Process remaining items
         if items_to_migrate:
             self._process_migration_batch(items_to_migrate)
-    
+
     def _process_migration_batch(self, items: List[Dict[str, Any]]):
         """Process a batch of migrated items"""
         # Could implement additional validation, logging, etc.
@@ -1899,32 +1899,32 @@ class MigrationService:
 ```python
 class CostOptimizedService:
     """Service with cost optimization strategies"""
-    
+
     def __init__(self, db: DynamoDB, table_name: str):
         self.db = db
         self.table_name = table_name
-    
+
     def efficient_batch_operations(self, items: List[Dict[str, Any]]):
         """Use batch operations to reduce request costs"""
         batch_size = 25  # DynamoDB batch limit
-        
+
         for i in range(0, len(items), batch_size):
             batch = items[i:i + batch_size]
-            
+
             # Use batch_write_item instead of individual puts
             request_items = {
                 self.table_name: [
                     {'PutRequest': {'Item': item}} for item in batch
                 ]
             }
-            
+
             self.db.client.batch_write_item(RequestItems=request_items)
-    
+
     def use_projections_for_cost_savings(self, model, index_name: str):
         """Use projections to reduce data transfer costs"""
         # Only fetch required attributes
         essential_attributes = ['id', 'name', 'status', 'updated_utc']
-        
+
         result = self.db.query_by_criteria(
             model=model,
             index_name=index_name,
@@ -1932,25 +1932,25 @@ class CostOptimizedService:
             projection_expression=','.join(essential_attributes),
             do_projections=False  # Manual projection control
         )
-        
+
         return result.get('Items', [])
-    
+
     def implement_data_archiving(self, cutoff_date: str):
         """Archive old data to reduce storage costs"""
         # Query old items
         archive_filter = f"updated_utc < :cutoff_date"
-        
+
         old_items = self.db.client.scan(
             TableName=self.table_name,
             FilterExpression=archive_filter,
             ExpressionAttributeValues={':cutoff_date': cutoff_date}
         )
-        
+
         # Move to S3 or delete based on retention policy
         for item in old_items.get('Items', []):
             # Archive to S3 (implementation depends on requirements)
             self._archive_to_s3(item)
-            
+
             # Delete from DynamoDB
             self.db.delete(
                 primary_key={'pk': item['pk'], 'sk': item['sk']},
@@ -1972,34 +1972,34 @@ from datetime import datetime, timedelta
 
 class BackupService:
     """Service for managing DynamoDB backups and recovery"""
-    
+
     def __init__(self, table_name: str, region: str = 'us-east-1'):
         self.table_name = table_name
         self.region = region
         self.dynamodb_client = boto3.client('dynamodb', region_name=region)
         self.s3_client = boto3.client('s3', region_name=region)
-    
+
     def create_point_in_time_backup(self, backup_name: Optional[str] = None) -> Dict[str, Any]:
         """Create on-demand backup"""
         if not backup_name:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             backup_name = f"{self.table_name}_backup_{timestamp}"
-        
+
         response = self.dynamodb_client.create_backup(
             TableName=self.table_name,
             BackupName=backup_name
         )
-        
+
         return {
             'backup_arn': response['BackupDetails']['BackupArn'],
             'backup_name': backup_name,
             'status': response['BackupDetails']['BackupStatus']
         }
-    
+
     def export_to_s3(self, s3_bucket: str, s3_prefix: str) -> Dict[str, Any]:
         """Export table data to S3 for cross-region backup"""
         export_time = datetime.now()
-        
+
         response = self.dynamodb_client.export_table_to_point_in_time(
             TableArn=f"arn:aws:dynamodb:{self.region}:*:table/{self.table_name}",
             S3Bucket=s3_bucket,
@@ -2007,61 +2007,61 @@ class BackupService:
             ExportFormat='DYNAMODB_JSON',
             ExportTime=export_time
         )
-        
+
         return {
             'export_arn': response['ExportDescription']['ExportArn'],
             'export_status': response['ExportDescription']['ExportStatus'],
             's3_location': f"s3://{s3_bucket}/{s3_prefix}"
         }
-    
+
     def restore_from_backup(self, backup_arn: str, target_table_name: str) -> Dict[str, Any]:
         """Restore table from backup"""
         response = self.dynamodb_client.restore_table_from_backup(
             TargetTableName=target_table_name,
             BackupArn=backup_arn
         )
-        
+
         return {
             'table_arn': response['TableDescription']['TableArn'],
             'restore_status': response['TableDescription']['TableStatus']
         }
-    
+
     def setup_continuous_backups(self) -> Dict[str, Any]:
         """Enable point-in-time recovery"""
         response = self.dynamodb_client.update_continuous_backups(
             TableName=self.table_name,
             PointInTimeRecoverySpecification={'PointInTimeRecoveryEnabled': True}
         )
-        
+
         return {
             'point_in_time_recovery_status': response['ContinuousBackupsDescription']['PointInTimeRecoveryDescription']['PointInTimeRecoveryStatus']
         }
 
 class DisasterRecoveryOrchestrator:
     """Orchestrate disaster recovery procedures"""
-    
+
     def __init__(self, primary_region: str, backup_region: str):
         self.primary_region = primary_region
         self.backup_region = backup_region
         self.primary_dynamodb = boto3.client('dynamodb', region_name=primary_region)
         self.backup_dynamodb = boto3.client('dynamodb', region_name=backup_region)
-    
+
     def failover_to_backup_region(self, table_name: str, backup_table_name: str) -> Dict[str, Any]:
         """Execute failover to backup region"""
         try:
             # 1. Verify backup region table is ready
             backup_status = self.backup_dynamodb.describe_table(TableName=backup_table_name)
-            
+
             if backup_status['Table']['TableStatus'] != 'ACTIVE':
                 raise Exception(f"Backup table {backup_table_name} is not active")
-            
+
             # 2. Update application configuration to point to backup region
             # This would typically involve updating environment variables or configuration
-            
+
             # 3. Verify data consistency
             primary_count = self._get_table_item_count(self.primary_dynamodb, table_name)
             backup_count = self._get_table_item_count(self.backup_dynamodb, backup_table_name)
-            
+
             return {
                 'failover_status': 'success',
                 'primary_region': self.primary_region,
@@ -2072,13 +2072,13 @@ class DisasterRecoveryOrchestrator:
                     'difference': abs(primary_count - backup_count)
                 }
             }
-            
+
         except Exception as e:
             return {
                 'failover_status': 'failed',
                 'error': str(e)
             }
-    
+
     def _get_table_item_count(self, client, table_name: str) -> int:
         """Get approximate item count from table"""
         response = client.describe_table(TableName=table_name)
@@ -2093,39 +2093,39 @@ class DisasterRecoveryOrchestrator:
 ```python
 class CrossRegionReplication:
     """Manage cross-region replication for disaster recovery"""
-    
+
     def __init__(self, source_region: str, target_regions: List[str]):
         self.source_region = source_region
         self.target_regions = target_regions
         self.source_client = boto3.client('dynamodb', region_name=source_region)
-    
+
     def setup_global_tables(self, table_name: str) -> Dict[str, Any]:
         """Setup DynamoDB Global Tables for automatic replication"""
         try:
             # Create global table
             replica_regions = [{'RegionName': region} for region in self.target_regions]
-            
+
             response = self.source_client.create_global_table(
                 GlobalTableName=table_name,
                 ReplicationGroup=replica_regions
             )
-            
+
             return {
                 'global_table_arn': response['GlobalTableDescription']['GlobalTableArn'],
                 'global_table_status': response['GlobalTableDescription']['GlobalTableStatus'],
                 'replicas': response['GlobalTableDescription']['ReplicationGroup']
             }
-            
+
         except Exception as e:
             return {'error': str(e)}
-    
+
     def monitor_replication_lag(self, table_name: str) -> Dict[str, Any]:
         """Monitor replication lag across regions"""
         replication_metrics = {}
-        
+
         for region in self.target_regions:
             client = boto3.client('dynamodb', region_name=region)
-            
+
             try:
                 response = client.describe_table(TableName=table_name)
                 replication_metrics[region] = {
@@ -2135,7 +2135,7 @@ class CrossRegionReplication:
                 }
             except Exception as e:
                 replication_metrics[region] = {'error': str(e)}
-        
+
         return replication_metrics
 ```
 
@@ -2157,90 +2157,90 @@ class APIVersion(Enum):
 
 class VersionedAPIHandler:
     """Handle multiple API versions with backward compatibility"""
-    
+
     def __init__(self):
         self.supported_versions = [APIVersion.V1, APIVersion.V2, APIVersion.V3]
         self.default_version = APIVersion.V3
-    
+
     def get_api_version(self, event: Dict[str, Any]) -> APIVersion:
         """Extract API version from request"""
         # Check headers first
         headers = event.get('headers', {})
         version_header = headers.get('API-Version') or headers.get('api-version')
-        
+
         if version_header:
             try:
                 return APIVersion(version_header)
             except ValueError:
                 pass
-        
+
         # Check path parameter
         path_parameters = event.get('pathParameters', {})
         version_path = path_parameters.get('version')
-        
+
         if version_path:
             try:
                 return APIVersion(version_path)
             except ValueError:
                 pass
-        
+
         # Default to latest version
         return self.default_version
-    
+
     def transform_request(self, request_data: Dict[str, Any], from_version: APIVersion, to_version: APIVersion) -> Dict[str, Any]:
         """Transform request data between API versions"""
         if from_version == to_version:
             return request_data
-        
+
         transformed_data = request_data.copy()
-        
+
         # V1 to V2 transformations
         if from_version == APIVersion.V1 and to_version in [APIVersion.V2, APIVersion.V3]:
             # Example: rename field
             if 'oldFieldName' in transformed_data:
                 transformed_data['newFieldName'] = transformed_data.pop('oldFieldName')
-        
+
         # V2 to V3 transformations
         if from_version in [APIVersion.V1, APIVersion.V2] and to_version == APIVersion.V3:
             # Example: add required field with default
             if 'requiredNewField' not in transformed_data:
                 transformed_data['requiredNewField'] = 'default_value'
-        
+
         return transformed_data
-    
+
     def transform_response(self, response_data: Dict[str, Any], from_version: APIVersion, to_version: APIVersion) -> Dict[str, Any]:
         """Transform response data to match requested API version"""
         if from_version == to_version:
             return response_data
-        
+
         transformed_data = response_data.copy()
-        
+
         # V3 to V2 transformations (backward compatibility)
         if from_version == APIVersion.V3 and to_version == APIVersion.V2:
             # Remove fields that don't exist in V2
             transformed_data.pop('newV3Field', None)
-        
+
         # V3/V2 to V1 transformations
         if from_version in [APIVersion.V2, APIVersion.V3] and to_version == APIVersion.V1:
             # Rename fields back to V1 format
             if 'newFieldName' in transformed_data:
                 transformed_data['oldFieldName'] = transformed_data.pop('newFieldName')
-            
+
             # Remove fields that don't exist in V1
             transformed_data.pop('newV2Field', None)
             transformed_data.pop('newV3Field', None)
-        
+
         return transformed_data
 
 def versioned_api_handler(handler_func):
     """Decorator for handling API versioning"""
     def wrapper(event, context, injected_services=None):
         versioned_handler = VersionedAPIHandler()
-        
+
         # Determine API version
         requested_version = versioned_handler.get_api_version(event)
         current_version = APIVersion.V3  # The version your handler implements
-        
+
         # Transform request if needed
         if 'body' in event and event['body']:
             body = json.loads(event['body'])
@@ -2248,10 +2248,10 @@ def versioned_api_handler(handler_func):
                 body, requested_version, current_version
             )
             event['body'] = json.dumps(transformed_body)
-        
+
         # Execute the handler
         response = handler_func(event, context, injected_services)
-        
+
         # Transform response if needed
         if response.get('body'):
             response_body = json.loads(response['body'])
@@ -2261,14 +2261,14 @@ def versioned_api_handler(handler_func):
                 )
                 response_body['data'] = transformed_data
                 response['body'] = json.dumps(response_body)
-        
+
         # Add version header to response
         if 'headers' not in response:
             response['headers'] = {}
         response['headers']['API-Version'] = requested_version.value
-        
+
         return response
-    
+
     return wrapper
 
 # Usage example
@@ -2291,7 +2291,7 @@ from typing import Dict, Any
 
 class APISchemaValidator:
     """Validate API requests and responses by version"""
-    
+
     def __init__(self):
         self.schemas = {
             APIVersion.V1: {
@@ -2354,7 +2354,7 @@ class APISchemaValidator:
                 }
             }
         }
-    
+
     def validate_request(self, data: Dict[str, Any], version: APIVersion) -> bool:
         """Validate request data against version schema"""
         try:
@@ -2363,7 +2363,7 @@ class APISchemaValidator:
             return True
         except ValidationError as e:
             raise ValueError(f"Request validation failed for {version.value}: {e.message}")
-    
+
     def validate_response(self, data: Dict[str, Any], version: APIVersion) -> bool:
         """Validate response data against version schema"""
         try:
@@ -2423,21 +2423,21 @@ To implement these patterns in a new project:
    ```bash
    # Create virtual environment
    python -m venv .venv
-   
+
    # Activate virtual environment
    # On macOS/Linux:
    source .venv/bin/activate
    # On Windows:
    .venv\Scripts\activate
    ```
-   
+
    **Why Virtual Environments are Essential**:
    - **Dependency Isolation**: Prevents conflicts between project dependencies
    - **Reproducible Builds**: Ensures consistent package versions across environments
    - **Clean Development**: Avoids polluting system Python installation
    - **Team Consistency**: All developers use identical dependency versions
    - **Deployment Safety**: Production environments match development exactly
-   
+
    **Standard Practice**: Always use `.venv` as the virtual environment directory name for consistency across all projects.
 
 2. **Install Dependencies**:

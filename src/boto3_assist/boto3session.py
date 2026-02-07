@@ -4,11 +4,13 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import Optional, List, Any
+from typing import Any, List, Optional
+
 import boto3
 from botocore.config import Config
-from .session_setup_mixin import SessionSetupMixin
+
 from .role_assumption_mixin import RoleAssumptionMixin
+from .session_setup_mixin import SessionSetupMixin
 
 
 class Boto3SessionManager(SessionSetupMixin, RoleAssumptionMixin):
@@ -33,9 +35,7 @@ class Boto3SessionManager(SessionSetupMixin, RoleAssumptionMixin):
         self.aws_region = aws_region
         self.config = config
         self.endpoint_url = aws_endpoint_url
-        self.assume_role_chain = assume_role_chain or (
-            [assume_role_arn] if assume_role_arn else []
-        )
+        self.assume_role_chain = assume_role_chain or ([assume_role_arn] if assume_role_arn else [])
         self.assume_role_session_name = (
             assume_role_session_name or f"AssumeRoleSessionFor{service_name}"
         )

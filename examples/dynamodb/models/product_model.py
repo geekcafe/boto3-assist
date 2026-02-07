@@ -6,8 +6,9 @@ MIT License.  See Project Root for the license information.
 
 import datetime
 from typing import Optional
-from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
+
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBKey
+from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
 
 
 class Product(DynamoDBModelBase):
@@ -42,9 +43,7 @@ class Product(DynamoDBModelBase):
         primary: DynamoDBIndex = DynamoDBIndex()
         primary.name = "primary"
         primary.partition_key.attribute_name = "pk"
-        primary.partition_key.value = lambda: DynamoDBKey.build_key(
-            ("product", self.id)
-        )
+        primary.partition_key.value = lambda: DynamoDBKey.build_key(("product", self.id))
         primary.sort_key.attribute_name = "sk"
         primary.sort_key.value = lambda: DynamoDBKey.build_key(("product", self.id))
         self.indexes.add_primary(primary)

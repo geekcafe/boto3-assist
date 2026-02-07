@@ -8,4 +8,3 @@ rules:
   - name: Designing Services
     path: docs/designing-services.md
     description: Service layer design patterns
-    

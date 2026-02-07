@@ -24,9 +24,7 @@ class S3FileDeleteTest(unittest.TestCase):
         bucket_name: str = "test-bucket"
         s3.bucket.create(bucket_name=bucket_name)
         s3.bucket.enable_versioning(bucket_name=bucket_name)
-        local_file_path: Path = Path(
-            os.path.join(os.path.dirname(__file__), "files", "test.txt")
-        )
+        local_file_path: Path = Path(os.path.join(os.path.dirname(__file__), "files", "test.txt"))
         if not os.path.exists(local_file_path):
             raise FileNotFoundError(f"File not found: {local_file_path}")
 
@@ -56,9 +54,7 @@ class S3FileDeleteTest(unittest.TestCase):
 
         for _ in range(0, 5):
             # upload the same file over and over, it should create different versions
-            s3.object.upload_file(
-                bucket=bucket_name, key=key, local_file_path=local_file_path
-            )
+            s3.object.upload_file(bucket=bucket_name, key=key, local_file_path=local_file_path)
 
         files = s3.object.delete_all_versions(
             bucket_name=bucket_name, key=key, include_deleted=True
@@ -92,9 +88,7 @@ class S3FileDeleteTest(unittest.TestCase):
 
         for _ in range(0, 5):
             # upload the same file over and over, it should create different versions
-            s3.object.upload_file(
-                bucket=bucket_name, key=key, local_file_path=local_file_path
-            )
+            s3.object.upload_file(bucket=bucket_name, key=key, local_file_path=local_file_path)
 
         # delete the latest which should add a deleted marker
         s3.object.delete(bucket_name=bucket_name, key=key)

@@ -6,8 +6,9 @@ MIT License.  See Project Root for the license information.
 
 import datetime
 from typing import Optional
-from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
+
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBKey
+from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
 
 
 class User(DynamoDBModelBase):
@@ -83,8 +84,7 @@ class User(DynamoDBModelBase):
         self.indexes.add_secondary(gsi3)
 
         self.projection_expression = (
-            "id,first_name,last_name,email,#type,#status,"
-            "company_name,modified_datetime_utc"
+            "id,first_name,last_name,email,#type,#status," "company_name,modified_datetime_utc"
         )
         self.projection_expression_attribute_names = {
             "#status": "status",

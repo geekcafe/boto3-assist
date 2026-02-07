@@ -6,8 +6,9 @@ MIT License.  See Project Root for the license information.
 
 import datetime
 from typing import Optional
-from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
+
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBKey
+from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
 
 
 class Order(DynamoDBModelBase):
@@ -83,9 +84,7 @@ class Order(DynamoDBModelBase):
                 index_name="gsi1",
                 partition_key=DynamoDBKey(
                     attribute_name="gsi1_pk",
-                    value=lambda: DynamoDBKey.build_key(
-                        ("user", self.user_id), ("orders", "")
-                    ),
+                    value=lambda: DynamoDBKey.build_key(("user", self.user_id), ("orders", "")),
                 ),
                 sort_key=DynamoDBKey(
                     attribute_name="gsi1_sk",

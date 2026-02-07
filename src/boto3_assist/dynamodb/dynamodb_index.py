@@ -6,14 +6,11 @@ https://github.com/geekcafe/boto3-assist
 """
 
 from __future__ import annotations
-from typing import Optional, Any
-from boto3.dynamodb.conditions import (
-    ConditionBase,
-    Key,
-    Equals,
-    ComparisonCondition,
-    And,
-)
+
+from typing import Any, Optional
+
+from boto3.dynamodb.conditions import And, ComparisonCondition, ConditionBase, Equals, Key
+
 from boto3_assist.dynamodb.dynamodb_key import DynamoDBKey
 
 
@@ -98,11 +95,7 @@ class DynamoDBIndexes:
     def secondaries(self) -> dict[str, DynamoDBIndex]:
         """Get the secondary indexes"""
         # get all indexes that are not the primary index
-        indexes = {
-            k: v
-            for k, v in self.__indexes.items()
-            if k != DynamoDBIndexes.PRIMARY_INDEX
-        }
+        indexes = {k: v for k, v in self.__indexes.items() if k != DynamoDBIndexes.PRIMARY_INDEX}
 
         return indexes
 
@@ -249,9 +242,7 @@ class DynamoDBIndex:
         """
         result = {
             "index_name": self.name,
-            "query_type": (
-                "Primary" if self.name == DynamoDBIndexes.PRIMARY_INDEX else "GSI/LSI"
-            ),
+            "query_type": ("Primary" if self.name == DynamoDBIndexes.PRIMARY_INDEX else "GSI/LSI"),
         }
 
         # Partition key info
@@ -271,11 +262,7 @@ class DynamoDBIndex:
                 }
 
                 # Add range info for between condition
-                if (
-                    condition == "between"
-                    and low_value is not None
-                    and high_value is not None
-                ):
+                if condition == "between" and low_value is not None and high_value is not None:
                     sk_info["low_value"] = low_value
                     sk_info["high_value"] = high_value
                     sk_info["full_range"] = {
@@ -350,17 +337,12 @@ class DynamoDBIndex:
     ) -> And | Equals:
         """Get the GSI index name and key"""
 
-        key: And | Equals = Key(f"{self.partition_key.attribute_name}").eq(
-            self.partition_key.value
-        )
+        key: And | Equals = Key(f"{self.partition_key.attribute_name}").eq(self.partition_key.value)
 
         if (
             include_sort_key
             and self.sort_key.attribute_name
-            and (
-                self.sort_key.value
-                or (low_value is not None and high_value is not None)
-            )
+            and (self.sort_key.value or (low_value is not None and high_value is not None))
         ):
             # if self.sk_value_2:
             if low_value is not None and high_value is not None:
@@ -368,9 +350,7 @@ class DynamoDBIndex:
                     case "between":
                         low = f"{self.sort_key.value}{low_value}"
                         high = f"{self.sort_key.value}{high_value}"
-                        key = key & Key(f"{self.sort_key.attribute_name}").between(
-                            low, high
-                        )
+                        key = key & Key(f"{self.sort_key.attribute_name}").between(low, high)
 
             else:
                 match condition:
@@ -379,21 +359,13 @@ class DynamoDBIndex:
                             self.sort_key.value
                         )
                     case "eq":
-                        key = key & Key(f"{self.sort_key.attribute_name}").eq(
-                            self.sort_key.value
-                        )
+                        key = key & Key(f"{self.sort_key.attribute_name}").eq(self.sort_key.value)
                     case "gt":
-                        key = key & Key(f"{self.sort_key.attribute_name}").gt(
-                            self.sort_key.value
-                        )
+                        key = key & Key(f"{self.sort_key.attribute_name}").gt(self.sort_key.value)
                     case "gte":
-                        key = key & Key(f"{self.sort_key.attribute_name}").gte(
-                            self.sort_key.value
-                        )
+                        key = key & Key(f"{self.sort_key.attribute_name}").gte(self.sort_key.value)
                     case "lt":
-                        key = key & Key(f"{self.sort_key.attribute_name}").lt(
-                            self.sort_key.value
-                        )
+                        key = key & Key(f"{self.sort_key.attribute_name}").lt(self.sort_key.value)
 
         return key
 
@@ -465,9 +437,7 @@ class DynamoDBIndex:
                 if hasattr(pk_condition, "_values") and len(pk_condition._values) >= 2:
                     pk_attr = pk_condition._values[0]
                     result["partition_key"] = {
-                        "attribute": (
-                            pk_attr.name if hasattr(pk_attr, "name") else str(pk_attr)
-                        ),
+                        "attribute": (pk_attr.name if hasattr(pk_attr, "name") else str(pk_attr)),
                         "value": pk_condition._values[1],
                     }
 
@@ -475,11 +445,7 @@ class DynamoDBIndex:
                 if len(key_expression._values) > 1:
                     sk_condition = key_expression._values[1]
                     if hasattr(sk_condition, "_values"):
-                        sk_attr = (
-                            sk_condition._values[0]
-                            if len(sk_condition._values) > 0
-                            else None
-                        )
+                        sk_attr = sk_condition._values[0] if len(sk_condition._values) > 0 else None
                         sk_info = {
                             "attribute": (
                                 sk_attr.name
@@ -508,15 +474,10 @@ class DynamoDBIndex:
 
             # If no _values found, handle single Equals condition (no sort key)
             elif isinstance(key_expression, Equals):
-                if (
-                    hasattr(key_expression, "_values")
-                    and len(key_expression._values) >= 2
-                ):
+                if hasattr(key_expression, "_values") and len(key_expression._values) >= 2:
                     pk_attr = key_expression._values[0]
                     result["partition_key"] = {
-                        "attribute": (
-                            pk_attr.name if hasattr(pk_attr, "name") else str(pk_attr)
-                        ),
+                        "attribute": (pk_attr.name if hasattr(pk_attr, "name") else str(pk_attr)),
                         "value": key_expression._values[1],
                     }
 

@@ -6,6 +6,7 @@ MIT License.  See Project Root for the license information.
 
 import math
 from typing import List, Optional
+
 from aws_lambda_powertools import Logger
 
 logger = Logger()
@@ -69,9 +70,7 @@ class NumberUtility:
             return None
 
     @staticmethod
-    def to_float(
-        value: str | float | int, raise_errors: Optional[bool] = False
-    ) -> float:
+    def to_float(value: str | float | int, raise_errors: Optional[bool] = False) -> float:
         """_summary_
 
         Args:
@@ -107,9 +106,7 @@ class NumberUtility:
         """
         result = math.floor(value * 10**significant_digits) / 10**significant_digits
         to_the_right = len(f"{int(value)}")
-        f_string_number = (
-            f"{value:.{significant_digits + to_the_right}g}"  # Using f-string
-        )
+        f_string_number = f"{value:.{significant_digits + to_the_right}g}"  # Using f-string
         result = float(f_string_number)
 
         return result
@@ -144,13 +141,9 @@ class NumberUtility:
             number_str = f"{number}"
             if "." in number_str:
                 decimal_point_index = number_str.index(".")
-                number_of_decimal_places = NumberUtility.get_number_of_decimal_places(
-                    number
-                )
+                number_of_decimal_places = NumberUtility.get_number_of_decimal_places(number)
                 if number_of_decimal_places > significant_digits:
-                    return NumberUtility.to_significant_digits_rounded(
-                        number, significant_digits
-                    )
+                    return NumberUtility.to_significant_digits_rounded(number, significant_digits)
                 else:
                     cutoff_index = decimal_point_index + significant_digits + 1
                     truncated_str = number_str[:cutoff_index]
@@ -210,17 +203,13 @@ class NumberUtility:
             logger.error(f"Unable to convert {value} to number")
             if raise_errors:
                 if error_message:
-                    raise ValueError(
-                        f"Unable to convert {value} to number, {error_message}"
-                    ) from e
+                    raise ValueError(f"Unable to convert {value} to number, {error_message}") from e
                 else:
                     raise ValueError(f"Unable to convert {value} to number") from e
             return 0
 
     @staticmethod
-    def to_significant_figure(
-        number: int | float | str, sig_figs: int
-    ) -> int | float | str:
+    def to_significant_figure(number: int | float | str, sig_figs: int) -> int | float | str:
         """
         Formats a number to it's significant figures.
         Examples

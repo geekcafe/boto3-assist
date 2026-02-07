@@ -5,8 +5,9 @@ MIT License.  See Project Root for the license information.
 """
 
 import os
-from datetime import datetime, timedelta, UTC
-from typing import Optional, Dict, Any, List
+from datetime import UTC, datetime, timedelta
+from typing import Any, Dict, List, Optional
+
 from boto3_assist.cloudwatch.cloudwatch_connection import CloudWatchConnection
 from boto3_assist.cloudwatch.cloudwatch_logs import CloudWatchLogs
 
@@ -65,9 +66,7 @@ class CloudWatchQuery(CloudWatchConnection):
                             "Namespace": "AWS/Logs",
                             # "MetricName": "StoredBytes",
                             "MetricName": "IncomingBytes",
-                            "Dimensions": [
-                                {"Name": "LogGroupName", "Value": log_group_name}
-                            ],
+                            "Dimensions": [{"Name": "LogGroupName", "Value": log_group_name}],
                         },
                         "Period": 86400,  # Daily data
                         "Stat": "Sum",
@@ -85,9 +84,7 @@ class CloudWatchQuery(CloudWatchConnection):
             # Access the first MetricDataResult
             metric_data_result = response["MetricDataResults"][0]
             # Sum the values if they exist
-            size = (
-                sum(metric_data_result["Values"]) if metric_data_result["Values"] else 0
-            )
+            size = sum(metric_data_result["Values"]) if metric_data_result["Values"] else 0
         else:
             size = 0
 

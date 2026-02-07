@@ -6,7 +6,8 @@ MIT License.  See Project Root for the license information.
 
 import json
 from datetime import datetime
-from typing import Optional, List, Any, Dict
+from typing import Any, Dict, List, Optional
+
 from boto3_assist.dynamodb.dynamodb import DynamoDB
 from examples.dynamodb.models.order_model import Order
 from src.boto3_assist.utilities.datetime_utility import DatetimeUtility
@@ -109,9 +110,7 @@ class OrderService:
         response: dict = {}
         model: Order = Order(id=order_id)
         p: str | None = model.projection_expression if do_projections else None
-        e: dict | None = (
-            model.projection_expression_attribute_names if do_projections else None
-        )
+        e: dict | None = model.projection_expression_attribute_names if do_projections else None
 
         if include_order_items:
             # exclude the sort key as a filter

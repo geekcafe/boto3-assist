@@ -4,21 +4,20 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
+import io
 import os
 import tempfile
 import time
-import io
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, List, Optional
 
 from aws_lambda_powertools import Logger
 from botocore.exceptions import ClientError
 
-from boto3_assist.errors.custom_exceptions import InvalidHttpMethod
+from boto3_assist.errors.custom_exceptions import FileNotFound, InvalidHttpMethod
 from boto3_assist.s3.s3_connection import S3Connection
 from boto3_assist.utilities.datetime_utility import DatetimeUtility
 from boto3_assist.utilities.file_operations import FileOperations
 from boto3_assist.utilities.http_utility import HttpUtility
-from boto3_assist.errors.custom_exceptions import FileNotFound
 
 logger = Logger(child=True)
 
@@ -91,9 +90,7 @@ class S3Object:
                                 VersionId=marker["VersionId"],
                             )
 
-                            files.append(
-                                f"{marker['Key']}:{marker['VersionId']}:delete-marker"
-                            )
+                            files.append(f"{marker['Key']}:{marker['VersionId']}:delete-marker")
             else:
                 response = self.delete(bucket_name=bucket_name, key=key)
                 if response["ResponseMetadata"]["HTTPStatusCode"] == 404:
@@ -217,9 +214,7 @@ class S3Object:
         )
         try:
             # convert if necessary
-            file_obj = (
-                file_obj.encode("utf-8") if isinstance(file_obj, str) else file_obj
-            )
+            file_obj = file_obj.encode("utf-8") if isinstance(file_obj, str) else file_obj
             self.connection.client.upload_fileobj(
                 Fileobj=io.BytesIO(file_obj), Bucket=bucket, Key=key
             )
@@ -452,13 +447,9 @@ class S3Object:
         error = None
 
         try:
-            response = dict(
-                self.connection.client.get_object(Bucket=bucket_name, Key=key)
-            )
+            response = dict(self.connection.client.get_object(Bucket=bucket_name, Key=key))
 
-            logger.debug(
-                {"metric_filter": "s3_download_response", "response": str(response)}
-            )
+            logger.debug({"metric_filter": "s3_download_response", "response": str(response)})
 
         except Exception as e:  # pylint: disable=W0718
             error = str(e)
@@ -475,8 +466,7 @@ class S3Object:
             if "An error occurred (AccessDenied)" in error:
                 if (
                     "is not authorized to perform: s3:ListBucket on resource" in error
-                    and "because no identity-based policy allows the s3:ListBucket action"
-                    in error
+                    and "because no identity-based policy allows the s3:ListBucket action" in error
                 ):
                     # the file is not found but you're getting a access error since you don't
                     # have s3:ListBucket.  To make life easier, we're just going to return a 404 error
@@ -507,9 +497,7 @@ class S3Object:
         local_file_path: str | None = None,
     ):
         if local_directory and local_file_path:
-            raise ValueError(
-                "Only one of local_directory or local_file_path can be provided"
-            )
+            raise ValueError("Only one of local_directory or local_file_path can be provided")
 
         if local_directory and not os.path.exists(local_directory):
             FileOperations.makedirs(local_directory)
@@ -595,17 +583,13 @@ class S3Object:
         """
         return FileOperations.get_tmp_directory()
 
-    def encode(
-        self, text: str, encoding: str = "utf-8", errors: str = "strict"
-    ) -> bytes:
+    def encode(self, text: str, encoding: str = "utf-8", errors: str = "strict") -> bytes:
         """
         Encodes a string for s3
         """
         return text.encode(encoding=encoding, errors=errors)
 
-    def decode(
-        self, file_obj: bytes, encoding: str = "utf-8", errors: str = "strict"
-    ) -> str:
+    def decode(self, file_obj: bytes, encoding: str = "utf-8", errors: str = "strict") -> str:
         """
         Decodes bytes to a string
         """

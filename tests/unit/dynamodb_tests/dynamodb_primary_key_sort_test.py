@@ -5,12 +5,14 @@ MIT License.  See Project Root for the license information.
 """
 
 import unittest
-import moto
 from typing import Optional
-from tests.unit.dynamodb_tests.db_models.task import Task
-from boto3_assist.environment_services.environment_loader import EnvironmentLoader
+
+import moto
+
 from boto3_assist.dynamodb.dynamodb import DynamoDB
+from boto3_assist.environment_services.environment_loader import EnvironmentLoader
 from tests.unit.common.db_test_helpers import DbTestHelper
+from tests.unit.dynamodb_tests.db_models.task import Task
 
 
 @moto.mock_aws
@@ -53,16 +55,12 @@ class DbQueryTest(unittest.TestCase):
         task.step = step
 
         task.metadata = metadata
-        response = self.db.save(
-            table_name=self.__table_name, item=task, fail_if_exists=True
-        )
+        response = self.db.save(table_name=self.__table_name, item=task, fail_if_exists=True)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         return task
 
     def test_primary_key_query_sort(self):
-        task: Task = self.create_data_process_task(
-            name="test", step="test", task_id=None
-        )
+        task: Task = self.create_data_process_task(name="test", step="test", task_id=None)
 
         # no create a bunch of children
         for i in range(0, 10):

@@ -95,7 +95,7 @@ response = db.get(
 )
 
 # Error: ValidationException
-# "Invalid ProjectionExpression: Attribute name is a reserved keyword; 
+# "Invalid ProjectionExpression: Attribute name is a reserved keyword;
 #  reserved keyword: name"
 ```
 
@@ -176,9 +176,9 @@ class User(DynamoDBModelBase):
         self.status = None      # Reserved keyword!
         self.type = None        # Reserved keyword!
         self.company_name = None
-        
+
         self._setup_indexes()
-        
+
         # Define projection expression ONCE in the model
         self.projection_expression = (
             "id,first_name,last_name,email,#type,#status,company_name"
@@ -188,7 +188,7 @@ class User(DynamoDBModelBase):
             "#status": "status",
             "#type": "type"
         }
-    
+
     def _setup_indexes(self):
         # ... index setup code ...
         pass
@@ -201,18 +201,18 @@ class UserService:
     def __init__(self, db: DynamoDB, table_name: str):
         self.db = db
         self.table_name = table_name
-    
+
     def get_user(self, user_id: str, include_all_fields: bool = False):
         """
         Get user with optional projection filtering
-        
+
         Args:
             user_id: The user ID
             include_all_fields: If True, return ALL attributes (no projection)
                                If False, use model's projection (filtered fields)
         """
         model = User(id=user_id)
-        
+
         if include_all_fields:
             # Get ALL attributes (no projection)
             response = self.db.get(
@@ -227,7 +227,7 @@ class UserService:
                 projection_expression=model.projection_expression,
                 expression_attribute_names=model.projection_expression_attribute_names
             )
-        
+
         return response.get("Item")
 ```
 
@@ -259,25 +259,25 @@ Design your services to optionally disable projections:
 
 ```python
 class OrderService:
-    def get(self, order_id: str, include_order_items: bool = False, 
+    def get(self, order_id: str, include_order_items: bool = False,
             do_projections: bool = True):
         """
         Get order with optional items
-        
+
         Args:
             order_id: The order ID
             include_order_items: Include order items in response
             do_projections: Use projection expressions (turn off for testing)
         """
         model = Order(id=order_id)
-        
+
         # Determine projection based on flag
         projection = None
         attr_names = None
         if do_projections:
             projection = model.projection_expression
             attr_names = model.projection_expression_attribute_names
-        
+
         if include_order_items:
             key = model.indexes.primary.key(include_sort_key=False)
             response = self.db.query(
@@ -293,7 +293,7 @@ class OrderService:
                 projection_expression=projection,
                 expression_attribute_names=attr_names
             )
-        
+
         return response
 ```
 
@@ -312,7 +312,7 @@ class TestOrderService(unittest.TestCase):
         self.table_name = "test-orders"
         # ... create table ...
         self.service = OrderService(self.db, self.table_name)
-    
+
     def test_verify_key_structure(self):
         """Verify pk/sk structure by turning off projections"""
         # Create order
@@ -321,21 +321,21 @@ class TestOrderService(unittest.TestCase):
             "user_id": "user-123",
             "total": 100.00
         })
-        
+
         # Get with ALL fields (do_projections=False)
         result = self.service.get(
             order_id="order-001",
             include_order_items=False,
             do_projections=False  # ← Turns off projection to see keys
         )
-        
+
         # Now we can verify key structure
         order_data = result["Item"]
         self.assertEqual(order_data["pk"], "order#order-001")
         self.assertEqual(order_data["sk"], "order#order-001")
         self.assertEqual(order_data["id"], "order-001")
         self.assertEqual(order_data["total"], 100.00)
-    
+
     def test_projection_works(self):
         """Verify projection filters fields correctly"""
         # Create order
@@ -344,20 +344,20 @@ class TestOrderService(unittest.TestCase):
             "user_id": "user-123",
             "total": 200.00
         })
-        
+
         # Get with projection (do_projections=True)
         result = self.service.get(
             order_id="order-002",
             include_order_items=False,
             do_projections=True  # ← Uses projection
         )
-        
+
         order_data = result["Item"]
-        
+
         # Should have projected fields
         self.assertIn("id", order_data)
         self.assertIn("total", order_data)
-        
+
         # Should NOT have keys (not in projection)
         self.assertNotIn("pk", order_data)
         self.assertNotIn("sk", order_data)
@@ -562,7 +562,7 @@ class User(DynamoDBModelBase):
     def __init__(self):
         super().__init__()
         # ... attributes ...
-        
+
         # Projection includes core user fields for list/display operations
         # Excludes: pk, sk, GSI keys, internal metadata
         # Reserved keywords handled: name, status, type
@@ -581,7 +581,7 @@ class User(DynamoDBModelBase):
 
 **Issue 1: Reserved keyword error**
 ```
-ValidationException: Invalid ProjectionExpression: 
+ValidationException: Invalid ProjectionExpression:
 Attribute name is a reserved keyword; reserved keyword: name
 ```
 
@@ -611,7 +611,7 @@ response = db.get(model=model, table_name=table_name)  # No projection
 
 **Issue 3: Attribute doesn't exist**
 ```
-ValidationException: The projection expression refers to an attribute 
+ValidationException: The projection expression refers to an attribute
 that does not exist in the item
 ```
 

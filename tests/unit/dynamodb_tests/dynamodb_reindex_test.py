@@ -5,12 +5,12 @@ MIT License.  See Project Root for the license information.
 """
 
 import unittest
-from typing import Optional, List
+from typing import List, Optional
 
-from src.boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
-from boto3_assist.dynamodb.dynamodb_re_indexer import DynamoDBReIndexer
-from src.boto3_assist.dynamodb.dynamodb_key import DynamoDBKey
+from boto3_assist.dynamodb.dynamodb_reindexer import DynamoDBReindexer
 from src.boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex
+from src.boto3_assist.dynamodb.dynamodb_key import DynamoDBKey
+from src.boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
 
 
 class User(DynamoDBModelBase):
@@ -120,14 +120,12 @@ class ReindexTest(unittest.TestCase):
         user: User = User().map(data)
         keys: List[DynamoDBKey] = user.list_keys()
 
-        re_indexer: DynamoDBReIndexer = DynamoDBReIndexer("dummy_table")
+        re_indexer: DynamoDBReindexer = DynamoDBReindexer("dummy_table")
 
         dictionary = user.helpers.keys_to_dictionary(keys=keys)
 
         update_expression = re_indexer.build_update_expression(dictionary)
-        expression_attribute_values = re_indexer.build_expression_attribute_values(
-            dictionary
-        )
+        expression_attribute_values = re_indexer.build_expression_attribute_values(dictionary)
 
         print(update_expression)
         print(expression_attribute_values)

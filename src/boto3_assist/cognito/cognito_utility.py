@@ -5,15 +5,14 @@ MIT License.  See Project Root for the license information.
 """
 
 import time
-from typing import List, Dict, Any, Optional, Literal
-
+from typing import Any, Dict, List, Literal, Optional
 
 from aws_lambda_powertools import Logger
 
-from boto3_assist.cognito.user import CognitoUser
-from boto3_assist.utilities.string_utility import StringUtility
-from boto3_assist.utilities.dictionary_utility import DictionaryUtilitiy
 from boto3_assist.cognito.cognito_connection import CognitoConnection
+from boto3_assist.cognito.user import CognitoUser
+from boto3_assist.utilities.dictionary_utility import DictionaryUtilitiy
+from boto3_assist.utilities.string_utility import StringUtility
 
 logger = Logger()
 
@@ -162,9 +161,7 @@ class CognitoUtility(CognitoConnection):
         self, user_name: str, user_pool_id: str, reset_password: bool = True
     ) -> dict:
         """Disable a user in cognito"""
-        response = self.client.admin_disable_user(
-            UserPoolId=user_pool_id, Username=user_name
-        )
+        response = self.client.admin_disable_user(UserPoolId=user_pool_id, Username=user_name)
 
         if reset_password:
             self.admin_set_user_password(
@@ -181,9 +178,7 @@ class CognitoUtility(CognitoConnection):
             user_name=user_name, user_pool_id=user_pool_id, reset_password=False
         )
 
-        response = self.client.admin_delete_user(
-            UserPoolId=user_pool_id, Username=user_name
-        )
+        response = self.client.admin_delete_user(UserPoolId=user_pool_id, Username=user_name)
 
         return dict(response)
 
@@ -191,9 +186,7 @@ class CognitoUtility(CognitoConnection):
         self, user_name: str, user_pool_id: str, reset_password: bool = True
     ) -> dict:
         """Enable the user account"""
-        response = self.client.admin_enable_user(
-            UserPoolId=user_pool_id, Username=user_name
-        )
+        response = self.client.admin_enable_user(UserPoolId=user_pool_id, Username=user_name)
 
         if reset_password:
             # reset the password
@@ -268,9 +261,7 @@ class CognitoUtility(CognitoConnection):
                 UserAttributes=[{"Name": "email", "Value": email}],
             )
 
-            logger.debug(
-                f"User {email} created successfully. Confirmation code sent to {email}."
-            )
+            logger.debug(f"User {email} created successfully. Confirmation code sent to {email}.")
             return dict(response)
 
         except self.client.exceptions.UsernameExistsException as e:
@@ -291,9 +282,7 @@ class CognitoUtility(CognitoConnection):
             logger.error(f"Error: {e}")
             return None
 
-    def authenticate_user_pass_auth(
-        self, username, password, client_id
-    ) -> tuple[str, str, str]:
+    def authenticate_user_pass_auth(self, username, password, client_id) -> tuple[str, str, str]:
         """
         Login with the username/passwrod combo + client_id
         Returns:
@@ -426,9 +415,7 @@ class CognitoUtility(CognitoConnection):
                 )
 
             if user.roles is not None:
-                roles: str = (
-                    ",".join(user.roles) if isinstance(user.roles, list) else user.roles
-                )
+                roles: str = ",".join(user.roles) if isinstance(user.roles, list) else user.roles
                 user_attributes.append(
                     {
                         "Name": self.custom_attributes.user_roles_custom_attribute,
@@ -450,16 +437,10 @@ class CognitoUtility(CognitoConnection):
         """Map the cognito response to a user object"""
         user = CognitoUser()
         # this is the internal Cognito ID that get's generated
-        user.cognito_user_name = self.get_cognito_attribute(
-            cognito_response, "Username"
-        )
+        user.cognito_user_name = self.get_cognito_attribute(cognito_response, "Username")
         user.email = self.get_cognito_attribute(cognito_response, "email", None)
-        user.first_name = self.get_cognito_attribute(
-            cognito_response, "given_name", None
-        )
-        user.last_name = self.get_cognito_attribute(
-            cognito_response, "family_name", None
-        )
+        user.first_name = self.get_cognito_attribute(cognito_response, "given_name", None)
+        user.last_name = self.get_cognito_attribute(cognito_response, "family_name", None)
         if self.custom_attributes:
             user.id = self.get_cognito_attribute(
                 cognito_response, self.custom_attributes.user_id_custom_attribute, None

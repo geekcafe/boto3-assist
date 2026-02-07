@@ -1,7 +1,7 @@
 # boto3-assist Development Roadmap
 
-**Last Updated**: 2025-10-12  
-**Current Version**: 0.30.0  
+**Last Updated**: 2025-10-12
+**Current Version**: 0.30.0
 **Target 1.0**: Q1 2026
 
 This roadmap outlines planned features, improvements, and the path to a stable 1.0 release. Items are organized by release milestone with status tracking.
@@ -501,9 +501,9 @@ This roadmap is a living document:
 
 ---
 
-**Last Updated**: 2025-10-12  
-**Next Review**: 2025-11-12  
-**Maintained By**: Eric Wilson  
+**Last Updated**: 2025-10-12
+**Next Review**: 2025-11-12
+**Maintained By**: Eric Wilson
 **Community Input**: GitHub Discussions
 
 ---

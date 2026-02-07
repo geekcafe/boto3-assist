@@ -5,15 +5,17 @@ MIT License.  See Project Root for the license information.
 """
 
 import hashlib
+import json
+import re
 import secrets
 import string
 import time
+import uuid
 from datetime import datetime
 from decimal import Decimal
-import uuid
-import json
-import re
+
 from aws_lambda_powertools import Logger
+
 from boto3_assist.utilities.datetime_utility import DatetimeUtility
 
 logger = Logger()
@@ -51,9 +53,7 @@ class JsonEncoder(json.JSONEncoder):
         except TypeError:
             # If an object does not have a __dict__ attribute, you might want to handle it differently.
             # For example, you could choose to return str(o) or implement other specific cases.
-            return str(
-                o
-            )  # Or any other way you wish to serialize objects without __dict__
+            return str(o)  # Or any other way you wish to serialize objects without __dict__
 
 
 class StringUtility:
@@ -62,9 +62,7 @@ class StringUtility:
     SPECIAL_CHARACTERS = "!\\#$%&()*+,-.:;<=>?@[]^_{|}~"
 
     @staticmethod
-    def generate_random_string(
-        length=12, digits=True, letters=True, special=False
-    ) -> str:
+    def generate_random_string(length=12, digits=True, letters=True, special=False) -> str:
         """
         Generate a random string with specified options.
 
@@ -89,9 +87,7 @@ class StringUtility:
         return random_string
 
     @staticmethod
-    def generate_random_password(
-        length=15, digits=True, letters=True, special=True
-    ) -> str:
+    def generate_random_password(length=15, digits=True, letters=True, special=True) -> str:
         """
         Generate a random password with specified options ensuring a minimum length of 8.
 
@@ -160,9 +156,7 @@ class StringUtility:
             return text
 
         while len(text) > max_width:
-            break_point = (
-                text.rfind(" ", 0, max_width) if " " in text[0:max_width] else max_width
-            )
+            break_point = text.rfind(" ", 0, max_width) if " " in text[0:max_width] else max_width
             if break_point == -1:
                 break_point = max_width
             wrapped_text += text[:break_point] + "\n"

@@ -5,7 +5,7 @@ MIT License.  See Project Root for the license information.
 """
 
 import os
-from typing import Optional, Literal
+from typing import Literal, Optional
 
 from aws_lambda_powertools import Logger
 
@@ -64,9 +64,7 @@ class SecurityHub(SecurityHubConnection):
                             }
                         )
                     else:
-                        logger.debug(
-                            f"Skipping: {finding['Id']} with a status of {current_status}"
-                        )
+                        logger.debug(f"Skipping: {finding['Id']} with a status of {current_status}")
 
                 next_token = response.get("NextToken")
                 if not next_token:

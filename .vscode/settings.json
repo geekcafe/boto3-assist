@@ -9,21 +9,21 @@
         "*_test.py"
     ],
     "python.testing.cwd": "${workspaceFolder}",
-    "python.analysis.extraPaths": [                
+    "python.analysis.extraPaths": [
         "${workspaceFolder}",
         "${workspaceFolder}/examples",
-        "${workspaceFolder}/src",                
+        "${workspaceFolder}/src",
         "${workspaceFolder}/tests",
         "${workspaceFolder}/devops",
-        "${workspaceFolder}/devops/cdk",   
+        "${workspaceFolder}/devops/cdk",
     ],
     "python.analysis.typeCheckingMode": "off",
     "pylint.args": [
         "--max-line-length=150"
     ],
     "[python]": {
-        
-        "editor.formatOnSave": true,        
+
+        "editor.formatOnSave": true,
         "editor.defaultFormatter": "ms-python.black-formatter",
     },
     "cSpell.words": [
@@ -34,5 +34,5 @@
         "retag",
         "retags"
     ],
-    
+
 }

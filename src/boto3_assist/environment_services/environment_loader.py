@@ -4,13 +4,13 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-import os
 import json
-from typing import List, Union, Optional, IO
+import os
 from pathlib import Path
-from dotenv import load_dotenv
-from aws_lambda_powertools import Logger
+from typing import IO, List, Optional, Union
 
+from aws_lambda_powertools import Logger
+from dotenv import load_dotenv
 
 logger = Logger(__name__)
 

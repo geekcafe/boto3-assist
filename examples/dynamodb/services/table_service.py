@@ -11,6 +11,7 @@ as using it in a docker container.
 """
 
 from typing import List
+
 from boto3_assist.dynamodb.dynamodb import DynamoDB
 
 
@@ -96,9 +97,7 @@ class DynamoDBTableService:
     def __generate_secondary_gsi_indexes(self, count: int = 4) -> List[dict]:
         indexes: List[dict] = []
         for i in range(count):
-            index = self.__generate_secondary_index(
-                f"gsi{i}", f"gsi{i}_pk", f"gsi{i}_sk"
-            )
+            index = self.__generate_secondary_index(f"gsi{i}", f"gsi{i}_pk", f"gsi{i}_sk")
             indexes.append(index)
 
         return indexes

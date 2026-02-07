@@ -1,7 +1,7 @@
 # boto3-assist: Decimal Conversion Enhancement Pattern
 
-> **Status**: 📋 Proposed Enhancement - Pending Implementation  
-> **Last Updated**: 2025-10-12  
+> **Status**: 📋 Proposed Enhancement - Pending Implementation
+> **Last Updated**: 2025-10-12
 > **TODO**: Review and integrate once boto3-assist library is updated
 
 ---
@@ -43,7 +43,7 @@ Enhance `boto3_assist.dynamodb.dynamodb_serializer.DynamoDBSerializer` to **auto
 def map(source: dict, target: DynamoDBModelBase) -> DynamoDBModelBase:
     """
     Map source dict to target model, converting Decimals automatically.
-    
+
     Conversion rules:
     - Decimal → float (for float type hints)
     - Decimal → int (for int type hints, if whole number)
@@ -53,16 +53,16 @@ def map(source: dict, target: DynamoDBModelBase) -> DynamoDBModelBase:
     for attr_name, attr_value in source.items():
         if not hasattr(target, attr_name):
             continue
-            
+
         # Get the property type hint if available
         target_type = _get_type_hint(target, attr_name)
-        
+
         # Convert Decimal based on target type
         converted_value = _convert_decimal_by_type(attr_value, target_type)
-        
+
         # Set the converted value
         setattr(target, attr_name, converted_value)
-    
+
     return target
 ```
 
@@ -83,7 +83,7 @@ def _get_type_hint(obj: Any, attr_name: str) -> Any:
 def _convert_decimal_by_type(value: Any, target_type: Any) -> Any:
     """
     Convert Decimal to appropriate type based on target_type hint.
-    
+
     Examples:
         value=Decimal('4.5'), target_type=float → 4.5
         value=Decimal('10'), target_type=int → 10
@@ -91,7 +91,7 @@ def _convert_decimal_by_type(value: Any, target_type: Any) -> Any:
     """
     if value is None:
         return None
-    
+
     # Direct Decimal conversion
     if isinstance(value, Decimal):
         if target_type == float or target_type == 'float':
@@ -100,7 +100,7 @@ def _convert_decimal_by_type(value: Any, target_type: Any) -> Any:
             return int(value)
         # Default: keep as Decimal if no type hint
         return value
-    
+
     # Handle Dict[str, float] and similar
     if isinstance(value, dict):
         origin = get_origin(target_type)
@@ -110,15 +110,15 @@ def _convert_decimal_by_type(value: Any, target_type: Any) -> Any:
                 # Dict[K, V] - convert values
                 value_type = args[1]
                 return {
-                    k: _convert_decimal_by_type(v, value_type) 
+                    k: _convert_decimal_by_type(v, value_type)
                     for k, v in value.items()
                 }
         # No type info, recursively convert all Decimals to float
         return {
-            k: _convert_decimal_by_type(v, None) 
+            k: _convert_decimal_by_type(v, None)
             for k, v in value.items()
         }
-    
+
     # Handle List[float] and similar
     if isinstance(value, list):
         origin = get_origin(target_type)
@@ -129,7 +129,7 @@ def _convert_decimal_by_type(value: Any, target_type: Any) -> Any:
                 return [_convert_decimal_by_type(item, item_type) for item in value]
         # No type info, recursively convert
         return [_convert_decimal_by_type(item, None) for item in value]
-    
+
     # Return as-is for non-Decimal types
     return value
 ```
@@ -147,12 +147,12 @@ class VoteSummary(BaseModel):
         self._choice_averages: Dict[str, float] = {}  # Type hint drives conversion
         self._total_participants: int = 0
         self._choice_percentages: Dict[str, float] = {}
-    
+
     @property
     def choice_averages(self) -> Dict[str, float]:
         """Returns dict with floats (boto3-assist converts Decimals automatically)."""
         return self._choice_averages  # Just return it - no conversion needed!
-    
+
     @choice_averages.setter
     def choice_averages(self, value: Dict[str, float]):
         self._choice_averages = value  # boto3-assist handles Decimal→float
@@ -160,9 +160,9 @@ class VoteSummary(BaseModel):
 
 ### Key Benefits
 
-✅ **No property getter manipulation** - Returns actual object, preserves identity  
-✅ **Type-driven conversion** - Uses Python type hints (standard practice)  
-✅ **Automatic and transparent** - Developers don't think about Decimals  
+✅ **No property getter manipulation** - Returns actual object, preserves identity
+✅ **Type-driven conversion** - Uses Python type hints (standard practice)
+✅ **Automatic and transparent** - Developers don't think about Decimals
 ✅ **Backward compatible** - No type hint = no conversion (existing behavior)
 
 ---
@@ -191,27 +191,27 @@ class TestModel(DynamoDBModelBase):
 
 class TestDecimalConversion:
     """Test automatic Decimal conversion during .map()"""
-    
+
     def test_decimal_to_float(self):
         """Test Decimal converts to float when property is typed as float."""
         source = {"float_value": Decimal("4.5")}
         target = TestModel()
-        
+
         result = DynamoDBSerializer.map(source, target)
-        
+
         assert isinstance(result.float_value, float)
         assert result.float_value == 4.5
-    
+
     def test_decimal_to_int(self):
         """Test Decimal converts to int when property is typed as int."""
         source = {"int_value": Decimal("42")}
         target = TestModel()
-        
+
         result = DynamoDBSerializer.map(source, target)
-        
+
         assert isinstance(result.int_value, int)
         assert result.int_value == 42
-    
+
     def test_dict_of_decimals_to_floats(self):
         """Test Dict[str, float] type hint converts nested Decimals."""
         source = {
@@ -221,14 +221,14 @@ class TestDecimalConversion:
             }
         }
         target = TestModel()
-        
+
         result = DynamoDBSerializer.map(source, target)
-        
+
         assert isinstance(result.dict_of_floats["avg_rating"], float)
         assert isinstance(result.dict_of_floats["completion_rate"], float)
         assert result.dict_of_floats["avg_rating"] == 4.7
         assert result.dict_of_floats["completion_rate"] == 0.85
-    
+
     def test_list_of_decimals_to_floats(self):
         """Test List[float] type hint converts list items."""
         source = {
@@ -239,23 +239,23 @@ class TestDecimalConversion:
             ]
         }
         target = TestModel()
-        
+
         result = DynamoDBSerializer.map(source, target)
-        
+
         assert all(isinstance(x, float) for x in result.list_of_floats)
         assert result.list_of_floats == [1.5, 2.7, 3.9]
-    
+
     def test_no_type_hint_preserves_decimal(self):
         """Test that properties without type hints keep Decimal (backward compat)."""
         source = {"no_hint_value": Decimal("99.9")}
         target = TestModel()
-        
+
         result = DynamoDBSerializer.map(source, target)
-        
+
         # Without type hint, should preserve Decimal for backward compatibility
         assert isinstance(result.no_hint_value, Decimal)
         assert result.no_hint_value == Decimal("99.9")
-    
+
     def test_nested_dict_without_type_hint(self):
         """Test Dict[str, Any] or no hint converts Decimals to float by default."""
         # This is the common case: content: Dict[str, Any]
@@ -268,14 +268,14 @@ class TestDecimalConversion:
             }
         }
         target = TestModel()
-        
+
         result = DynamoDBSerializer.map(source, target)
-        
+
         # For dicts without specific type hints, convert Decimals to float
         # This prevents the common Decimal comparison errors
         assert isinstance(result.no_hint_value["nested_decimal"], float)
         assert isinstance(result.no_hint_value["deeply"]["nested"], float)
-    
+
     def test_mixed_types_in_dict(self):
         """Test dict with mixed types (strings, ints, Decimals)."""
         source = {
@@ -287,36 +287,36 @@ class TestDecimalConversion:
             }
         }
         target = TestModel()
-        
+
         result = DynamoDBSerializer.map(source, target)
-        
+
         assert isinstance(result.dict_of_floats["count"], int)
         assert isinstance(result.dict_of_floats["name"], str)
         assert isinstance(result.dict_of_floats["average"], float)
         assert isinstance(result.dict_of_floats["rate"], float)
-    
+
     def test_round_trip_consistency(self):
         """Test save → retrieve maintains data consistency."""
         # This is the critical integration test
         from boto3_assist.dynamodb.dynamodb import DynamoDB
         import moto
-        
+
         with moto.mock_aws():
             db = DynamoDB()
             # Create test table...
-            
+
             # Save model
             model = TestModel()
             model.dict_of_floats = {"avg": 4.5, "rate": 0.85}
             db.save(table_name="test_table", item=model)
-            
+
             # Retrieve model
             retrieved = db.get(
                 table_name="test_table",
                 key={"pk": model.pk, "sk": model.sk}
             )
             mapped = DynamoDBSerializer.map(retrieved, TestModel())
-            
+
             # Should get back floats, not Decimals
             assert isinstance(mapped.dict_of_floats["avg"], float)
             assert mapped.dict_of_floats["avg"] == 4.5
@@ -341,23 +341,23 @@ def test_vote_summary_decimal_handling(db, vote_summary_service):
         vote_type="rating",
         choice_averages={"product_a": 4.5, "product_b": 3.7}
     )
-    
+
     assert result.success
     summary_id = result.data.id
-    
+
     # Retrieve from database (will come back with Decimals from DynamoDB)
     retrieved = vote_summary_service.get_by_id(
         summary_id, "tenant_123", "user_123"
     )
-    
+
     assert retrieved.success
     summary = retrieved.data
-    
+
     # Should be able to use directly in float operations
     # (Previously required float() conversion)
     assert summary.choice_averages["product_a"] > 4.0  # No TypeError!
     assert abs(summary.choice_averages["product_a"] - 4.5) < 0.1  # Works!
-    
+
     # Type should be float
     assert isinstance(summary.choice_averages["product_a"], float)
 ```
@@ -392,13 +392,13 @@ class DynamoDBSerializer:
     """
     Serializer with configurable Decimal handling.
     """
-    
+
     @classmethod
-    def map(cls, source: dict, target: DynamoDBModelBase, 
+    def map(cls, source: dict, target: DynamoDBModelBase,
             auto_convert_decimals: bool = True) -> DynamoDBModelBase:
         """
         Map source to target with optional Decimal conversion.
-        
+
         Args:
             auto_convert_decimals: If True, converts Decimals based on type hints.
                                    If False, preserves Decimals (legacy behavior).
@@ -406,7 +406,7 @@ class DynamoDBSerializer:
         if not auto_convert_decimals:
             # Legacy behavior - no conversion
             return cls._map_legacy(source, target)
-        
+
         # New behavior - smart conversion
         return cls._map_with_conversion(source, target)
 ```

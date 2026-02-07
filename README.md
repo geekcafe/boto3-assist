@@ -27,13 +27,13 @@ for saving.  See the [examples](https://github.com/geekcafe/boto3-assist/tree/ma
 python -m vevn .venv
 source ./.venv/bin/activate
 
-pip install --upgrade pip  
+pip install --upgrade pip
 pip install boto3-assist
 
 ```
 
 ## Running Unit Tests
-Several of our tests use a mocking library to simulate connections to S3, DynamoDB, etc.  In order to use those tests, you will need to have a `.env.unittest` file at the root of this project (which our tests will attempt to locate and load).  
+Several of our tests use a mocking library to simulate connections to S3, DynamoDB, etc.  In order to use those tests, you will need to have a `.env.unittest` file at the root of this project (which our tests will attempt to locate and load).
 
 For your convenience the `.evn.unittest` file has been added to this project.  The values should not point to live AWS profiles, instead it should use the values added.
 
@@ -47,4 +47,3 @@ aws_access_key_id = test
 aws_secret_access_key = test
 
 ```
-

@@ -24,24 +24,18 @@ class S3FileUploadTest(unittest.TestCase):
         s3 = S3()
         bucket_name: str = "test-bucket"
         s3.bucket.create(bucket_name=bucket_name)
-        local_file_path: Path = Path(
-            os.path.join(os.path.dirname(__file__), "files", "test.txt")
-        )
+        local_file_path: Path = Path(os.path.join(os.path.dirname(__file__), "files", "test.txt"))
         if not os.path.exists(local_file_path):
             raise FileNotFoundError(f"File not found: {local_file_path}")
 
-        s3.object.upload_file(
-            bucket=bucket_name, key="test.txt", local_file_path=local_file_path
-        )
+        s3.object.upload_file(bucket=bucket_name, key="test.txt", local_file_path=local_file_path)
 
     def test_upload_file_obj(self):
         """Test uploading a file"""
         s3 = S3()
         bucket_name: str = "test-bucket"
         s3.bucket.create(bucket_name=bucket_name)
-        local_file_path: Path = Path(
-            os.path.join(os.path.dirname(__file__), "files", "test.txt")
-        )
+        local_file_path: Path = Path(os.path.join(os.path.dirname(__file__), "files", "test.txt"))
         if not os.path.exists(local_file_path):
             raise FileNotFoundError(f"File not found: {local_file_path}")
 

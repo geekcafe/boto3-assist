@@ -1,14 +1,13 @@
+import configparser
 import os
 from pathlib import Path
-import configparser
 from typing import Literal, Optional
+
 from boto3_assist.utilities.serialization_utility import SerializableModel
 
 
 class AWSConfigProfile(SerializableModel):
-    def __init__(
-        self, region: Optional[str] = "us-east-1", output: Optional[str] = "json"
-    ):
+    def __init__(self, region: Optional[str] = "us-east-1", output: Optional[str] = "json"):
 
         self.region: Optional[str] = region
         self.output: Optional[str] = output

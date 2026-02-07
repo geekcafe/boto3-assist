@@ -69,7 +69,7 @@ class ProductService:
     def __init__(self, db: Optional[DynamoDB] = None):
         """
         Initialize the service.
-        
+
         Args:
             db: Optional DynamoDB instance (for dependency injection/testing)
         """
@@ -90,22 +90,22 @@ class ProductService:
 def create_product(self, product_data: dict) -> Product:
     """
     Create a new product.
-    
+
     Args:
         product_data: Dictionary with product attributes
-        
+
     Returns:
         Product: The created product model
     """
     # Map data to model
     product = Product().map(product_data)
-    
+
     # Convert to DynamoDB format (includes all keys)
     item = product.to_resource_dictionary()
-    
+
     # Save to database
     self.db.save(item=item, table_name=self.table_name)
-    
+
     return product
 ```
 
@@ -125,24 +125,24 @@ product = service.create_product({
 def get_product(self, product_id: str) -> Optional[Product]:
     """
     Retrieve a product by ID.
-    
+
     Args:
         product_id: The product ID
-        
+
     Returns:
         Product if found, None otherwise
     """
     # Create model with ID to identify the key
     model = Product(id=product_id)
-    
+
     # Get from database using model's primary key
     response = self.db.get(model=model, table_name=self.table_name)
-    
+
     # Check if item exists
     item = response.get("Item")
     if not item:
         return None
-    
+
     # Map response to model and return
     return Product().map(item)
 ```
@@ -162,11 +162,11 @@ else:
 def update_product(self, product_id: str, updates: dict) -> Optional[Product]:
     """
     Update an existing product.
-    
+
     Args:
         product_id: The product ID
         updates: Dictionary of fields to update
-        
+
     Returns:
         Updated product if found, None otherwise
     """
@@ -174,14 +174,14 @@ def update_product(self, product_id: str, updates: dict) -> Optional[Product]:
     existing = self.get_product(product_id)
     if not existing:
         return None
-    
+
     # 2. Apply updates to the model
     existing.map(updates)
-    
+
     # 3. Save back to database
     item = existing.to_resource_dictionary()
     self.db.save(item=item, table_name=self.table_name)
-    
+
     return existing
 ```
 
@@ -198,15 +198,15 @@ if updated:
 def delete_product(self, product_id: str) -> bool:
     """
     Delete a product.
-    
+
     Args:
         product_id: The product ID
-        
+
     Returns:
         True if deleted successfully, False otherwise
     """
     model = Product(id=product_id)
-    
+
     try:
         self.db.delete(model=model, table_name=self.table_name)
         return True
@@ -234,19 +234,19 @@ from boto3.dynamodb.conditions import Key
 def list_all_products(self, ascending: bool = True) -> list[Product]:
     """
     List all products, sorted by name.
-    
+
     Args:
         ascending: Sort order
-        
+
     Returns:
         List of Product models
     """
     # Create a model to get the GSI key
     model = Product()
-    
+
     # Get the key condition for GSI0 (all products)
     key_condition = model.indexes.get("gsi0").key()
-    
+
     # Query the GSI
     response = self.db.query(
         key=key_condition,
@@ -254,7 +254,7 @@ def list_all_products(self, ascending: bool = True) -> list[Product]:
         table_name=self.table_name,
         ascending=ascending
     )
-    
+
     # Map all items to models
     items = response.get("Items", [])
     return [Product().map(item) for item in items]
@@ -273,23 +273,23 @@ for product in products:
 def list_products_by_category(self, category: str) -> list[Product]:
     """
     List products in a specific category.
-    
+
     Assumes Product has a gsi1 with:
     - gsi1_pk = category#<category>
     - gsi1_sk = product#<id>
     """
     model = Product()
     model.category = category
-    
+
     # Get key condition for this category
     key_condition = model.indexes.get("gsi1").key()
-    
+
     response = self.db.query(
         key=key_condition,
         index_name="gsi1",
         table_name=self.table_name
     )
-    
+
     items = response.get("Items", [])
     return [Product().map(item) for item in items]
 ```
@@ -305,28 +305,28 @@ electronics = service.list_products_by_category("electronics")
 
 ```python
 def get(
-    self, 
-    order_id: str, 
+    self,
+    order_id: str,
     include_order_items: bool = False,
     do_projections: bool = True
 ) -> dict:
     """
     Get an order, optionally including all its items.
-    
+
     Args:
         order_id: The order ID
         include_order_items: If True, returns order + items; if False, just order
         do_projections: If True, uses projection expressions; if False, returns all fields
-        
+
     Returns:
         DynamoDB response dict with 'Item' or 'Items'
     """
     model = Order(id=order_id)
-    
+
     # Optionally use projections
     projection = model.projection_expression if do_projections else None
     expr_attrs = model.projection_expression_attribute_names if do_projections else None
-    
+
     if include_order_items:
         # Query by partition key only (gets order + all items)
         key = model.indexes.primary.key(include_sort_key=False)
@@ -346,7 +346,7 @@ def get(
             expression_attribute_names=expr_attrs
         )
         # Returns: {"Item": order}
-    
+
     return response
 ```
 
@@ -390,19 +390,19 @@ def get_order_items(self, order_id: str) -> list[OrderItem]:
     """
     # Use begins_with on sort key
     model = Order(id=order_id)
-    
+
     # Create key condition for partition key + sort key begins_with
     from boto3.dynamodb.conditions import Key
     key_condition = (
-        Key("pk").eq(f"order#{order_id}") & 
+        Key("pk").eq(f"order#{order_id}") &
         Key("sk").begins_with("item#")
     )
-    
+
     response = self.db.query(
         key=key_condition,
         table_name=self.table_name
     )
-    
+
     items = response.get("Items", [])
     return [OrderItem().map(item) for item in items]
 ```
@@ -415,34 +415,34 @@ def get_order_items(self, order_id: str) -> list[OrderItem]:
 from datetime import datetime
 
 def get_orders_in_date_range(
-    self, 
-    user_id: str, 
-    start_date: datetime, 
+    self,
+    user_id: str,
+    start_date: datetime,
     end_date: datetime
 ) -> list[Order]:
     """
     Get user's orders within a date range.
-    
+
     Assumes Order has gsi1 with:
     - gsi1_pk = user#<user_id>#orders
     - gsi1_sk = <timestamp>
     """
     model = Order()
     model.user_id = user_id
-    
+
     # Get key with 'between' condition
     key_condition = model.indexes.get("gsi1").key(
         condition="between",
         low_value=start_date.timestamp(),
         high_value=end_date.timestamp()
     )
-    
+
     response = self.db.query(
         key=key_condition,
         index_name="gsi1",
         table_name=self.table_name
     )
-    
+
     items = response.get("Items", [])
     return [Order().map(item) for item in items]
 ```
@@ -453,21 +453,21 @@ def get_orders_in_date_range(
 def search_users_by_last_name(self, last_name_prefix: str) -> list[User]:
     """
     Find users whose last name starts with a prefix.
-    
+
     Assumes User has gsi1 with sort key: lastname#<last_name>#firstname#<first_name>
     """
     model = User()
     model.last_name = last_name_prefix
-    
+
     # Use begins_with condition
     key_condition = model.indexes.get("gsi1").key(condition="begins_with")
-    
+
     response = self.db.query(
         key=key_condition,
         index_name="gsi1",
         table_name=self.table_name
     )
-    
+
     items = response.get("Items", [])
     return [User().map(item) for item in items]
 ```
@@ -488,14 +488,14 @@ def get_product_summary(self, product_id: str) -> Optional[dict]:
     Get only name and price of a product.
     """
     model = Product(id=product_id)
-    
+
     response = self.db.get(
         model=model,
         table_name=self.table_name,
         projection_expression="id,#name,price",
         expression_attribute_names={"#name": "name"}  # 'name' is reserved
     )
-    
+
     return response.get("Item")
 ```
 
@@ -507,7 +507,7 @@ class Product(DynamoDBModelBase):
         super().__init__()
         # ... attributes ...
         self._setup_indexes()
-        
+
         # Define projection expression
         self.projection_expression = "id,#name,price,description"
         self.projection_expression_attribute_names = {"#name": "name"}
@@ -515,14 +515,14 @@ class Product(DynamoDBModelBase):
 # In service
 def get_product(self, product_id: str) -> Optional[Product]:
     model = Product(id=product_id)
-    
+
     response = self.db.get(
         model=model,
         table_name=self.table_name,
         projection_expression=model.projection_expression,
         expression_attribute_names=model.projection_expression_attribute_names
     )
-    
+
     item = response.get("Item")
     return Product().map(item) if item else None
 ```
@@ -543,42 +543,42 @@ class OrderService:
         order.user_id = user_id
         order.created_utc = datetime.utcnow()
         order.status = "pending"
-        
+
         # Calculate totals
         subtotal = 0.0
         tax_total = 0.0
-        
+
         for item_data in items:
             # Get product to check price
             product = self._product_service.get_product(item_data["product_id"])
-            
+
             quantity = item_data["quantity"]
             item_total = product.price * quantity
             subtotal += item_total
-            
+
             if product.is_taxable:
                 tax_total += item_total * 0.08  # 8% tax
-        
+
         order.total = subtotal + tax_total
         order.tax_total = tax_total
-        
+
         # Save order
         self.db.save(
             item=order.to_resource_dictionary(),
             table_name=self.table_name
         )
-        
+
         # Create order items (in production, use transactions)
         for item_data in items:
             self._create_order_item(order.id, item_data)
-        
+
         return order
-    
+
     def _generate_order_id(self) -> str:
         """Generate unique order ID"""
         import uuid
         return f"ord-{uuid.uuid4().hex[:12]}"
-    
+
     def _create_order_item(self, order_id: str, item_data: dict):
         """Create an order item"""
         # Implementation here
@@ -595,22 +595,22 @@ def get_product(self, product_id: str) -> Optional[Product]:
     try:
         model = Product(id=product_id)
         response = self.db.get(model=model, table_name=self.table_name)
-        
+
         item = response.get("Item")
         return Product().map(item) if item else None
-        
+
     except ClientError as e:
         error_code = e.response['Error']['Code']
-        
+
         if error_code == 'ResourceNotFoundException':
             print(f"Table {self.table_name} not found")
         elif error_code == 'ProvisionedThroughputExceededException':
             print("Request rate too high")
         else:
             print(f"DynamoDB error: {error_code}")
-        
+
         return None
-    
+
     except Exception as e:
         print(f"Unexpected error: {e}")
         return None
@@ -630,37 +630,37 @@ class UserService:
     def __init__(self, db: Optional[DynamoDB] = None):
         self.db = db or DynamoDB()
         self.table_name = os.environ.get("APP_TABLE_NAME", "app-table")
-    
+
     def create_user(self, user_data: dict) -> User:
         """Create a new user."""
         user = User().map(user_data)
-        
+
         # Set default values
         if not user.status:
             user.status = "active"
-        
+
         # Business logic: validate email
         if not self._is_valid_email(user.email):
             raise ValueError("Invalid email address")
-        
+
         # Check if email already exists
         if self.get_user_by_email(user.email):
             raise ValueError("Email already registered")
-        
+
         # Save user
         item = user.to_resource_dictionary()
         self.db.save(item=item, table_name=self.table_name)
-        
+
         return user
-    
+
     def get_user(self, user_id: str) -> Optional[User]:
         """Get user by ID."""
         model = User(id=user_id)
         response = self.db.get(model=model, table_name=self.table_name)
-        
+
         item = response.get("Item")
         return User().map(item) if item else None
-    
+
     def get_user_by_email(self, email: str) -> Optional[User]:
         """
         Find user by email.
@@ -668,22 +668,22 @@ class UserService:
         """
         model = User()
         model.email = email
-        
+
         key_condition = model.indexes.get("gsi2").key()
-        
+
         response = self.db.query(
             key=key_condition,
             index_name="gsi2",
             table_name=self.table_name
         )
-        
+
         items = response.get("Items", [])
         return User().map(items[0]) if items else None
-    
+
     def list_users(self, status: Optional[str] = None) -> list[User]:
         """List all users, optionally filtered by status."""
         model = User()
-        
+
         if status:
             # Use status-specific GSI
             model.status = status
@@ -693,67 +693,67 @@ class UserService:
             # Use general "all users" GSI
             key_condition = model.indexes.get("gsi0").key()
             index_name = "gsi0"
-        
+
         response = self.db.query(
             key=key_condition,
             index_name=index_name,
             table_name=self.table_name
         )
-        
+
         items = response.get("Items", [])
         return [User().map(item) for item in items]
-    
+
     def update_user(self, user_id: str, updates: dict) -> Optional[User]:
         """Update user."""
         user = self.get_user(user_id)
         if not user:
             return None
-        
+
         # Don't allow changing email if it would conflict
         if "email" in updates and updates["email"] != user.email:
             if self.get_user_by_email(updates["email"]):
                 raise ValueError("Email already in use")
-        
+
         user.map(updates)
-        
+
         item = user.to_resource_dictionary()
         self.db.save(item=item, table_name=self.table_name)
-        
+
         return user
-    
+
     def deactivate_user(self, user_id: str) -> bool:
         """Soft delete by setting status to inactive."""
         user = self.get_user(user_id)
         if not user:
             return False
-        
+
         user.status = "inactive"
-        
+
         item = user.to_resource_dictionary()
         self.db.save(item=item, table_name=self.table_name)
-        
+
         return True
-    
+
     def search_by_name(self, last_name: str, first_name: Optional[str] = None) -> list[User]:
         """Search users by name."""
         model = User()
         model.last_name = last_name
         if first_name:
             model.first_name = first_name
-        
+
         key_condition = model.indexes.get("gsi1").key(
             condition="begins_with"
         )
-        
+
         response = self.db.query(
             key=key_condition,
             index_name="gsi1",
             table_name=self.table_name
         )
-        
+
         items = response.get("Items", [])
         return [User().map(item) for item in items]
-    
+
     @staticmethod
     def _is_valid_email(email: str) -> bool:
         """Validate email format."""
@@ -846,7 +846,7 @@ class TestUserService(unittest.TestCase):
         self.service = UserService()
         # Create mock table
         # ... setup code ...
-    
+
     def test_create_user(self):
         user = self.service.create_user({
             "id": "test-1",
@@ -854,7 +854,7 @@ class TestUserService(unittest.TestCase):
             "last_name": "Doe",
             "email": "john@example.com"
         })
-        
+
         self.assertEqual(user.first_name, "John")
         self.assertEqual(user.status, "active")
 ```

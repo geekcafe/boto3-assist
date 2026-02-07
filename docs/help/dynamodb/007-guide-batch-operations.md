@@ -181,7 +181,7 @@ print(f"Deleted {response['ProcessedCount']} users")
 ### batch_write_item Limits
 
 - **Maximum operations per request**: 25
-- **Maximum item size**: 400 KB per item  
+- **Maximum item size**: 400 KB per item
 - **Maximum request size**: 16 MB total
 - **Automatic chunking**: boto3-assist splits larger batches automatically
 - **No conditional writes**: Cannot use ConditionExpression
@@ -242,7 +242,7 @@ for item in response['Items']:
 def load_user_dashboard(user_id: str):
     """Load all data for user dashboard in one batch operation"""
     db = DynamoDB()
-    
+
     # Get user + recent orders + favorites
     keys = [
         # User profile
@@ -254,9 +254,9 @@ def load_user_dashboard(user_id: str):
         # Favorites
         {"pk": f"user#{user_id}", "sk": "summary#favorites"},
     ]
-    
+
     response = db.batch_get_item(keys=keys, table_name="app-table")
-    
+
     # Organize results
     dashboard_data = {}
     for item in response['Items']:
@@ -268,7 +268,7 @@ def load_user_dashboard(user_id: str):
             dashboard_data['orders'] = item
         elif item['sk'].startswith('summary#favorites'):
             dashboard_data['favorites'] = item
-    
+
     return dashboard_data
 ```
 
@@ -279,10 +279,10 @@ def import_products_from_csv(csv_file_path: str):
     """Import products from CSV file using batch operations"""
     import csv
     from your_app.models.product_model import Product
-    
+
     db = DynamoDB()
     products = []
-    
+
     # Read CSV
     with open(csv_file_path, 'r') as file:
         reader = csv.DictReader(file)
@@ -292,19 +292,19 @@ def import_products_from_csv(csv_file_path: str):
             product.price = float(row['price'])
             product.sku = row['sku']
             products.append(product)
-    
+
     # Convert to dictionaries
     items = [p.to_resource_dictionary() for p in products]
-    
+
     # Batch write (automatically chunks if > 25)
     response = db.batch_write_item(
         items=items,
         table_name="products",
         operation="put"
     )
-    
+
     print(f"Imported {response['ProcessedCount']} products")
-    
+
     if response['UnprocessedCount'] > 0:
         print(f"Warning: {response['UnprocessedCount']} products failed")
         # Could retry unprocessed items here
@@ -316,24 +316,24 @@ def import_products_from_csv(csv_file_path: str):
 def cleanup_expired_sessions(days_old: int = 30):
     """Delete old session records in bulk"""
     from datetime import datetime, timedelta
-    
+
     db = DynamoDB()
-    
+
     # First, query for expired sessions
     cutoff_date = datetime.utcnow() - timedelta(days=days_old)
-    
+
     # ... query logic to get expired session keys ...
     expired_keys = []  # Populated from query
-    
+
     # Batch delete all expired sessions
     response = db.batch_write_item(
         items=expired_keys,
         table_name="sessions",
         operation="delete"
     )
-    
+
     print(f"Deleted {response['ProcessedCount']} expired sessions")
-    
+
     return response['ProcessedCount']
 ```
 
@@ -343,24 +343,24 @@ def cleanup_expired_sessions(days_old: int = 30):
 def process_checkout(cart_items: list):
     """Update inventory for all cart items in batch"""
     db = DynamoDB()
-    
+
     # Get current inventory for all products
     product_ids = [item['product_id'] for item in cart_items]
     keys = [
         {"pk": f"product#{pid}", "sk": f"product#{pid}"}
         for pid in product_ids
     ]
-    
+
     response = db.batch_get_item(keys=keys, table_name="products")
-    
+
     # Check if all items are in stock
     inventory = {item['id']: item for item in response['Items']}
-    
+
     for cart_item in cart_items:
         product = inventory[cart_item['product_id']]
         if product['quantity'] < cart_item['quantity']:
             raise ValueError(f"Insufficient stock for {product['name']}")
-    
+
     # All items available - proceed with batch operations
     # ... update inventory, create order, etc.
 ```
@@ -400,10 +400,10 @@ response = db.batch_get_item(keys=keys, table_name="users")
 
 if response['UnprocessedKeys']:
     print(f"Warning: {len(response['UnprocessedKeys'])} keys unprocessed")
-    
+
     # Option 1: Log and alert
     logger.warning(f"Unprocessed keys: {response['UnprocessedKeys']}")
-    
+
     # Option 2: Retry manually
     unprocessed = response['UnprocessedKeys']
     retry_response = db.batch_get_item(
@@ -422,27 +422,27 @@ import time
 def batch_get_with_retry(keys, table_name, max_attempts=3):
     """Batch get with additional retry logic"""
     db = DynamoDB()
-    
+
     for attempt in range(max_attempts):
         try:
             response = db.batch_get_item(keys=keys, table_name=table_name)
-            
+
             if not response['UnprocessedKeys']:
                 return response  # Success!
-            
+
             # Some keys unprocessed, wait and retry
             if attempt < max_attempts - 1:
                 wait_time = 2 ** attempt  # Exponential backoff
                 print(f"Retrying in {wait_time}s...")
                 time.sleep(wait_time)
                 keys = response['UnprocessedKeys']
-            
+
         except Exception as e:
             if attempt == max_attempts - 1:
                 raise  # Final attempt failed
             print(f"Error: {e}. Retrying...")
             time.sleep(2 ** attempt)
-    
+
     return response
 ```
 

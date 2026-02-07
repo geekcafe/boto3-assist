@@ -4,7 +4,8 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import Any, overload, Optional
+from typing import Any, Optional, overload
+
 from boto3_assist.dynamodb.dynamodb import DynamoDB
 from examples.dynamodb.models.user_model import User
 

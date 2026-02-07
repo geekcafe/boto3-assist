@@ -11,15 +11,16 @@ This test shows the three different query patterns for 1:many relationships:
 """
 
 import unittest
-from moto import mock_aws
-import boto3
 from datetime import datetime
 
+import boto3
+from moto import mock_aws
+
 from boto3_assist.dynamodb.dynamodb import DynamoDB
-from examples.dynamodb.models.order_model import Order
 from examples.dynamodb.models.order_item_model import OrderItem
-from examples.dynamodb.services.order_service import OrderService
+from examples.dynamodb.models.order_model import Order
 from examples.dynamodb.services.order_item_service import OrderItemService
+from examples.dynamodb.services.order_service import OrderService
 from examples.dynamodb.services.table_service import DynamoDBTableService
 
 
@@ -38,9 +39,7 @@ class OrderServiceTest(unittest.TestCase):
         """Set up mock DynamoDB environment before each test"""
         # Create mock DynamoDB instance
         self.dynamodb: DynamoDB = DynamoDB()
-        self.dynamodb.dynamodb_resource = boto3.resource(
-            "dynamodb", region_name="us-east-1"
-        )
+        self.dynamodb.dynamodb_resource = boto3.resource("dynamodb", region_name="us-east-1")
 
         # Create test table
         self.table_name = "test_orders_table"
@@ -65,9 +64,7 @@ class OrderServiceTest(unittest.TestCase):
         self.order_service.save(model=order)
         return order
 
-    def _create_test_order_item(
-        self, order_id: str, item_id: str, quantity: int = 1
-    ) -> OrderItem:
+    def _create_test_order_item(self, order_id: str, item_id: str, quantity: int = 1) -> OrderItem:
         """Helper: Create a test order item"""
         item = OrderItem()
         item.id = item_id
@@ -178,9 +175,7 @@ class OrderServiceTest(unittest.TestCase):
         # Query for items only using begins_with on sort key
         from boto3.dynamodb.conditions import Key
 
-        key_condition = Key("pk").eq(f"order#{order_id}") & Key("sk").begins_with(
-            "item#"
-        )
+        key_condition = Key("pk").eq(f"order#{order_id}") & Key("sk").begins_with("item#")
 
         result = self.dynamodb.query(key=key_condition, table_name=self.table_name)
 

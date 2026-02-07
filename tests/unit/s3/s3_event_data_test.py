@@ -26,12 +26,8 @@ class S3EventDataTests(unittest.TestCase):
             "tenants/aaaaaaaaaaaaaa/users/bbbbbbbbbbbbbbbb/sample.json",
         )
         self.assertEqual(s3_event.detail.object.size, 6904)
-        self.assertEqual(
-            s3_event.detail.object.etag, "f50341a4fa42e09016e76d7878c4fdc5"
-        )
-        self.assertEqual(
-            s3_event.detail.object.version_id, "58QKYNXF62Wo1y7CZUDrDM0ILh5ncSwf"
-        )
+        self.assertEqual(s3_event.detail.object.etag, "f50341a4fa42e09016e76d7878c4fdc5")
+        self.assertEqual(s3_event.detail.object.version_id, "58QKYNXF62Wo1y7CZUDrDM0ILh5ncSwf")
         self.assertEqual(s3_event.detail.object.sequencer, "0067A3FA6A303C91A8")
         self.assertEqual(s3_event.detail.request_id, "F82R8XDNW8385Q6Y")
         self.assertEqual(s3_event.detail.requester, "959096737760")

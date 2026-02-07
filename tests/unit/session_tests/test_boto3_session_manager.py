@@ -1,5 +1,6 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 from boto3 import Session as RealBoto3Session
 
 
@@ -93,8 +94,9 @@ def test_no_assume_role(mock_boto3_session):
 
 
 def test_multiple_assume_role_chain():
-    from boto3_assist.boto3session import Boto3SessionManager
     from boto3 import Session as RealBoto3Session
+
+    from boto3_assist.boto3session import Boto3SessionManager
 
     with patch("boto3.Session", autospec=True) as mock_session_class:
         # Create three sessions: base → first assume → second assume
@@ -125,9 +127,7 @@ def test_multiple_assume_role_chain():
         }
 
         # Assign proper .client() behavior for each session
-        base_session.client.side_effect = lambda svc: (
-            first_sts if svc == "sts" else MagicMock()
-        )
+        base_session.client.side_effect = lambda svc: (first_sts if svc == "sts" else MagicMock())
         first_assumed_session.client.side_effect = lambda svc: (
             second_sts if svc == "sts" else MagicMock()
         )
@@ -172,6 +172,4 @@ def test_multiple_assume_role_chain():
 
         # Ensure client is created from final session
         _ = manager.client
-        second_assumed_session.client.assert_called_with(
-            "s3", config=None, endpoint_url=None
-        )
+        second_assumed_session.client.assert_called_with("s3", config=None, endpoint_url=None)

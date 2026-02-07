@@ -1,5 +1,6 @@
 import boto3
 from botocore.exceptions import ClientError
+
 from .ecr_connection import ECRConnection
 
 
@@ -43,9 +44,7 @@ class ECR(ECRConnection):
             failures = put_resp.get("failures")
 
             if failures and len(failures) > 0:
-                raise RuntimeError(
-                    f"Failed to tag {repository_name}:{target_tag} - {failures}"
-                )
+                raise RuntimeError(f"Failed to tag {repository_name}:{target_tag} - {failures}")
 
             print(f"Successfully tagged {repository_name}:{target_tag}")
             return put_resp

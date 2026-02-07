@@ -6,6 +6,7 @@ https://github.com/geekcafe/boto3-assist
 """
 
 from __future__ import annotations
+
 from typing import Callable, Optional, Tuple
 
 

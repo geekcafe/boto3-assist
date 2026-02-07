@@ -146,9 +146,7 @@ class TestSerializableModel(unittest.TestCase):
         self.assertEqual(flat["id"], "1")
         self.assertEqual(flat["level_one_array_0_id"], "1")
         self.assertEqual(flat["level_one_array_0_level_two_array_0_id"], "1")
-        self.assertEqual(
-            flat["level_one_array_0_level_two_array_0_level_three_array_0_id"], "1"
-        )
+        self.assertEqual(flat["level_one_array_0_level_two_array_0_level_three_array_0_id"], "1")
 
     def test_dict_wide_list_happy_path(self):
         model = {

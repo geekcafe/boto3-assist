@@ -71,9 +71,7 @@ class EnvironmentVariables:
             """
             Determines if you want to display the aws access key
             """
-            value = (
-                str(os.getenv("DISPLAY_AWS_ACCESS_KEY_ID", "false")).lower() == "true"
-            )
+            value = str(os.getenv("DISPLAY_AWS_ACCESS_KEY_ID", "false")).lower() == "true"
             return value
 
         @staticmethod
@@ -81,10 +79,7 @@ class EnvironmentVariables:
             """
             Determines if you want to display the aws access key
             """
-            value = (
-                str(os.getenv("DISPLAY_AWS_SECRET_ACCESS_KEY", "false")).lower()
-                == "true"
-            )
+            value = str(os.getenv("DISPLAY_AWS_SECRET_ACCESS_KEY", "false")).lower() == "true"
             return value
 
         @staticmethod
@@ -211,9 +206,7 @@ class EnvironmentVariables:
         value = os.getenv("ENVIRONMENT")
 
         if not value:
-            logger.warning(
-                "ENVIRONMENT var is not set. A future version will throw an error."
-            )
+            logger.warning("ENVIRONMENT var is not set. A future version will throw an error.")
             return ""
 
         return value

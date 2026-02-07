@@ -13,7 +13,9 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, TypeVar
+
 from aws_lambda_powertools import Logger
+
 from boto3_assist.utilities.string_utility import StringUtility
 
 T = TypeVar("T")
@@ -60,9 +62,7 @@ class SerializableModel:
         Convert the object to a dictionary. Same as .dict()
         """
         # return Serialization.convert_object_to_dict(self)
-        return Serialization.to_dict(
-            instance=self, serialize_fn=lambda x: x, include_none=True
-        )
+        return Serialization.to_dict(instance=self, serialize_fn=lambda x: x, include_none=True)
 
     def to_wide_dictionary(self) -> Dict:
         """
@@ -106,9 +106,7 @@ class JsonEncoder(json.JSONEncoder):
         except TypeError:
             # If an object does not have a __dict__ attribute, you might want to handle it differently.
             # For example, you could choose to return str(o) or implement other specific cases.
-            return str(
-                o
-            )  # Or any other way you wish to serialize objects without __dict__
+            return str(o)  # Or any other way you wish to serialize objects without __dict__
 
 
 class JsonConversions:
@@ -156,11 +154,11 @@ class JsonConversions:
 
             # Parse JSON
             parsed_value = json.loads(value)
-            
+
             # Handle nested string JSON (recursive case)
             if isinstance(parsed_value, str):
                 return JsonConversions.string_to_json_obj(parsed_value, raise_on_error, retry + 1)
-            
+
             return parsed_value
 
         except json.JSONDecodeError as e:
@@ -169,7 +167,7 @@ class JsonConversions:
                 if isinstance(value, str):
                     fixed_json = JsonConversions.convert_bad_json_string(value)
                     return JsonConversions.string_to_json_obj(fixed_json, raise_on_error, retry + 1)
-            
+
             if raise_on_error:
                 raise e
             return {}
@@ -178,10 +176,11 @@ class JsonConversions:
             if raise_on_error:
                 logger.exception({"source": "string_to_json_obj", "error": str(e), "value": value})
                 raise e
-            
-            logger.warning({"source": "string_to_json_obj", "returning_original": True, "value": value})
-            return value
 
+            logger.warning(
+                {"source": "string_to_json_obj", "returning_original": True, "value": value}
+            )
+            return value
 
     @staticmethod
     def convert_bad_json_string(bad_json: str) -> str:
@@ -224,19 +223,13 @@ class JsonConversions:
                 new_key = convert_func(key)
                 # Only process nested structures if deep is True.
                 new_dict[new_key] = (
-                    JsonConversions._convert_keys(value, convert_func, deep)
-                    if deep
-                    else value
+                    JsonConversions._convert_keys(value, convert_func, deep) if deep else value
                 )
             return new_dict
         elif isinstance(data, list):
             # For lists, if deep conversion is enabled, process each element.
             return [
-                (
-                    JsonConversions._convert_keys(item, convert_func, deep)
-                    if deep
-                    else item
-                )
+                (JsonConversions._convert_keys(item, convert_func, deep) if deep else item)
                 for item in data
             ]
         else:
@@ -250,9 +243,7 @@ class JsonConversions:
         data: The JSON-like structure (dict or list) to process.
         deep (bool): If True, process keys in all nested dictionaries; if False, only at the first level.
         """
-        return JsonConversions._convert_keys(
-            data, JsonConversions._camel_to_snake, deep
-        )
+        return JsonConversions._convert_keys(data, JsonConversions._camel_to_snake, deep)
 
     @staticmethod
     def json_snake_to_camel(data, deep: bool = True):
@@ -262,9 +253,7 @@ class JsonConversions:
         data: The JSON-like structure (dict or list) to process.
         deep (bool): If True, process keys in all nested dictionaries; if False, only at the first level.
         """
-        return JsonConversions._convert_keys(
-            data, JsonConversions._snake_to_camel, deep
-        )
+        return JsonConversions._convert_keys(data, JsonConversions._snake_to_camel, deep)
 
     # # Example usage:
     # if __name__ == "__main__":
@@ -308,9 +297,7 @@ class Serialization:
         Dumps an object to dictionary structure
         """
 
-        dump = Serialization.to_dict(
-            instance=model, serialize_fn=lambda x: x, include_none=True
-        )
+        dump = Serialization.to_dict(instance=model, serialize_fn=lambda x: x, include_none=True)
 
         return dump
 
@@ -320,9 +307,7 @@ class Serialization:
         Dumps an object to dictionary structure
         """
 
-        dump = Serialization.to_dict(
-            instance=model, serialize_fn=lambda x: x, include_none=True
-        )
+        dump = Serialization.to_dict(instance=model, serialize_fn=lambda x: x, include_none=True)
 
         # have a dictionary now let's flatten out
         flat_dict = {}
@@ -350,9 +335,7 @@ class Serialization:
             source_dict = Serialization.convert_object_to_dict(source)
             if not isinstance(source_dict, dict):
                 return None
-        return Serialization._load_properties(
-            source=source_dict, target=target, coerce=coerce
-        )
+        return Serialization._load_properties(source=source_dict, target=target, coerce=coerce)
 
     @staticmethod
     def to_wide_dictionary_list(
@@ -387,9 +370,7 @@ class Serialization:
             elif isinstance(obj, dict):
                 result = [{}]
                 for key, value in obj.items():
-                    sub_result = recursive_flatten(
-                        f"{prefix}_{key}" if prefix else key, value
-                    )
+                    sub_result = recursive_flatten(f"{prefix}_{key}" if prefix else key, value)
                     new_result = []
                     for entry in result:
                         for sub_entry in sub_result:
@@ -507,9 +488,7 @@ class Serialization:
                     else:
                         setattr(target, key, value)
                 except ValueError as e:
-                    logger.error(
-                        f"Error setting attribute {key} with value {value}: {e}"
-                    )
+                    logger.error(f"Error setting attribute {key} with value {value}: {e}")
                     raise
                 except Exception as e:  # pylint: disable=w0718
                     if not Serialization.has_setter(target, key):
@@ -636,9 +615,7 @@ class Serialization:
                     instance_dict[attr] = serialize_value(value)
 
         # Add properties
-        for name, _ in inspect.getmembers(
-            instance.__class__, predicate=inspect.isdatadescriptor
-        ):
+        for name, _ in inspect.getmembers(instance.__class__, predicate=inspect.isdatadescriptor):
             prop = None
             try:
                 prop = getattr(instance.__class__, name)

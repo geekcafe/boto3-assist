@@ -28,9 +28,7 @@ class TestCaseTransformation:
         """Recursively convert all dictionary keys from snake_case to camelCase."""
         if isinstance(obj, dict):
             return {
-                StringUtility.snake_to_camel(key): self.convert_keys_to_camel_case(
-                    value
-                )
+                StringUtility.snake_to_camel(key): self.convert_keys_to_camel_case(value)
                 for key, value in obj.items()
             }
         elif isinstance(obj, list):
@@ -74,12 +72,8 @@ class TestCaseTransformation:
             if isinstance(converted_data, list) and len(converted_data) > 0:
                 first_item = converted_data[0]
                 # Check that snake_case keys were converted
-                assert (
-                    "createdById" in first_item
-                ), "Expected 'createdById' key after conversion"
-                assert (
-                    "tenantId" in first_item
-                ), "Expected 'tenantId' key after conversion"
+                assert "createdById" in first_item, "Expected 'createdById' key after conversion"
+                assert "tenantId" in first_item, "Expected 'tenantId' key after conversion"
                 assert (
                     "created_by_id" not in first_item
                 ), "Key 'created_by_id' should have been converted"

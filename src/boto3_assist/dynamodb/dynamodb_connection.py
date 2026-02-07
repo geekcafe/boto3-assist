@@ -4,12 +4,11 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import Optional, List
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 from aws_lambda_powertools import Logger
-from boto3_assist.connection import Connection
 
+from boto3_assist.connection import Connection
 
 if TYPE_CHECKING:
     from mypy_boto3_dynamodb import DynamoDBClient, DynamoDBServiceResource
