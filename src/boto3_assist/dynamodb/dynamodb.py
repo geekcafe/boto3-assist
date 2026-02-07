@@ -116,6 +116,57 @@ class DynamoDB(DynamoDBConnection):
 
         return DecimalConversionUtility.convert_decimals_to_native_types(response)
 
+    def _retry_on_throttle(
+        self,
+        operation,
+        *,
+        max_retries: int = 5,
+        initial_backoff: float = 0.1,
+        operation_name: str = "DynamoDB operation",
+    ):
+        """
+        Execute a DynamoDB operation with exponential backoff retry on throttling.
+
+        DynamoDB on-demand tables auto-scale but can temporarily throttle during
+        burst traffic (e.g., hundreds of concurrent Lambda invocations). This
+        method retries with exponential backoff to ride out the scaling lag.
+
+        Args:
+            operation: Callable that performs the DynamoDB operation
+            max_retries: Maximum number of retry attempts (default 5)
+            initial_backoff: Initial backoff in seconds (default 0.1s, doubles each retry)
+            operation_name: Name for logging (e.g., "update_item", "save")
+
+        Returns:
+            The return value of the operation callable
+
+        Raises:
+            ClientError: If max retries exceeded or non-throttle error occurs
+        """
+        import time
+
+        retry_count = 0
+        backoff_time = initial_backoff
+
+        while True:
+            try:
+                return operation()
+            except ClientError as e:
+                error_code = e.response["Error"]["Code"]
+                if (
+                    error_code == "ProvisionedThroughputExceededException"
+                    and retry_count < max_retries
+                ):
+                    logger.warning(
+                        f"{operation_name}: Throughput exceeded. "
+                        f"Retrying in {backoff_time}s (attempt {retry_count + 1}/{max_retries})"
+                    )
+                    time.sleep(backoff_time)
+                    backoff_time *= 2
+                    retry_count += 1
+                    continue
+                raise
+
     def save(
         self,
         item: dict | DynamoDBModelBase,
@@ -127,47 +178,105 @@ class DynamoDB(DynamoDBConnection):
         expression_attribute_values: Optional[dict] = None,
     ) -> dict:
         """
-        Save an item to the database with optional conditional expressions.
+        Save (create or update) an item in DynamoDB.
+
+        This method performs a PutItem operation, which creates a new item or
+        completely replaces an existing item with the same primary key.
 
         Args:
-            item (dict): DynamoDB Dictionary Object or DynamoDBModelBase.
-                Supports the "client" or "resource" syntax
-            table_name (str): The DynamoDb Table Name
-            source (str, optional): The source of the call, used for logging. Defaults to None.
-            fail_if_exists (bool, optional): Only allow it to insert once.
-                Fail if it already exits. This is useful for loggers, historical records,
-                tasks, etc. that should only be created once
-            condition_expression (str, optional): Custom condition expression.
-                Example: "attribute_not_exists(#pk)" or "#version = :expected_version"
-            expression_attribute_names (dict, optional): Attribute name mappings.
-                Example: {"#version": "version", "#status": "status"}
-            expression_attribute_values (dict, optional): Attribute value mappings.
-                Example: {":expected_version": 1, ":active": "active"}
-
-        Raises:
-            ClientError: Client specific errors
-            RuntimeError: Conditional check failed
-            Exception: Any Error Raised
+            item: Item to save. Can be a dictionary or DynamoDBModelBase instance.
+                Must include all primary key attributes.
+            table_name: Name of the DynamoDB table.
+            source: Optional identifier for logging/tracking. Default: None.
+            fail_if_exists: If True, only allow insert if item doesn't exist.
+                Useful for loggers, historical records, tasks that should only be
+                created once. Default: False.
+            condition_expression: Optional condition that must be satisfied for the
+                save to succeed. Can be a string or boto3 ConditionBase object.
+                Example: "attribute_not_exists(pk)" to prevent overwriting.
+                If provided, overrides `fail_if_exists`.
+            expression_attribute_names: Map of placeholder names to actual attribute
+                names. Required when using reserved words in conditions.
+                Example: {"#status": "status"}.
+            expression_attribute_values: Map of placeholder values used in condition
+                expressions. Example: {":min_age": 18}.
 
         Returns:
-            dict: The Response from DynamoDB's put_item actions.
-            It does not return the saved object, only the response.
+            Dictionary containing the response from DynamoDB. May include:
+            - "Attributes": The item (if return_values specified)
+            - "ConsumedCapacity": Capacity info (if requested)
+            - "ItemCollectionMetrics": Collection metrics (if requested)
+
+        Raises:
+            RuntimeError: If condition_expression is not satisfied, or if item
+                conversion fails.
+            ClientError: If DynamoDB operation fails.
 
         Examples:
-            >>> # Simple save
-            >>> db.save(item=user, table_name="users")
+            Basic save:
+                >>> db = DynamoDB()
+                >>> db.save(
+                ...     item={"pk": "user#123", "sk": "user#123", "name": "John"},
+                ...     table_name="users"
+                ... )
 
-            >>> # Prevent duplicates
-            >>> db.save(item=user, table_name="users", fail_if_exists=True)
+            Prevent overwriting existing item:
+                >>> db.save(
+                ...     item={"pk": "user#123", "sk": "user#123", "name": "John"},
+                ...     table_name="users",
+                ...     fail_if_exists=True
+                ... )
 
-            >>> # Optimistic locking with version check
-            >>> db.save(
-            ...     item=user,
-            ...     table_name="users",
-            ...     condition_expression="#version = :expected_version",
-            ...     expression_attribute_names={"#version": "version"},
-            ...     expression_attribute_values={":expected_version": 5}
-            ... )
+            Conditional save with values:
+                >>> db.save(
+                ...     item={"pk": "user#123", "sk": "user#123", "age": 25},
+                ...     table_name="users",
+                ...     condition_expression="age < :max_age",
+                ...     expression_attribute_values={":max_age": 100}
+                ... )
+
+            Save and return old value (requires additional parameters):
+                >>> # Note: Current implementation doesn't support return_values
+                >>> # This is a future enhancement
+                >>> db.save(
+                ...     item={"pk": "user#123", "sk": "user#123", "name": "Jane"},
+                ...     table_name="users"
+                ... )
+
+            Save a model:
+                >>> user = User(id="123", name="John", email="john@example.com")
+                >>> db.save(item=user, table_name="users")
+
+            Using boto3 conditions:
+                >>> from boto3.dynamodb.conditions import Attr
+                >>> db.save(
+                ...     item={"pk": "user#123", "sk": "user#123", "status": "active"},
+                ...     table_name="users",
+                ...     condition_expression=Attr("status").ne("banned")
+                ... )
+
+            Optimistic locking with version check:
+                >>> db.save(
+                ...     item=user,
+                ...     table_name="users",
+                ...     condition_expression="#version = :expected_version",
+                ...     expression_attribute_names={"#version": "version"},
+                ...     expression_attribute_values={":expected_version": 5}
+                ... )
+
+        Note:
+            - PutItem replaces the entire item. Use update_item() for partial updates.
+            - Condition expressions are evaluated before the write occurs.
+            - Failed condition checks raise RuntimeError with descriptive message.
+            - Models are automatically converted to dictionaries before saving.
+            - Decimal types are handled automatically for numeric values.
+            - If `fail_if_exists=True`, the condition checks for non-existence of
+              both pk and sk attributes.
+
+        See Also:
+            - update_item(): Update specific attributes without replacing entire item
+            - batch_write(): Save multiple items in a single request
+            - delete(): Remove an item from the table
         """
         response: Dict[str, Any] = {}
 
@@ -219,7 +328,12 @@ class DynamoDB(DynamoDBConnection):
                     )
                     params["ExpressionAttributeNames"] = {"#pk": "pk", "#sk": "sk"}
 
-                response = dict(self.dynamodb_client.put_item(**params))
+                response = dict(
+                    self._retry_on_throttle(
+                        lambda: self.dynamodb_client.put_item(**params),
+                        operation_name="save(client)",
+                    )
+                )
 
             else:
                 # Use boto3.resource syntax
@@ -242,7 +356,12 @@ class DynamoDB(DynamoDBConnection):
                         Attr("pk").not_exists() & Attr("sk").not_exists()
                     )
 
-                response = dict(table.put_item(**put_params))
+                response = dict(
+                    self._retry_on_throttle(
+                        lambda: table.put_item(**put_params),
+                        operation_name="save(resource)",
+                    )
+                )
 
         except ClientError as e:
             error_code = e.response["Error"]["Code"]
@@ -335,11 +454,92 @@ class DynamoDB(DynamoDBConnection):
         call_type: str = "resource",
     ) -> Dict[str, Any]:
         """
-        Description:
-            generic get_item dynamoDb call
-        Parameters:
-            key: a dictionary object representing the primary key
-            model: a model instance of DynamoDBModelBase
+        Retrieve a single item from DynamoDB by its primary key.
+
+        This method supports two usage patterns:
+        1. Direct key lookup: Provide `key` and `table_name`
+        2. Model-based lookup: Provide `model` with keys already set
+
+        Args:
+            key: Primary key dictionary (e.g., {"pk": "user#123", "sk": "user#123"}).
+                Required if `model` is not provided.
+            table_name: Name of the DynamoDB table. Required.
+            model: DynamoDBModelBase instance with keys already set. If provided,
+                keys will be extracted from the model. Cannot be used with `key`.
+            do_projections: If True and using a model, apply the model's projection
+                expression to limit returned attributes. Default: False.
+            strongly_consistent: If True, perform a strongly consistent read.
+                Default: False (eventually consistent).
+            return_consumed_capacity: Return information about consumed capacity.
+                Options: "INDEXES", "TOTAL", "NONE". Default: None.
+            projection_expression: Comma-separated list of attributes to retrieve.
+                Example: "id,name,email". Default: None (all attributes).
+            expression_attribute_names: Map of placeholder names to actual attribute
+                names. Required when attribute names are reserved words.
+                Example: {"#status": "status"}. Default: None.
+            source: Optional identifier for logging/tracking. Default: None.
+            call_type: Internal parameter for connection type. Default: "resource".
+
+        Returns:
+            Dictionary containing the item's attributes, or empty dict if not found.
+
+        Raises:
+            ValueError: If both `key` and `model` are provided, or if `table_name`
+                is missing when using `model`.
+            ClientError: If DynamoDB operation fails (network, permissions, etc.).
+
+        Examples:
+            Basic retrieval:
+                >>> db = DynamoDB()
+                >>> item = db.get(
+                ...     key={"pk": "user#123", "sk": "user#123"},
+                ...     table_name="users"
+                ... )
+                >>> print(item.get("name"))
+                'John Doe'
+
+            With projection (only get specific fields):
+                >>> item = db.get(
+                ...     key={"pk": "user#123", "sk": "user#123"},
+                ...     table_name="users",
+                ...     projection_expression="id,name,email"
+                ... )
+
+            Strongly consistent read:
+                >>> item = db.get(
+                ...     key={"pk": "user#123", "sk": "user#123"},
+                ...     table_name="users",
+                ...     strongly_consistent=True
+                ... )
+
+            Using a model:
+                >>> user = User(id="123")  # Model with keys set
+                >>> item = db.get(
+                ...     model=user,
+                ...     table_name="users",
+                ...     do_projections=True  # Use model's projection
+                ... )
+
+            Handling reserved words:
+                >>> item = db.get(
+                ...     key={"pk": "user#123", "sk": "user#123"},
+                ...     table_name="users",
+                ...     projection_expression="id,#status",
+                ...     expression_attribute_names={"#status": "status"}
+                ... )
+
+        Note:
+            - Eventually consistent reads are faster and cheaper but may not reflect
+              recent writes. Use `strongly_consistent=True` when you need the latest data.
+            - Empty dict is returned if item doesn't exist (no exception raised).
+            - Use projections to reduce data transfer and improve performance.
+            - Reserved words (like "status", "name", "type") must use expression
+              attribute names.
+
+        See Also:
+            - query(): Retrieve multiple items matching a partition key
+            - scan(): Retrieve all items (expensive operation)
+            - batch_get(): Retrieve multiple items by their keys
         """
 
         if model is not None:
@@ -372,13 +572,21 @@ class DynamoDB(DynamoDBConnection):
                 raise ValueError("table_name must be provided.")
             if call_type == "resource":
                 table = self.dynamodb_resource.Table(table_name)
-                response = dict(table.get_item(Key=key, **valid_kwargs))  # type: ignore[arg-type]
+                response = dict(
+                    self._retry_on_throttle(
+                        lambda: table.get_item(Key=key, **valid_kwargs),  # type: ignore[arg-type]
+                        operation_name="get(resource)",
+                    )
+                )
             elif call_type == "client":
                 response = dict(
-                    self.dynamodb_client.get_item(
-                        Key=key,
-                        TableName=table_name,
-                        **valid_kwargs,  # type: ignore[arg-type]
+                    self._retry_on_throttle(
+                        lambda: self.dynamodb_client.get_item(
+                            Key=key,
+                            TableName=table_name,
+                            **valid_kwargs,  # type: ignore[arg-type]
+                        ),
+                        operation_name="get(client)",
                     )
                 )
             else:
@@ -488,7 +696,12 @@ class DynamoDB(DynamoDBConnection):
             params["ConditionExpression"] = condition_expression
 
         try:
-            response = dict(table.update_item(**params))
+            response = dict(
+                self._retry_on_throttle(
+                    lambda: table.update_item(**params),
+                    operation_name="update_item",
+                )
+            )
 
             # Apply decimal conversion if response contains attributes
             return self._apply_decimal_conversion(response)
@@ -520,16 +733,134 @@ class DynamoDB(DynamoDBConnection):
         limit: Optional[int] = None,
     ) -> dict:
         """
-        Run a query and return a list of items
+        Query items from DynamoDB using a partition key and optional sort key condition.
+
+        Query is the most efficient way to retrieve multiple items from DynamoDB.
+        It requires a partition key value and can optionally filter by sort key.
+
         Args:
-            key (Key): _description_
-            index_name (str, optional): _description_. Defaults to None.
-            ascending (bool, optional): _description_. Defaults to False.
-            table_name (str, optional): _description_. Defaults to None.
-            source (str, optional): The source of the query.  Used for logging. Defaults to None.
+            key: Key condition expression. Can be:
+                - dict: Simple key dictionary
+                - Key: boto3 Key condition (e.g., Key("pk").eq("user#123"))
+                - ConditionBase: boto3 condition object
+                - ComparisonCondition: boto3 comparison condition
+                - DynamoDBIndex: Index object with key information
+            table_name: Name of the DynamoDB table.
+            index_name: Name of the Global Secondary Index (GSI) or Local Secondary
+                Index (LSI) to query. If None, queries the main table. If using
+                DynamoDBIndex for `key`, this is extracted automatically.
+            ascending: If True, sort results in ascending order by sort key.
+                If False, descending order. Default: False.
+            source: Optional identifier for logging/tracking. Default: None.
+            strongly_consistent: If True, perform strongly consistent read.
+                Only valid for table queries, not GSI queries. Default: False.
+            projection_expression: Comma-separated list of attributes to retrieve.
+                Reduces data transfer. Example: "id,name,email".
+            expression_attribute_names: Map of placeholder names to actual names.
+                Required for reserved words. Example: {"#status": "status"}.
+            start_key: Key of the item to start from (for pagination).
+                Use LastEvaluatedKey from previous query response.
+            limit: Maximum number of items to evaluate (not necessarily return).
+                Note: Filters are applied after this limit. Default: None (all items).
 
         Returns:
-            dict: dynamodb response dictionary
+            Dictionary containing:
+            - "Items": List of items matching the query
+            - "Count": Number of items returned
+            - "ScannedCount": Number of items evaluated
+            - "LastEvaluatedKey": Key for pagination (if more results exist)
+            - "ConsumedCapacity": Capacity info (if requested)
+
+        Raises:
+            ValueError: If key or table_name is missing or invalid.
+            ClientError: If DynamoDB operation fails.
+
+        Examples:
+            Basic query by partition key:
+                >>> from boto3.dynamodb.conditions import Key
+                >>> db = DynamoDB()
+                >>> response = db.query(
+                ...     key=Key("pk").eq("user#123"),
+                ...     table_name="users"
+                ... )
+                >>> items = response["Items"]
+
+            Query with sort key condition:
+                >>> response = db.query(
+                ...     key=Key("pk").eq("user#123") & Key("sk").begins_with("order#"),
+                ...     table_name="orders"
+                ... )
+
+            Query a GSI:
+                >>> response = db.query(
+                ...     key=Key("email").eq("john@example.com"),
+                ...     table_name="users",
+                ...     index_name="email-index"
+                ... )
+
+            Query with projection (specific fields only):
+                >>> response = db.query(
+                ...     key=Key("pk").eq("user#123"),
+                ...     table_name="users",
+                ...     projection_expression="id,name,email"
+                ... )
+
+            Reverse order (newest first):
+                >>> response = db.query(
+                ...     key=Key("pk").eq("user#123"),
+                ...     table_name="posts",
+                ...     ascending=False  # Descending order (default)
+                ... )
+
+            Pagination:
+                >>> # First page
+                >>> response = db.query(
+                ...     key=Key("pk").eq("users#"),
+                ...     table_name="users",
+                ...     limit=10
+                ... )
+                >>> items = response["Items"]
+                >>> last_key = response.get("LastEvaluatedKey")
+                >>>
+                >>> # Next page
+                >>> if last_key:
+                ...     response = db.query(
+                ...         key=Key("pk").eq("users#"),
+                ...         table_name="users",
+                ...         limit=10,
+                ...         start_key=last_key
+                ...     )
+
+            Using DynamoDBIndex:
+                >>> index = DynamoDBIndex(name="email-index", pk="email", sk="created_at")
+                >>> index.set_pk("john@example.com")
+                >>> response = db.query(
+                ...     key=index,
+                ...     table_name="users"
+                ... )
+
+            Handling reserved words:
+                >>> response = db.query(
+                ...     key=Key("pk").eq("user#123"),
+                ...     table_name="users",
+                ...     projection_expression="id,#status",
+                ...     expression_attribute_names={"#status": "status"}
+                ... )
+
+        Note:
+            - Query is much more efficient than scan for retrieving items.
+            - Partition key condition is required; sort key condition is optional.
+            - GSI queries cannot use strongly_consistent reads.
+            - Results are automatically paginated if more than 1MB of data.
+            - Use limit for pagination, not for reducing costs (still evaluates items).
+            - The `ascending` parameter defaults to False (descending order).
+            - Use `start_key` with `LastEvaluatedKey` for pagination.
+
+        See Also:
+            - get(): Retrieve a single item by primary key
+            - scan(): Retrieve all items (less efficient)
+            - batch_get(): Retrieve multiple specific items
+            - query_by_criteria(): Helper for model-based queries with projections
         """
 
         logger.debug({"action": "query", "source": source})
@@ -573,7 +904,12 @@ class DynamoDB(DynamoDBConnection):
         table = self.dynamodb_resource.Table(table_name)
         response: dict = {}
         try:
-            response = dict(table.query(**kwargs))
+            response = dict(
+                self._retry_on_throttle(
+                    lambda: table.query(**kwargs),
+                    operation_name="query",
+                )
+            )
         except Exception as e:  # pylint: disable=w0718
             logger.exception({"source": f"{source}", "metric_filter": "query", "error": str(e)})
             response = {"exception": str(e)}
@@ -618,7 +954,10 @@ class DynamoDB(DynamoDBConnection):
             raise ValueError("table_name and primary_key must be provided.")
 
         table = self.dynamodb_resource.Table(table_name)
-        response = table.delete_item(Key=primary_key)
+        response = self._retry_on_throttle(
+            lambda: table.delete_item(Key=primary_key),
+            operation_name="delete",
+        )
 
         return response
 
