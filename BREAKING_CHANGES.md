@@ -133,3 +133,43 @@ When breaking changes are introduced, each will follow this format:
 - Gradual improvement over time
 
 ---
+
+
+### High Priority #11: Standardize Docstrings 🔄
+
+**Status**: In Progress (3 core methods complete)
+
+**Breaking Changes**: None - docstrings are documentation only
+
+**Changes Made**:
+- ✅ Created comprehensive docstring examples in `docs/docstring-improvements.md`
+- ✅ Documented Google-style docstring standards and best practices
+- ✅ Applied improved docstrings to three core DynamoDB methods:
+  - `DynamoDB.get()` - Complete with examples, parameter descriptions, and usage notes
+  - `DynamoDB.save()` - Complete with conditional expressions and error handling
+  - `DynamoDB.query()` - Complete with pagination, GSI usage, and filtering examples
+- ✅ All 163 tests still passing
+
+**Improvements**:
+- Clear one-line summaries
+- Detailed descriptions explaining what methods do
+- Complete Args sections with type information and examples
+- Returns sections describing what's returned
+- Raises sections listing possible exceptions
+- Multiple Examples showing common use cases
+- Note sections with important caveats and tips
+- See Also sections linking to related methods
+
+**Next Steps**:
+- Apply improved docstrings to other DynamoDB methods (update_item, delete, scan, batch operations)
+- Extend to S3 module methods
+- Extend to Cognito module methods
+- Extend to utility functions
+- Generate API documentation from docstrings using Sphinx
+
+**Migration Path**:
+- No migration required - docstrings are documentation only
+- Improved IDE autocomplete and documentation
+- Better developer experience
+
+---
