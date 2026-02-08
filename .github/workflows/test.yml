@@ -35,9 +35,13 @@ jobs:
         pip install -r requirements.txt
         pip install -r requirements.dev.txt
 
-    - name: Run tests with coverage
+    - name: Install package in development mode
       run: |
-        PYTHONPATH=. python -m unittest discover -s tests/unit -p "*_test.py"
+        pip install -e .
+
+    - name: Run tests with pytest
+      run: |
+        pytest tests/unit/ -v --cov=src/boto3_assist --cov-report=term --cov-report=xml
 
     - name: Check import sorting
       run: |

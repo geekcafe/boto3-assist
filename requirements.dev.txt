@@ -26,6 +26,7 @@ mypy_boto3_ssm
 # Testing
 moto
 pytest
+pytest-cov
 
 # Package info - occasionally needs to be upgraded or we can get upload errors when out of sync
 # Error example: InvalidDistribution: Metadata is missing required fields: Name, Version.
