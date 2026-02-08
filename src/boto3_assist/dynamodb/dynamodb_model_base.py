@@ -8,10 +8,6 @@ from __future__ import annotations
 
 import datetime as dt
 from enum import Enum
-
-# import decimal
-# import inspect
-# import uuid
 from typing import Any, Dict, List, Set, TypeVar
 
 from boto3.dynamodb.types import TypeSerializer
