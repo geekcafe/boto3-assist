@@ -2,6 +2,34 @@
 
 This document tracks all breaking changes made during the architectural improvements leading to version 1.0.
 
+## Version 0.50.0 (In Progress)
+
+### Python Version Requirement Update ⚠️
+
+**Status**: Complete
+
+**Breaking Changes**: Minimum Python version increased from 3.10 to 3.11
+
+**Reason**: The codebase uses `datetime.UTC` which was introduced in Python 3.11. This provides better timezone-aware datetime handling.
+
+**Changes Made**:
+- ✅ Updated `pyproject.toml` to require Python 3.11+
+- ✅ Updated GitHub Actions workflow to test Python 3.11, 3.12, 3.13
+- ✅ Updated README.md to document Python 3.11+ requirement
+- ✅ Added Python version badge to README
+
+**Impact**:
+- Users on Python 3.10 must upgrade to Python 3.11+ to use version 0.50.0+
+- Users on Python 3.11+ are not affected
+- All tests passing on Python 3.11, 3.12, and 3.13
+
+**Migration Path**:
+- If using Python 3.10: Upgrade to Python 3.11 or higher
+- If using Python 3.11+: No changes required
+- Last version supporting Python 3.10: 0.49.x
+
+---
+
 ## Version 0.42.0 (In Progress)
 
 ### Critical Fix #8: Standardize Error Handling ✅

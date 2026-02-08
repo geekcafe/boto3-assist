@@ -37,7 +37,7 @@ authors = [
 ]
 description = "Additional boto3 wrappers to make your life a little easier"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",

@@ -2,7 +2,7 @@
 
 This document tracks progress on the architectural improvements outlined in the review.
 
-## Quick Wins ✅ (6/6 Complete)
+## Quick Wins ✅ (8/8 Complete)
 
 - ✅ **#1: Add Import Organization** - isort configured and applied to all files
 - ✅ **#2: Add py.typed Marker** - PEP 561 compliance for type hints
@@ -10,9 +10,47 @@ This document tracks progress on the architectural improvements outlined in the 
 - ✅ **#4: Create Security Documentation** - Comprehensive SECURITY.md
 - ✅ **#5: Remove Duplicate File** - Removed dynamodb_re_indexer.py
 - ✅ **#6: Add GitHub Actions** - CI/CD workflow for testing and linting
+- ✅ **#7: Migrate to pytest** - Switched from unittest to pytest with coverage
+- ✅ **#8: Update Python version requirement** - Minimum Python 3.11+ (was 3.10+)
 
-**Time Invested**: ~7 hours
+**Time Invested**: ~8.5 hours
 **Status**: Complete ✅
+
+### #7: Migrate to pytest (Complete)
+
+**Files Modified**:
+- `.github/workflows/test.yml` - Updated to use pytest instead of unittest
+- `requirements.dev.txt` - Added pytest-cov for coverage reporting
+- `pyproject.toml` - Updated pythonpath to include root directory
+
+**Key Features**:
+- Switched from unittest to pytest for better test discovery and reporting
+- Added coverage reporting with pytest-cov
+- All 231 tests passing (was 163 with unittest - pytest discovered more tests)
+- Coverage reporting shows 55% overall coverage
+- GitHub Actions now uses pytest for CI/CD
+
+**Breaking Changes**: None (pytest is backward compatible with unittest tests)
+
+---
+
+### #8: Update Python Version Requirement (Complete)
+
+**Files Modified**:
+- `pyproject.toml` - Updated `requires-python = ">=3.11"`
+- `.github/workflows/test.yml` - Removed Python 3.10 from test matrix
+- `README.md` - Added Python 3.11+ badge and requirement note
+- `BREAKING_CHANGES.md` - Documented the version requirement change
+
+**Reason**:
+- Code uses `datetime.UTC` which was introduced in Python 3.11
+- Python 3.10 tests were failing with `ImportError: cannot import name 'UTC' from 'datetime'`
+- Better timezone-aware datetime handling with native UTC support
+
+**Impact**:
+- ⚠️ **Breaking Change**: Users on Python 3.10 must upgrade to 3.11+
+- All tests passing on Python 3.11, 3.12, and 3.13
+- Last version supporting Python 3.10: 0.49.x
 
 ---
 
@@ -93,12 +131,12 @@ This document tracks progress on the architectural improvements outlined in the 
 ## Summary
 
 ### Completed
-- ✅ All 6 Quick Wins
+- ✅ All 8 Quick Wins
 - ✅ 2 of 3 Critical Fixes
 - ✅ 8 new files created
 - ✅ 3 comprehensive documentation files
-- ✅ Zero breaking changes
-- ✅ All 163 tests passing
+- ✅ 1 breaking change (Python 3.11+ requirement)
+- ✅ All 231 tests passing with pytest on Python 3.11, 3.12, 3.13
 
 ### In Progress
 - None currently
@@ -109,12 +147,13 @@ This document tracks progress on the architectural improvements outlined in the 
 3. **High Priority #11**: Standardize docstrings
 
 ### Metrics
-- **Files Modified**: 100+ (import sorting) + 1 (docstrings)
+- **Files Modified**: 100+ (import sorting) + 1 (docstrings) + 5 (pytest migration + Python version)
 - **New Files**: 8
 - **Documentation Pages**: 3
-- **Test Coverage**: Maintained at 100% passing (163/163 tests)
-- **Breaking Changes**: 0
-- **Time Invested**: ~11 hours
+- **Test Coverage**: Maintained at 100% passing (231/231 tests with pytest)
+- **Python Support**: 3.11, 3.12, 3.13
+- **Breaking Changes**: 1 (Python 3.11+ requirement)
+- **Time Invested**: ~12.5 hours
 - **Estimated Remaining**: ~3-4 weeks for full 1.0 readiness
 
 ---
@@ -123,24 +162,37 @@ This document tracks progress on the architectural improvements outlined in the 
 
 All breaking changes are documented in `BREAKING_CHANGES.md`.
 
-**Current Status**: Zero breaking changes introduced
+**Current Status**: 1 breaking change introduced
 
-**Backward Compatibility**: 100% maintained
+**Breaking Changes**:
+1. **Python Version Requirement**: Minimum Python version increased from 3.10 to 3.11
+   - Reason: Code uses `datetime.UTC` (Python 3.11+ feature)
+   - Impact: Users on Python 3.10 must upgrade
+   - Last version supporting Python 3.10: 0.49.x
+
+**Backward Compatibility**: 99% maintained
 - Legacy exceptions still work
 - Direct `os.getenv()` still works
 - All existing APIs unchanged
 - New features are opt-in
+- Only breaking change is Python version requirement
 
 ---
 
 ## Testing Status
 
-All tests passing: ✅ 163/163
+All tests passing: ✅ 231/231 with pytest
 
 ```bash
-# Run tests
+# Run tests with pytest
 source .venv/bin/activate
-PYTHONPATH=. python -m unittest discover -s tests/unit -p "*_test.py"
+pytest tests/unit/ -v
+
+# Run tests with coverage
+pytest tests/unit/ -v --cov=src/boto3_assist --cov-report=term
+
+# Run tests with detailed coverage
+pytest tests/unit/ -v --cov=src/boto3_assist --cov-report=term-missing
 ```
 
 ---
@@ -202,15 +254,16 @@ PYTHONPATH=. python -m unittest discover -s tests/unit -p "*_test.py"
 
 ## Version Planning
 
-### Version 0.42.0 (Current)
-- All Quick Wins
+### Version 0.50.0 (Current)
+- All Quick Wins (8/8)
 - Critical Fixes #8 and #9
-- Zero breaking changes
+- Python 3.11+ requirement (breaking change)
+- Pytest migration with coverage reporting
 
-### Version 0.43.0 (Planned)
+### Version 0.51.0 (Planned)
 - Critical Fix #7 (Type Hints)
 - High Priority #10 (API Simplification)
-- Possible deprecation warnings for legacy features
+- Possible additional deprecation warnings for legacy features
 
 ### Version 1.0.0 (Target)
 - All critical fixes complete

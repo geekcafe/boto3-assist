@@ -9,14 +9,15 @@ which python
 pip install --upgrade pip
 pip install -r ./requirements.txt
 pip install -r ./requirements.dev.txt
+pip install -e .
 
 
-echo "running unit test"
-python -m unittest discover -s tests -p "*_test.py"
+echo "running unit tests with pytest"
+pytest tests/unit/ -v --cov=src/boto3_assist --cov-report=term
 
 if [ $? -eq 0 ]; then
     echo "Tests passed successfully"
 else
-    echo "No tests found or tests failed"
+    echo "Tests failed"
     exit 1
 fi
