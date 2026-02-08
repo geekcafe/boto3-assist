@@ -9,7 +9,7 @@ packages = ["src/boto3_assist"]
 "src/boto3_assist/py.typed" = "boto3_assist/py.typed"
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 testpaths = ["tests"]
 markers = [
     "integration: marks tests as integration (deselect with '-m \"not integration\"')"
