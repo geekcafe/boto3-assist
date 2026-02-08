@@ -14,7 +14,7 @@ from enum import Enum
 # import uuid
 from typing import Any, Dict, List, Set, TypeVar
 
-from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
+from boto3.dynamodb.types import TypeSerializer
 
 from boto3_assist.dynamodb.dynamodb_helpers import DynamoDBHelpers
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex, DynamoDBIndexes

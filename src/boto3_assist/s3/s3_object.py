@@ -6,7 +6,6 @@ MIT License.  See Project Root for the license information.
 
 import io
 import os
-import tempfile
 import time
 from typing import Any, Dict, List, Optional
 

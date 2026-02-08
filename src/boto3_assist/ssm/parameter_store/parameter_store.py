@@ -4,7 +4,7 @@ Maintainers: Eric Wilson
 MIT License.  See Project Root for the license information.
 """
 
-from typing import Literal, Optional
+from typing import Literal
 
 from botocore.exceptions import ClientError
 
