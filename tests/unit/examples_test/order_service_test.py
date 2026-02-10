@@ -11,7 +11,7 @@ This test shows the three different query patterns for 1:many relationships:
 """
 
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 import boto3
 from moto import mock_aws
@@ -54,8 +54,8 @@ class OrderServiceTest(unittest.TestCase):
         """Helper: Create a test order"""
         order = Order(id=order_id)
         order.user_id = user_id
-        order.created_utc = datetime.utcnow()
-        order.completed_utc = datetime.utcnow()
+        order.created_utc = datetime.now(timezone.utc)
+        order.completed_utc = datetime.now(timezone.utc)
         order.status = "pending"
         order.total = 0.0
         order.tax_total = 0.0

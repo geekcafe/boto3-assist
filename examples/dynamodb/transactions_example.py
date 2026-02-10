@@ -302,7 +302,7 @@ def example_audit_trail():
 
     import datetime
 
-    timestamp = datetime.datetime.utcnow().isoformat()
+    timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     operations = [
         {

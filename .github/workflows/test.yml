@@ -39,6 +39,22 @@ jobs:
       run: |
         pip install -e .
 
+    - name: Set up AWS config for moto tests
+      run: |
+        mkdir -p ~/.aws
+        cat > ~/.aws/config << EOF
+        [profile moto-mock-tests]
+        region = us-east-1
+        output = json
+        aws_access_key_id = test
+        aws_secret_access_key = test
+        EOF
+        cat > ~/.aws/credentials << EOF
+        [moto-mock-tests]
+        aws_access_key_id = test
+        aws_secret_access_key = test
+        EOF
+
     - name: Run tests with pytest
       run: |
         pytest tests/unit/ -v --cov=src/boto3_assist --cov-report=term --cov-report=xml
