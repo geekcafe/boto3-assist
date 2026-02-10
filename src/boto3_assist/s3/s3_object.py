@@ -37,9 +37,10 @@ class S3Object:
         """
         s3 = self.connection.client
         # see if the object exists
+        response: Dict[str, Any]
         try:
-            response = s3.head_object(Bucket=bucket_name, Key=key)
-            response = s3.delete_object(Bucket=bucket_name, Key=key)
+            s3.head_object(Bucket=bucket_name, Key=key)
+            response = s3.delete_object(Bucket=bucket_name, Key=key)  # type: ignore[assignment]
         except s3.exceptions.NoSuchKey:
             response = {"ResponseMetadata": {"HTTPStatusCode": 404}}
         except s3.exceptions.ClientError as e:
@@ -594,7 +595,7 @@ class S3Object:
         """
         return file_obj.decode(encoding=encoding, errors=errors)
 
-    def list_versions(self, bucket: str, prefix: str = "") -> List[str]:
+    def list_versions(self, bucket: str, prefix: str = "") -> List[Dict[str, Any]]:
         """
         List all versions of objects in an S3 bucket with a given prefix.
 
@@ -605,13 +606,13 @@ class S3Object:
         Returns:
             list: A list of dictionaries containing information about each object version.
         """
-        versions = []
+        versions: List[Dict[str, Any]] = []
         paginator = self.connection.client.get_paginator("list_object_versions")
         page_iterator = paginator.paginate(Bucket=bucket, Prefix=prefix)
 
         for page in page_iterator:
             if "Versions" in page:
-                versions.extend(page["Versions"])
+                versions.extend(page["Versions"])  # type: ignore[arg-type]
 
         return versions
 

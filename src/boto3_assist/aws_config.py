@@ -1,7 +1,8 @@
 import configparser
 import os
+from configparser import SectionProxy
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Dict, Literal, Optional, Union
 
 from boto3_assist.utilities.serialization_utility import SerializableModel
 
@@ -49,7 +50,7 @@ class AWSConfig:
     def __init__(self):
         pass
 
-    def get_path(self) -> Path:
+    def get_path(self) -> str:
         r"""
         Returns the path to the AWS config file, honoring AWS_CONFIG_FILE
         and falling back to ~/.aws/config (or %USERPROFILE%\.aws\config on Windows).
@@ -57,10 +58,10 @@ class AWSConfig:
         # 1) Check for explicit override
         env_path = os.environ.get("AWS_CONFIG_FILE")
         if env_path:
-            return Path(env_path).expanduser()
+            return str(Path(env_path).expanduser())
 
         # 2) Default location
-        return os.path.join(Path.home(), ".aws", "config")
+        return os.path.join(str(Path.home()), ".aws", "config")
 
     def path_exists(self) -> bool:
         path = self.get_path()
@@ -69,7 +70,9 @@ class AWSConfig:
 
     def has_profile(self, profile_name: str) -> bool:
         config = configparser.ConfigParser()
-        self.read_section(profile_name, config)
+        path = self.get_path()
+        if os.path.isfile(path):
+            config.read(path)
         return profile_name in config.sections()
 
     def upsert_profile(
@@ -84,7 +87,7 @@ class AWSConfig:
         self,
         profile_name: str,
         sso_session: AWSConfigSSOSession,
-        profile: AWSConfigProfile | None = None,
+        profile: Optional[AWSConfigProfile] = None,
         config_path: Optional[str] = None,
     ):
         """
@@ -123,8 +126,8 @@ class AWSConfig:
 
     def write_section(
         self,
-        profile_name: str | None,
-        section: AWSConfigProfile | AWSConfigSSOSession,
+        profile_name: str,
+        section: Union[AWSConfigProfile, AWSConfigSSOSession],
         config_path: Optional[str] = None,
     ):
         config = configparser.ConfigParser()
@@ -135,18 +138,20 @@ class AWSConfig:
 
         section_key = ""
 
-        if profile_name.startswith("sso-session "):
-            profile_name = profile_name.replace("sso-session ", "")
-        if profile_name.startswith("profile "):
-            profile_name = profile_name.replace("profile ", "")
+        # Remove prefixes if present
+        clean_profile_name = profile_name
+        if clean_profile_name.startswith("sso-session "):
+            clean_profile_name = clean_profile_name.replace("sso-session ", "")
+        if clean_profile_name.startswith("profile "):
+            clean_profile_name = clean_profile_name.replace("profile ", "")
 
         if isinstance(section, AWSConfigProfile):
-            if profile_name:
-                section_key = f"profile {profile_name}"
+            if clean_profile_name:
+                section_key = f"profile {clean_profile_name}"
             else:
                 section_key = "default"
         elif isinstance(section, AWSConfigSSOSession):
-            section_key = f"sso-session {profile_name}"
+            section_key = f"sso-session {clean_profile_name}"
         else:
             raise ValueError("Invalid section type")
 
@@ -158,7 +163,7 @@ class AWSConfig:
     def _write_section(
         self,
         section_key: str,
-        section: AWSConfigProfile | AWSConfigSSOSession,
+        section: Union[AWSConfigProfile, AWSConfigSSOSession],
         config: configparser.ConfigParser,
     ) -> configparser.ConfigParser:
 
@@ -177,22 +182,21 @@ class AWSConfig:
         profile_name: Optional[str] = None,
         config_path: Optional[str] = None,
         section_type: Literal["profile", "sso-session"] = "profile",
-    ) -> configparser.SectionProxy:
+    ) -> Union[SectionProxy, Dict[str, str]]:
         config = configparser.ConfigParser()
-        if not config_path:
-            config_path = self.get_path()
+        path = config_path or self.get_path()
 
-        if not os.path.isfile(config_path):
-            return config
+        if not os.path.isfile(path):
+            return {}
 
-        config.read(config_path)
-        profile_ini = f"{section_type} {profile_name}"
-        if profile_ini in config:
-            profile = config[profile_ini]
-            return profile
+        config.read(path)
 
-        if profile_name in config:
-            profile = config[profile_name]
-            return profile
+        if profile_name:
+            profile_ini = f"{section_type} {profile_name}"
+            if profile_ini in config:
+                return config[profile_ini]
+
+            if profile_name in config:
+                return config[profile_name]
 
         return {}

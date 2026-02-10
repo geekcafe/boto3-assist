@@ -73,15 +73,17 @@ class Boto3SessionManager(SessionSetupMixin, RoleAssumptionMixin):
     @property
     def client(self) -> Any:
         if not self.__client:
+            assert self.__session is not None  # Initialized in __initialize()
             self.__client = self.__session.client(
-                self.service_name, config=self.config, endpoint_url=self.endpoint_url
+                self.service_name, config=self.config, endpoint_url=self.endpoint_url  # type: ignore[call-overload]
             )
         return self.__client
 
     @property
     def resource(self) -> Any:
         if not self.__resource:
+            assert self.__session is not None  # Initialized in __initialize()
             self.__resource = self.__session.resource(
-                self.service_name, config=self.config, endpoint_url=self.endpoint_url
+                self.service_name, config=self.config, endpoint_url=self.endpoint_url  # type: ignore[call-overload]
             )
         return self.__resource

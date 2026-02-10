@@ -5,7 +5,7 @@ MIT License.  See Project Root for the license information.
 """
 
 import time
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, cast
 
 from aws_lambda_powertools import Logger
 
@@ -110,7 +110,7 @@ class CognitoUtility(CognitoConnection):
             user_attributes.append({"Name": "email_verified", "Value": "true"})
 
         try:
-            kwargs = {
+            kwargs: Dict[str, Any] = {
                 "UserPoolId": user_pool_id,
                 "Username": user.email,
                 "UserAttributes": user_attributes,
@@ -120,7 +120,7 @@ class CognitoUtility(CognitoConnection):
             if not send_invitation:
                 kwargs["MessageAction"] = "SUPPRESS"
 
-            response = self.client.admin_create_user(**kwargs)
+            response = self.client.admin_create_user(**kwargs)  # type: ignore[arg-type]
 
             self.admin_set_user_password(
                 user_name=user.email,
@@ -241,7 +241,7 @@ class CognitoUtility(CognitoConnection):
         response = self.client.admin_update_user_attributes(
             UserPoolId=f"{user_pool_id}",
             Username=f"{user.cognito_user_name}",
-            UserAttributes=user_attributes,
+            UserAttributes=user_attributes,  # type: ignore[arg-type]
             ClientMetadata={"string": "string"},
         )
         return response
