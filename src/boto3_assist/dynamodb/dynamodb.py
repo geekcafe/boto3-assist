@@ -939,7 +939,67 @@ class DynamoDB(DynamoDBConnection):
         table_name: Optional[str] = None,
         model: Optional[DynamoDBModelBase] = None,
     ):
-        """deletes an item from the database"""
+        """
+        Delete an item from DynamoDB.
+
+        This method performs a DeleteItem operation, permanently removing an item
+        from the table. The item is identified by its primary key (partition key
+        and sort key if applicable).
+
+        Args:
+            primary_key: Primary key dictionary identifying the item to delete.
+                Example: {"pk": "user#123", "sk": "profile#123"}.
+                Cannot be used with `model` parameter.
+            table_name: Name of the DynamoDB table. Required.
+            model: DynamoDBModelBase instance to delete. The primary key will be
+                extracted from the model's indexes. Cannot be used with `primary_key`.
+
+        Returns:
+            dict: DynamoDB response containing metadata about the deletion.
+                Does not include the deleted item unless return_values is specified
+                (not currently supported in this method).
+
+        Raises:
+            ValueError: If table_name is not provided, or if both primary_key and
+                model are provided, or if neither is provided.
+            ClientError: For DynamoDB errors (item not found, permission denied, etc.)
+
+        Example:
+            Delete by primary key::
+
+                >>> db = DynamoDB()
+                >>> db.delete(
+                ...     table_name="users",
+                ...     primary_key={"pk": "user#123", "sk": "profile#123"}
+                ... )
+
+            Delete using model::
+
+                >>> user = User(id="123")
+                >>> db.delete(table_name="users", model=user)
+
+            Verify deletion::
+
+                >>> db.delete(table_name="users", primary_key={"pk": "user#123"})
+                >>> result = db.get(
+                ...     table_name="users",
+                ...     key={"pk": "user#123"}
+                ... )
+                >>> assert result is None  # Item was deleted
+
+        Note:
+            - This operation is permanent and cannot be undone
+            - Consider implementing soft deletes (setting a deleted flag) for
+              important data that may need to be recovered
+            - For conditional deletes, use update_item() with a condition expression
+            - For batch deletions, use batch_write() for better performance
+            - DynamoDB does not return an error if the item doesn't exist
+
+        See Also:
+            - :meth:`batch_write`: For deleting multiple items efficiently
+            - :meth:`update_item`: For conditional operations or soft deletes
+            - :meth:`save`: For creating or updating items
+        """
 
         if model is not None:
             if table_name is None:
@@ -962,7 +1022,42 @@ class DynamoDB(DynamoDBConnection):
         return response
 
     def list_tables(self) -> List[str]:
-        """Get a list of tables from the current connection"""
+        """
+        Get a list of all table names from the current DynamoDB connection.
+
+        This method retrieves all tables accessible with the current AWS credentials
+        and region. Useful for discovery, validation, or administrative tasks.
+
+        Returns:
+            List[str]: List of table names. Empty list if no tables exist.
+
+        Example:
+            List all tables::
+
+                >>> db = DynamoDB()
+                >>> tables = db.list_tables()
+                >>> print(f"Found {len(tables)} tables")
+                >>> for table in tables:
+                ...     print(f"  - {table}")
+
+            Check if a table exists::
+
+                >>> tables = db.list_tables()
+                >>> if "users" in tables:
+                ...     print("Users table exists")
+                >>> else:
+                ...     print("Users table not found")
+
+        Note:
+            - Returns only tables in the current region
+            - Requires ListTables permission
+            - May be slow if you have many tables (100+)
+            - Consider caching the result if called frequently
+
+        See Also:
+            - :meth:`get`: For retrieving items from a table
+            - :meth:`query`: For querying a specific table
+        """
         tables = list(self.dynamodb_resource.tables.all())
         table_list: List[str] = []
         if len(tables) > 0:
@@ -984,7 +1079,48 @@ class DynamoDB(DynamoDBConnection):
         strongly_consistent: bool = False,
         limit: Optional[int] = None,
     ) -> dict:
-        """Helper function to list by criteria"""
+        """
+        Query items using model-based projections and criteria.
+
+        This is a convenience method that wraps the query() method with automatic
+        projection expression handling from DynamoDBModelBase instances. Useful
+        when you want to query with model-defined projections.
+
+        Args:
+            model: DynamoDBModelBase instance that defines projection expressions
+            table_name: Name of the DynamoDB table
+            index_name: Name of the GSI or LSI to query
+            key: Key condition expression (dict, Key, or ConditionBase)
+            start_key: Pagination key from previous query (optional)
+            do_projections: If True, use model's projection expression (default: False)
+            ascending: If True, sort results in ascending order (default: False)
+            strongly_consistent: If True, use strongly consistent reads (default: False)
+            limit: Maximum number of items to return (optional)
+
+        Returns:
+            dict: Query response with Items, Count, and optional LastEvaluatedKey
+
+        Example:
+            Query with model projections::
+
+                >>> user = User()  # DynamoDBModelBase instance
+                >>> response = db.query_by_criteria(
+                ...     model=user,
+                ...     table_name="users",
+                ...     index_name="email-index",
+                ...     key=Key("email").eq("user@example.com"),
+                ...     do_projections=True
+                ... )
+
+        Note:
+            - This is a convenience wrapper around query()
+            - For more control, use query() directly
+            - Projections are only applied if do_projections=True
+
+        See Also:
+            - :meth:`query`: For direct query operations
+            - :class:`DynamoDBModelBase`: For model definitions
+        """
 
         projection_expression: str | None = None
         expression_attribute_names: dict | None = None
@@ -1009,50 +1145,155 @@ class DynamoDB(DynamoDBConnection):
 
     def has_more_records(self, response: dict) -> bool:
         """
-        Check if there are more records to process.
-        This based on the existance of the LastEvaluatedKey in the response.
-        Parameters:
-            response (dict): dynamodb response dictionary
+        Check if a DynamoDB response has more records to paginate through.
+
+        This method checks for the presence of LastEvaluatedKey in the response,
+        which indicates that the query or scan operation has more results available.
+
+        Args:
+            response: DynamoDB response dictionary from query() or scan()
 
         Returns:
-            bool: True if there are more records, False otherwise
+            bool: True if more records exist, False if this was the last page
+
+        Example:
+            Paginate through all results::
+
+                >>> db = DynamoDB()
+                >>> start_key = None
+                >>> all_items = []
+                >>>
+                >>> while True:
+                ...     response = db.query(
+                ...         key=Key("pk").eq("user#123"),
+                ...         table_name="users",
+                ...         start_key=start_key
+                ...     )
+                ...     all_items.extend(response['Items'])
+                ...
+                ...     if not db.has_more_records(response):
+                ...         break
+                ...     start_key = db.last_key(response)
+                >>>
+                >>> print(f"Retrieved {len(all_items)} total items")
+
+        See Also:
+            - :meth:`last_key`: Get the pagination key for the next request
+            - :meth:`query`: For querying with pagination
         """
 
         return "LastEvaluatedKey" in response
 
     def last_key(self, response: dict) -> dict | None:
         """
-        Get the LastEvaluatedKey, which can be used to continue processing the results
-        Parameters:
-            response (dict): dynamodb response dictionary
+        Extract the LastEvaluatedKey from a DynamoDB response for pagination.
+
+        The LastEvaluatedKey is used as the start_key parameter in the next
+        query or scan request to continue retrieving results.
+
+        Args:
+            response: DynamoDB response dictionary from query() or scan()
 
         Returns:
-            dict | None: The last key or None if not found
+            dict | None: The LastEvaluatedKey dictionary if more results exist,
+                None if this was the last page
+
+        Example:
+            Use last_key for pagination::
+
+                >>> response = db.query(
+                ...     key=Key("pk").eq("user#123"),
+                ...     table_name="users"
+                ... )
+                >>>
+                >>> next_key = db.last_key(response)
+                >>> if next_key:
+                ...     next_response = db.query(
+                ...         key=Key("pk").eq("user#123"),
+                ...         table_name="users",
+                ...         start_key=next_key
+                ...     )
+
+        See Also:
+            - :meth:`has_more_records`: Check if more records exist
+            - :meth:`query`: For querying with pagination
         """
 
         return response.get("LastEvaluatedKey")
 
     def items(self, response: dict) -> list:
         """
-        Get the Items from the dynamodb response
-        Parameters:
-            response (dict): dynamodb response dictionary
+        Extract the Items list from a DynamoDB response.
+
+        This is a convenience method to safely extract items from query(),
+        scan(), or batch_get_item() responses.
+
+        Args:
+            response: DynamoDB response dictionary
 
         Returns:
-            list: A list or empty array/list if no items found
+            list: List of items from the response. Empty list if no items found.
+
+        Example:
+            Extract items from query response::
+
+                >>> response = db.query(
+                ...     key=Key("pk").eq("user#123"),
+                ...     table_name="users"
+                ... )
+                >>> items = db.items(response)
+                >>> for item in items:
+                ...     print(item['name'])
+
+            Safe extraction (no KeyError)::
+
+                >>> response = db.query(...)
+                >>> items = db.items(response)  # Returns [] if no Items key
+                >>> print(f"Found {len(items)} items")
+
+        See Also:
+            - :meth:`item`: Extract single item from get() response
+            - :meth:`query`: For querying items
         """
 
         return response.get("Items", [])
 
     def item(self, response: dict) -> dict:
         """
-        Get the Item from the dynamodb response
-        Parameters:
-            response (dict): dynamodb response dictionary
+        Extract the Item from a DynamoDB get() response.
+
+        This is a convenience method to safely extract a single item from
+        a get() operation response.
+
+        Args:
+            response: DynamoDB response dictionary from get()
 
         Returns:
-            dict: A dictionary or empty dictionary if no item found
+            dict: The item dictionary. Empty dict if item not found.
+
+        Example:
+            Extract item from get response::
+
+                >>> response = db.get(
+                ...     table_name="users",
+                ...     key={"pk": "user#123", "sk": "user#123"}
+                ... )
+                >>> item = db.item(response)
+                >>> if item:
+                ...     print(f"User: {item['name']}")
+                >>> else:
+                ...     print("User not found")
+
+        Note:
+            - Returns empty dict {} if item doesn't exist
+            - For query/scan responses, use items() instead
+
+        See Also:
+            - :meth:`items`: Extract items list from query/scan response
+            - :meth:`get`: For retrieving single items
         """
+
+        return response.get("Item", {})
 
         return response.get("Item", {})
 
@@ -1197,51 +1438,91 @@ class DynamoDB(DynamoDBConnection):
         self, items: list[dict], table_name: str, *, operation: str = "put"
     ) -> dict:
         """
-        Write or delete multiple items in a single request.
+        Write or delete multiple items in a single batch request.
 
-        DynamoDB allows up to 25 write operations per batch_write_item call.
-        This method automatically chunks larger requests and handles unprocessed
-        items with exponential backoff retry logic.
+        Batch write operations allow you to efficiently put or delete up to 25 items
+        in a single request. This method automatically handles chunking for larger
+        batches and retries unprocessed items with exponential backoff.
+
+        Important: Batch writes are NOT atomic. If some items fail, others may still
+        succeed. For atomic multi-item operations, use transact_write_items() instead.
 
         Args:
-            items: List of items to write or delete
-                   - For 'put': Full item dictionaries
-                   - For 'delete': Key-only dictionaries (pk, sk)
-            table_name: The DynamoDB table name
-            operation: Either 'put' (default) or 'delete'
+            items: List of item dictionaries to write or delete.
+                - For 'put' operation: Full item dictionaries with all attributes
+                  Example: [{"pk": "user#1", "name": "Alice", "email": "alice@example.com"}]
+                - For 'delete' operation: Key-only dictionaries (partition key and sort key)
+                  Example: [{"pk": "user#1", "sk": "profile#1"}]
+            table_name: Name of the DynamoDB table.
+            operation: Operation type. Either 'put' (default) or 'delete'.
+                - 'put': Creates new items or replaces existing items
+                - 'delete': Removes items by their primary keys
 
         Returns:
             dict: Response containing:
-                - 'UnprocessedItems': Items that couldn't be processed after retries
                 - 'ProcessedCount': Number of successfully processed items
-                - 'UnprocessedCount': Number of unprocessed items
+                - 'UnprocessedCount': Number of items that couldn't be processed
+                - 'UnprocessedItems': List of items that failed after all retries
 
-        Example (Put):
-            >>> items = [
-            ...     {"pk": "user#1", "sk": "user#1", "name": "Alice"},
-            ...     {"pk": "user#2", "sk": "user#2", "name": "Bob"},
-            ...     {"pk": "user#3", "sk": "user#3", "name": "Charlie"}
-            ... ]
-            >>> response = db.batch_write_item(items=items, table_name="users")
-            >>> print(f"Processed {response['ProcessedCount']} items")
+        Raises:
+            ValueError: If operation is not 'put' or 'delete'
+            ClientError: For DynamoDB errors (throttling, permission denied, etc.)
 
-        Example (Delete):
-            >>> keys = [
-            ...     {"pk": "user#1", "sk": "user#1"},
-            ...     {"pk": "user#2", "sk": "user#2"}
-            ... ]
-            >>> response = db.batch_write_item(
-            ...     items=keys,
-            ...     table_name="users",
-            ...     operation="delete"
-            ... )
+        Example:
+            Batch put multiple items::
+
+                >>> db = DynamoDB()
+                >>> items = [
+                ...     {"pk": "user#1", "sk": "user#1", "name": "Alice", "age": 30},
+                ...     {"pk": "user#2", "sk": "user#2", "name": "Bob", "age": 25},
+                ...     {"pk": "user#3", "sk": "user#3", "name": "Charlie", "age": 35}
+                ... ]
+                >>> response = db.batch_write_item(items=items, table_name="users")
+                >>> print(f"Processed {response['ProcessedCount']} items")
+                Processed 3 items
+
+            Batch delete multiple items::
+
+                >>> keys = [
+                ...     {"pk": "user#1", "sk": "user#1"},
+                ...     {"pk": "user#2", "sk": "user#2"}
+                ... ]
+                >>> response = db.batch_write_item(
+                ...     items=keys,
+                ...     table_name="users",
+                ...     operation="delete"
+                ... )
+
+            Handle unprocessed items::
+
+                >>> response = db.batch_write_item(items=large_batch, table_name="users")
+                >>> if response['UnprocessedCount'] > 0:
+                ...     print(f"Warning: {response['UnprocessedCount']} items not processed")
+                ...     # Optionally retry or log unprocessed items
+                ...     unprocessed = response['UnprocessedItems']
+
+            Mixed operations (put and delete in same batch)::
+
+                >>> # Note: This requires manual construction
+                >>> # Use separate batch_write_item calls for put and delete
+                >>> db.batch_write_item(items=items_to_add, table_name="users", operation="put")
+                >>> db.batch_write_item(items=keys_to_delete, table_name="users", operation="delete")
 
         Note:
-            - Maximum 25 operations per request (automatically chunked)
+            - **Maximum 25 operations per request** (automatically chunked for larger batches)
             - Each item can be up to 400 KB
             - Maximum 16 MB total request size
-            - No conditional writes in batch operations
-            - Unprocessed items are automatically retried with exponential backoff
+            - **Not atomic**: Some items may succeed while others fail
+            - No conditional writes in batch operations (use transact_write for conditions)
+            - Unprocessed items are automatically retried up to 5 times with exponential backoff
+            - DynamoDB may throttle batch operations during high traffic
+            - For atomic operations, use transact_write_items() instead
+
+        See Also:
+            - :meth:`batch_get_item`: For batch read operations
+            - :meth:`transact_write_items`: For atomic multi-item writes
+            - :meth:`save`: For single item writes with conditions
+            - :meth:`delete`: For single item deletes
         """
         import time
 
@@ -1344,78 +1625,177 @@ class DynamoDB(DynamoDBConnection):
         return_item_collection_metrics: str = "NONE",
     ) -> dict:
         """
-        Execute multiple write operations as an atomic transaction.
+        Execute multiple write operations as an ACID transaction.
 
-        All operations succeed or all fail together. This is critical for
-        maintaining data consistency across multiple items. Supports up to
-        100 operations per transaction (increased from 25 in 2023).
+        Transactions provide atomicity, consistency, isolation, and durability (ACID)
+        guarantees. All operations in the transaction succeed together or fail together,
+        ensuring data consistency across multiple items and tables.
+
+        This is essential for operations like:
+        - Transferring money between accounts
+        - Updating inventory and order status together
+        - Maintaining referential integrity across items
 
         Args:
-            operations: List of transaction operation dictionaries. Each dict must
-                       have one of: 'Put', 'Update', 'Delete', or 'ConditionCheck'
-                       Example:
-                       [
-                           {
-                               'Put': {
-                                   'TableName': 'users',
-                                   'Item': {'pk': 'user#1', 'sk': 'user#1', 'name': 'Alice'}
-                               }
-                           },
-                           {
-                               'Update': {
-                                   'TableName': 'accounts',
-                                   'Key': {'pk': 'account#1', 'sk': 'account#1'},
-                                   'UpdateExpression': 'SET balance = balance - :amount',
-                                   'ExpressionAttributeValues': {':amount': 100}
-                               }
-                           }
-                       ]
-            client_request_token: Optional idempotency token for retry safety
-            return_consumed_capacity: 'INDEXES', 'TOTAL', or 'NONE' (default)
-            return_item_collection_metrics: 'SIZE' or 'NONE' (default)
+            operations: List of transaction operation dictionaries. Each operation must
+                contain exactly one of: 'Put', 'Update', 'Delete', or 'ConditionCheck'.
+
+                Operation types:
+                - **Put**: Insert or replace an item
+                - **Update**: Modify specific attributes
+                - **Delete**: Remove an item
+                - **ConditionCheck**: Verify a condition without modifying data
+
+                Example structure::
+
+                    [
+                        {
+                            'Put': {
+                                'TableName': 'users',
+                                'Item': {'pk': 'user#1', 'name': 'Alice'},
+                                'ConditionExpression': 'attribute_not_exists(pk)'
+                            }
+                        },
+                        {
+                            'Update': {
+                                'TableName': 'accounts',
+                                'Key': {'pk': 'account#1'},
+                                'UpdateExpression': 'SET balance = balance - :amt',
+                                'ExpressionAttributeValues': {':amt': 100}
+                            }
+                        }
+                    ]
+
+            client_request_token: Optional idempotency token (UUID recommended).
+                Ensures the same transaction isn't executed twice if retried.
+            return_consumed_capacity: Capacity reporting level:
+                - 'NONE' (default): No capacity information
+                - 'TOTAL': Total capacity consumed
+                - 'INDEXES': Capacity per table and index
+            return_item_collection_metrics: Collection metrics level:
+                - 'NONE' (default): No metrics
+                - 'SIZE': Size metrics for affected items
 
         Returns:
             dict: Transaction response containing:
-                - 'ConsumedCapacity': Capacity consumed (if requested)
-                - 'ItemCollectionMetrics': Metrics (if requested)
+                - 'ConsumedCapacity': List of capacity consumed per table (if requested)
+                - 'ItemCollectionMetrics': Metrics about affected items (if requested)
 
         Raises:
+            ValueError: If operations list is empty or exceeds 100 items
             TransactionCanceledException: If transaction fails due to:
-                - Conditional check failure
-                - Item size too large
+                - Conditional check failure on any operation
+                - Item size exceeds 400 KB
                 - Throughput exceeded
-                - Duplicate request
+                - Duplicate item in transaction
+            ClientError: For other DynamoDB errors
 
         Example:
-            >>> # Transfer money between accounts atomically
-            >>> operations = [
-            ...     {
-            ...         'Update': {
-            ...             'TableName': 'accounts',
-            ...             'Key': {'pk': 'account#123', 'sk': 'account#123'},
-            ...             'UpdateExpression': 'SET balance = balance - :amount',
-            ...             'ExpressionAttributeValues': {':amount': 100},
-            ...             'ConditionExpression': 'balance >= :amount'
-            ...         }
-            ...     },
-            ...     {
-            ...         'Update': {
-            ...             'TableName': 'accounts',
-            ...             'Key': {'pk': 'account#456', 'sk': 'account#456'},
-            ...             'UpdateExpression': 'SET balance = balance + :amount',
-            ...             'ExpressionAttributeValues': {':amount': 100}
-            ...         }
-            ...     }
-            ... ]
-            >>> response = db.transact_write_items(operations=operations)
+            Transfer money between accounts atomically::
+
+                >>> db = DynamoDB()
+                >>> operations = [
+                ...     {
+                ...         'Update': {
+                ...             'TableName': 'accounts',
+                ...             'Key': {'pk': 'account#sender', 'sk': 'account#sender'},
+                ...             'UpdateExpression': 'SET balance = balance - :amount',
+                ...             'ExpressionAttributeValues': {':amount': 100},
+                ...             'ConditionExpression': 'balance >= :amount'  # Prevent overdraft
+                ...         }
+                ...     },
+                ...     {
+                ...         'Update': {
+                ...             'TableName': 'accounts',
+                ...             'Key': {'pk': 'account#receiver', 'sk': 'account#receiver'},
+                ...             'UpdateExpression': 'SET balance = balance + :amount',
+                ...             'ExpressionAttributeValues': {':amount': 100}
+                ...         }
+                ...     }
+                ... ]
+                >>> try:
+                ...     response = db.transact_write_items(operations=operations)
+                ...     print("Transfer successful!")
+                ... except Exception as e:
+                ...     print(f"Transfer failed: {e}")
+                ...     # Both accounts remain unchanged
+
+            Create order and update inventory atomically::
+
+                >>> operations = [
+                ...     {
+                ...         'Put': {
+                ...             'TableName': 'orders',
+                ...             'Item': {
+                ...                 'pk': 'order#123',
+                ...                 'sk': 'order#123',
+                ...                 'user_id': 'user#456',
+                ...                 'product_id': 'product#789',
+                ...                 'quantity': 2,
+                ...                 'status': 'pending'
+                ...             },
+                ...             'ConditionExpression': 'attribute_not_exists(pk)'
+                ...         }
+                ...     },
+                ...     {
+                ...         'Update': {
+                ...             'TableName': 'inventory',
+                ...             'Key': {'pk': 'product#789', 'sk': 'inventory'},
+                ...             'UpdateExpression': 'SET stock = stock - :qty',
+                ...             'ExpressionAttributeValues': {':qty': 2},
+                ...             'ConditionExpression': 'stock >= :qty'  # Ensure stock available
+                ...         }
+                ...     }
+                ... ]
+                >>> response = db.transact_write_items(operations=operations)
+
+            Use condition check to verify state::
+
+                >>> operations = [
+                ...     {
+                ...         'ConditionCheck': {
+                ...             'TableName': 'users',
+                ...             'Key': {'pk': 'user#123', 'sk': 'user#123'},
+                ...             'ConditionExpression': 'account_status = :status',
+                ...             'ExpressionAttributeValues': {':status': 'active'}
+                ...         }
+                ...     },
+                ...     {
+                ...         'Put': {
+                ...             'TableName': 'orders',
+                ...             'Item': {'pk': 'order#456', 'user_id': 'user#123'}
+                ...         }
+                ...     }
+                ... ]
+                >>> response = db.transact_write_items(operations=operations)
+
+            With idempotency token for safe retries::
+
+                >>> import uuid
+                >>> token = str(uuid.uuid4())
+                >>> response = db.transact_write_items(
+                ...     operations=operations,
+                ...     client_request_token=token
+                ... )
+                >>> # Safe to retry with same token if network fails
 
         Note:
-            - Maximum 100 operations per transaction (AWS limit as of 2023)
+            - **ACID Guarantees**: All operations succeed or all fail (atomicity)
+            - **Maximum 100 operations** per transaction (AWS limit as of 2023)
             - Each item can be up to 400 KB
             - Maximum 4 MB total transaction size
-            - Cannot target same item multiple times in one transaction
-            - All operations must succeed or all fail (atomic)
-            - Uses strongly consistent reads for condition checks
+            - **Cannot target the same item twice** in one transaction
+            - Uses **strongly consistent reads** for all condition checks
+            - More expensive than batch operations (2x write capacity units)
+            - Transactions can fail due to conflicts with other transactions
+            - Consider using idempotency tokens for retry safety
+            - For non-atomic batch operations, use batch_write_item() instead
+
+        See Also:
+            - :meth:`transact_get_items`: For atomic multi-item reads
+            - :meth:`batch_write_item`: For non-atomic batch writes
+            - :meth:`update_item`: For single item updates with conditions
+            - :meth:`save`: For single item writes
         """
         if not operations:
             raise ValueError("At least one operation is required")
@@ -1465,57 +1845,137 @@ class DynamoDB(DynamoDBConnection):
         self, keys: list[dict], *, return_consumed_capacity: str = "NONE"
     ) -> dict:
         """
-        Retrieve multiple items with strong consistency as a transaction.
+        Retrieve multiple items with strong consistency in a single transaction.
 
-        Unlike batch_get_item, this provides a consistent snapshot across all items
-        using strongly consistent reads. Maximum 100 items per transaction.
+        Transaction get provides a consistent snapshot across all requested items,
+        ensuring you read all items as they existed at the same point in time.
+        This is essential when you need to read related items that must be consistent
+        with each other (e.g., reading an order and its associated inventory levels).
+
+        Unlike batch_get_item which may return eventually consistent data, transact_get
+        always uses strongly consistent reads and provides snapshot isolation.
 
         Args:
-            keys: List of get operation dictionaries. Each dict must specify:
-                  - 'Key': The item's primary key
-                  - 'TableName': The table name
-                  - 'ProjectionExpression': Optional projection
-                  - 'ExpressionAttributeNames': Optional attribute names
-                  Example:
-                  [
-                      {
-                          'Key': {'pk': 'user#1', 'sk': 'user#1'},
-                          'TableName': 'users'
-                      },
-                      {
-                          'Key': {'pk': 'order#123', 'sk': 'order#123'},
-                          'TableName': 'orders',
-                          'ProjectionExpression': 'id,total,#status',
-                          'ExpressionAttributeNames': {'#status': 'status'}
-                      }
-                  ]
-            return_consumed_capacity: 'INDEXES', 'TOTAL', or 'NONE' (default)
+            keys: List of get operation dictionaries. Each dictionary specifies one
+                item to retrieve and must contain:
+
+                Required fields:
+                - **Key**: Primary key dictionary (partition key and sort key if applicable)
+                - **TableName**: Name of the table
+
+                Optional fields:
+                - **ProjectionExpression**: Comma-separated list of attributes to retrieve
+                - **ExpressionAttributeNames**: Mapping for reserved words or special characters
+
+                Example structure::
+
+                    [
+                        {
+                            'Key': {'pk': 'user#1', 'sk': 'user#1'},
+                            'TableName': 'users'
+                        },
+                        {
+                            'Key': {'pk': 'order#123', 'sk': 'order#123'},
+                            'TableName': 'orders',
+                            'ProjectionExpression': 'id, total, #status',
+                            'ExpressionAttributeNames': {'#status': 'status'}
+                        }
+                    ]
+
+            return_consumed_capacity: Capacity reporting level:
+                - 'NONE' (default): No capacity information
+                - 'TOTAL': Total capacity consumed
+                - 'INDEXES': Capacity per table and index
 
         Returns:
             dict: Response containing:
-                - 'Items': List of retrieved items (with Decimal conversion)
-                - 'ConsumedCapacity': Capacity consumed (if requested)
+                - 'Items': List of retrieved items (with Decimal conversion applied)
+                - 'Count': Number of items retrieved
+                - 'ConsumedCapacity': Capacity consumed per table (if requested)
+
+        Raises:
+            ValueError: If keys list is empty or exceeds 100 items
+            ClientError: For DynamoDB errors (item not found, permission denied, etc.)
 
         Example:
-            >>> keys = [
-            ...     {
-            ...         'Key': {'pk': 'user#123', 'sk': 'user#123'},
-            ...         'TableName': 'users'
-            ...     },
-            ...     {
-            ...         'Key': {'pk': 'account#123', 'sk': 'account#123'},
-            ...         'TableName': 'accounts'
-            ...     }
-            ... ]
-            >>> response = db.transact_get_items(keys=keys)
-            >>> items = response['Items']
+            Get multiple items with consistent snapshot::
+
+                >>> db = DynamoDB()
+                >>> keys = [
+                ...     {
+                ...         'Key': {'pk': 'user#123', 'sk': 'user#123'},
+                ...         'TableName': 'users'
+                ...     },
+                ...     {
+                ...         'Key': {'pk': 'account#123', 'sk': 'account#123'},
+                ...         'TableName': 'accounts'
+                ...     }
+                ... ]
+                >>> response = db.transact_get_items(keys=keys)
+                >>> items = response['Items']
+                >>> print(f"Retrieved {response['Count']} items")
+
+            Get items with projection::
+
+                >>> keys = [
+                ...     {
+                ...         'Key': {'pk': 'order#123', 'sk': 'order#123'},
+                ...         'TableName': 'orders',
+                ...         'ProjectionExpression': 'id, total, items'
+                ...     },
+                ...     {
+                ...         'Key': {'pk': 'user#456', 'sk': 'user#456'},
+                ...         'TableName': 'users',
+                ...         'ProjectionExpression': 'id, email, #name',
+                ...         'ExpressionAttributeNames': {'#name': 'name'}
+                ...     }
+                ... ]
+                >>> response = db.transact_get_items(keys=keys)
+
+            Cross-table consistent read::
+
+                >>> # Read order and inventory levels consistently
+                >>> keys = [
+                ...     {
+                ...         'Key': {'pk': 'order#789', 'sk': 'order#789'},
+                ...         'TableName': 'orders'
+                ...     },
+                ...     {
+                ...         'Key': {'pk': 'product#123', 'sk': 'inventory'},
+                ...         'TableName': 'inventory'
+                ...     },
+                ...     {
+                ...         'Key': {'pk': 'product#456', 'sk': 'inventory'},
+                ...         'TableName': 'inventory'
+                ...     }
+                ... ]
+                >>> response = db.transact_get_items(keys=keys)
+                >>> order, inv1, inv2 = response['Items']
+                >>> # All items reflect the same point in time
+
+            Handle missing items::
+
+                >>> response = db.transact_get_items(keys=keys)
+                >>> if response['Count'] < len(keys):
+                ...     print("Some items were not found")
+                >>> # Items that don't exist are simply not included in response
 
         Note:
-            - Maximum 100 items per transaction
-            - Always uses strongly consistent reads
-            - More expensive than batch_get_item (2x RCUs)
-            - Provides snapshot isolation across items
-            - Cannot be combined with transact_write_items
+            - **Maximum 100 items** per transaction (AWS limit)
+            - **Always uses strongly consistent reads** (cannot be eventually consistent)
+            - **More expensive than batch_get_item** (2x read capacity units)
+            - Provides **snapshot isolation** - all items read at same point in time
+            - Items that don't exist are not included in the response (no error)
+            - Cannot be combined with transact_write_items in same transaction
+            - Each item can be up to 400 KB
+            - Maximum 4 MB total response size
+            - Use batch_get_item for eventually consistent reads or > 100 items
+
+        See Also:
+            - :meth:`transact_write_items`: For atomic multi-item writes
+            - :meth:`batch_get_item`: For eventually consistent batch reads
+            - :meth:`get`: For single item reads
+            - :meth:`query`: For querying multiple items with a partition key
         """
         if not keys:
             raise ValueError("At least one key is required")
