@@ -5,7 +5,7 @@ MIT License.  See Project Root for the license information.
 """
 
 import os
-from typing import Any, Dict, List, Optional, overload
+from typing import Any, Dict, List, Optional, Type, TypedDict, TypeVar, Union, overload
 
 from aws_lambda_powertools import Logger
 from boto3.dynamodb.conditions import Attr, ComparisonCondition, ConditionBase, Key  # And,; Equals,
@@ -19,6 +19,43 @@ from .dynamodb_index import DynamoDBIndex
 from .dynamodb_model_base import DynamoDBModelBase
 
 logger = Logger()
+
+# Type variable for generic model support
+T = TypeVar("T", bound=DynamoDBModelBase)
+
+
+# TypedDict definitions for common DynamoDB structures
+class DynamoDBKey(TypedDict, total=False):
+    """Primary key structure for DynamoDB items."""
+
+    pk: str
+    sk: str
+
+
+class QueryResponse(TypedDict, total=False):
+    """Response structure from DynamoDB query operations."""
+
+    Items: List[Dict[str, Any]]
+    Count: int
+    ScannedCount: int
+    LastEvaluatedKey: Optional[Dict[str, Any]]
+    ConsumedCapacity: Optional[Dict[str, Any]]
+
+
+class GetResponse(TypedDict, total=False):
+    """Response structure from DynamoDB get operations."""
+
+    Item: Optional[Dict[str, Any]]
+    ConsumedCapacity: Optional[Dict[str, Any]]
+
+
+class TransactWriteOperation(TypedDict, total=False):
+    """Single operation in a DynamoDB transaction write."""
+
+    Put: Optional[Dict[str, Any]]
+    Update: Optional[Dict[str, Any]]
+    Delete: Optional[Dict[str, Any]]
+    ConditionCheck: Optional[Dict[str, Any]]
 
 
 class DynamoDB(DynamoDBConnection):
@@ -169,14 +206,14 @@ class DynamoDB(DynamoDBConnection):
 
     def save(
         self,
-        item: dict | DynamoDBModelBase,
+        item: Union[Dict[str, Any], DynamoDBModelBase],
         table_name: str,
         source: Optional[str] = None,
         fail_if_exists: bool = False,
         condition_expression: Optional[str] = None,
-        expression_attribute_names: Optional[dict] = None,
-        expression_attribute_values: Optional[dict] = None,
-    ) -> dict:
+        expression_attribute_names: Optional[Dict[str, str]] = None,
+        expression_attribute_values: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """
         Save (create or update) an item in DynamoDB.
 
@@ -421,7 +458,7 @@ class DynamoDB(DynamoDBConnection):
         strongly_consistent: bool = False,
         return_consumed_capacity: Optional[str] = None,
         projection_expression: Optional[str] = None,
-        expression_attribute_names: Optional[dict] = None,
+        expression_attribute_names: Optional[Dict[str, str]] = None,
         source: Optional[str] = None,
         call_type: str = "resource",
     ) -> Dict[str, Any]: ...
@@ -429,27 +466,27 @@ class DynamoDB(DynamoDBConnection):
     @overload
     def get(
         self,
-        key: dict,
+        key: Dict[str, Any],
         table_name: str,
         *,
         strongly_consistent: bool = False,
         return_consumed_capacity: Optional[str] = None,
         projection_expression: Optional[str] = None,
-        expression_attribute_names: Optional[dict] = None,
+        expression_attribute_names: Optional[Dict[str, str]] = None,
         source: Optional[str] = None,
         call_type: str = "resource",
     ) -> Dict[str, Any]: ...
 
     def get(
         self,
-        key: Optional[dict] = None,
+        key: Optional[Dict[str, Any]] = None,
         table_name: Optional[str] = None,
         model: Optional[DynamoDBModelBase] = None,
         do_projections: bool = False,
         strongly_consistent: bool = False,
         return_consumed_capacity: Optional[str] = None,
         projection_expression: Optional[str] = None,
-        expression_attribute_names: Optional[dict] = None,
+        expression_attribute_names: Optional[Dict[str, str]] = None,
         source: Optional[str] = None,
         call_type: str = "resource",
     ) -> Dict[str, Any]:
@@ -606,13 +643,13 @@ class DynamoDB(DynamoDBConnection):
     def update_item(
         self,
         table_name: str,
-        key: dict,
+        key: Dict[str, Any],
         update_expression: str,
-        expression_attribute_values: Optional[dict] = None,
-        expression_attribute_names: Optional[dict] = None,
+        expression_attribute_values: Optional[Dict[str, Any]] = None,
+        expression_attribute_names: Optional[Dict[str, str]] = None,
         condition_expression: Optional[str] = None,
         return_values: str = "NONE",
-    ) -> dict:
+    ) -> Dict[str, Any]:
         """
         Update an item in DynamoDB with an update expression.
 
@@ -720,7 +757,7 @@ class DynamoDB(DynamoDBConnection):
 
     def query(
         self,
-        key: dict | Key | ConditionBase | ComparisonCondition | DynamoDBIndex,
+        key: Union[Dict[str, Any], Key, ConditionBase, ComparisonCondition, DynamoDBIndex],
         table_name: str,
         *,
         index_name: Optional[str] = None,
@@ -728,10 +765,10 @@ class DynamoDB(DynamoDBConnection):
         source: Optional[str] = None,
         strongly_consistent: bool = False,
         projection_expression: Optional[str] = None,
-        expression_attribute_names: Optional[dict] = None,
-        start_key: Optional[dict] = None,
+        expression_attribute_names: Optional[Dict[str, str]] = None,
+        start_key: Optional[Dict[str, Any]] = None,
         limit: Optional[int] = None,
-    ) -> dict:
+    ) -> Dict[str, Any]:
         """
         Query items from DynamoDB using a partition key and optional sort key condition.
 
@@ -920,7 +957,7 @@ class DynamoDB(DynamoDBConnection):
         return self._apply_decimal_conversion(response)
 
     @overload
-    def delete(self, *, table_name: str, model: DynamoDBModelBase) -> dict:
+    def delete(self, *, table_name: str, model: DynamoDBModelBase) -> Dict[str, Any]:
         pass
 
     @overload
@@ -928,17 +965,17 @@ class DynamoDB(DynamoDBConnection):
         self,
         *,
         table_name: str,
-        primary_key: dict,
-    ) -> dict:
+        primary_key: Dict[str, Any],
+    ) -> Dict[str, Any]:
         pass
 
     def delete(
         self,
         *,
-        primary_key: Optional[dict] = None,
+        primary_key: Optional[Dict[str, Any]] = None,
         table_name: Optional[str] = None,
         model: Optional[DynamoDBModelBase] = None,
-    ):
+    ) -> Dict[str, Any]:
         """
         Delete an item from DynamoDB.
 
@@ -1072,13 +1109,13 @@ class DynamoDB(DynamoDBConnection):
         model: DynamoDBModelBase,
         table_name: str,
         index_name: str,
-        key: dict | Key | ConditionBase | ComparisonCondition,
-        start_key: Optional[dict] = None,
+        key: Union[Dict[str, Any], Key, ConditionBase, ComparisonCondition],
+        start_key: Optional[Dict[str, Any]] = None,
         do_projections: bool = False,
         ascending: bool = False,
         strongly_consistent: bool = False,
         limit: Optional[int] = None,
-    ) -> dict:
+    ) -> Dict[str, Any]:
         """
         Query items using model-based projections and criteria.
 
@@ -1143,7 +1180,7 @@ class DynamoDB(DynamoDBConnection):
 
         return response
 
-    def has_more_records(self, response: dict) -> bool:
+    def has_more_records(self, response: Dict[str, Any]) -> bool:
         """
         Check if a DynamoDB response has more records to paginate through.
 
@@ -1184,7 +1221,7 @@ class DynamoDB(DynamoDBConnection):
 
         return "LastEvaluatedKey" in response
 
-    def last_key(self, response: dict) -> dict | None:
+    def last_key(self, response: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
         Extract the LastEvaluatedKey from a DynamoDB response for pagination.
 
@@ -1221,7 +1258,7 @@ class DynamoDB(DynamoDBConnection):
 
         return response.get("LastEvaluatedKey")
 
-    def items(self, response: dict) -> list:
+    def items(self, response: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         Extract the Items list from a DynamoDB response.
 
@@ -1258,7 +1295,7 @@ class DynamoDB(DynamoDBConnection):
 
         return response.get("Items", [])
 
-    def item(self, response: dict) -> dict:
+    def item(self, response: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extract the Item from a DynamoDB get() response.
 
@@ -1299,13 +1336,13 @@ class DynamoDB(DynamoDBConnection):
 
     def batch_get_item(
         self,
-        keys: list[dict],
+        keys: List[Dict[str, Any]],
         table_name: str,
         *,
         projection_expression: Optional[str] = None,
-        expression_attribute_names: Optional[dict] = None,
+        expression_attribute_names: Optional[Dict[str, str]] = None,
         consistent_read: bool = False,
-    ) -> dict:
+    ) -> Dict[str, Any]:
         """
         Retrieve multiple items from DynamoDB in a single request.
 
@@ -1435,8 +1472,8 @@ class DynamoDB(DynamoDBConnection):
         return self._apply_decimal_conversion(result)
 
     def batch_write_item(
-        self, items: list[dict], table_name: str, *, operation: str = "put"
-    ) -> dict:
+        self, items: List[Dict[str, Any]], table_name: str, *, operation: str = "put"
+    ) -> Dict[str, Any]:
         """
         Write or delete multiple items in a single batch request.
 
@@ -1618,12 +1655,12 @@ class DynamoDB(DynamoDBConnection):
 
     def transact_write_items(
         self,
-        operations: list[dict],
+        operations: List[Dict[str, Any]],
         *,
         client_request_token: Optional[str] = None,
         return_consumed_capacity: str = "NONE",
         return_item_collection_metrics: str = "NONE",
-    ) -> dict:
+    ) -> Dict[str, Any]:
         """
         Execute multiple write operations as an ACID transaction.
 
@@ -1842,8 +1879,8 @@ class DynamoDB(DynamoDBConnection):
             raise
 
     def transact_get_items(
-        self, keys: list[dict], *, return_consumed_capacity: str = "NONE"
-    ) -> dict:
+        self, keys: List[Dict[str, Any]], *, return_consumed_capacity: str = "NONE"
+    ) -> Dict[str, Any]:
         """
         Retrieve multiple items with strong consistency in a single transaction.
 

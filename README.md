@@ -13,21 +13,21 @@ This library was created to make life a little easier when using boto3. It provi
 ## Features
 
 ### Core Capabilities
-- **User Authentication / Session Mapping** - Simplified session management for local, dev, and production environments
-- **DynamoDB Model Mapping** - Lightweight ORM-style mapping for Python objects to DynamoDB items
+- **DynamoDB Model Mapping** - Lightweight ORM-style mapping for Python objects to DynamoDB items with comprehensive docstrings
+- **Session Management** - Simplified session management for local, dev, and production environments
 - **Key Generation** - Automatic primary and sort key generation for DynamoDB
 - **S3 Operations** - Simplified S3 bucket and object operations
 - **Cognito Integration** - User authentication and management helpers
-- **Error Handling** - Comprehensive exception hierarchy with structured error details
-- **Configuration Management** - Centralized, type-safe configuration system
+- **Error Handling** - Comprehensive exception hierarchy with 20+ specific exception types
+- **Configuration Management** - Centralized, type-safe configuration system with environment variable support
 
 ### Quality & Developer Experience
-- ✅ **231 passing tests** with pytest
-- ✅ **55% code coverage** (expanding to 90%+)
-- ✅ **Type hints** for better IDE support (PEP 561 compliant)
-- ✅ **Pre-commit hooks** for code quality
-- ✅ **CI/CD pipeline** with GitHub Actions
-- ✅ **Comprehensive documentation** for all major features
+- ✅ **231 passing tests** with pytest and 55% code coverage
+- ✅ **Type hints** for better IDE support (PEP 561 compliant, improvements in progress)
+- ✅ **Google-style docstrings** with 40+ practical examples across all core DynamoDB methods
+- ✅ **Pre-commit hooks** for automated code quality (isort, black, flake8)
+- ✅ **CI/CD pipeline** with GitHub Actions testing on Python 3.11, 3.12, and 3.13
+- ✅ **Comprehensive documentation** for error handling, configuration, and security best practices
 
 ## Installation
 
@@ -77,10 +77,21 @@ dynamodb = session.resource('dynamodb')
 
 ## Documentation
 
-- **[Configuration Guide](docs/configuration.md)** - Centralized configuration management
-- **[Error Handling](docs/error-handling.md)** - Exception hierarchy and usage patterns
-- **[Examples](examples/)** - Comprehensive examples for DynamoDB, S3, Cognito, and more
+### Core Documentation
+- **[Configuration Guide](docs/configuration.md)** - Centralized configuration management with environment variables
+- **[Error Handling](docs/error-handling.md)** - 20+ specific exception types with error codes and structured details
 - **[Security Best Practices](SECURITY.md)** - Security guidelines and vulnerability reporting
+
+### Examples & Guides
+- **[DynamoDB Examples](examples/dynamodb/)** - CRUD operations, batch operations, transactions, conditional writes, and more
+- **[S3 Examples](examples/s3/)** - Bucket and object operations
+- **[Cognito Examples](examples/cognito/)** - User authentication and management
+- **[CloudWatch Examples](examples/cloudwatch/)** - Log reporting and metrics
+
+### Development Documentation
+- **[Progress Tracking](PROGRESS.md)** - Detailed progress on architectural improvements
+- **[Breaking Changes](BREAKING_CHANGES.md)** - Log of breaking changes (currently: Python 3.11+ requirement)
+- **[Type Hints Progress](docs/type-hints-progress.md)** - Type hint improvement tracking
 
 ## Development
 
@@ -113,13 +124,17 @@ pytest tests/unit/dynamodb_tests/dynamodb_test.py -v
 
 # Run with detailed coverage report
 pytest tests/unit/ -v --cov=src/boto3_assist --cov-report=term-missing
+
+# Run pre-commit hooks
+pre-commit run --all-files
 ```
 
 ### Test Configuration
 
-Several tests use the `moto` library to mock AWS services. You'll need a `.env.unittest` file at the project root (already included in the repository).
+Tests use the `moto` library to mock AWS services. You'll need:
 
-You should also create a mock AWS profile in `~/.aws/config`:
+1. A `.env.unittest` file at the project root (already included)
+2. A mock AWS profile in `~/.aws/config`:
 
 ```toml
 [profile moto-mock-tests]
@@ -149,35 +164,34 @@ flake8 src/ --max-line-length=100
 ## Contributing
 
 Contributions are welcome! Please ensure:
-- All tests pass (`pytest tests/unit/`)
-- Code is formatted (`black` and `isort`)
-- Pre-commit hooks pass
+- All tests pass: `pytest tests/unit/ -v`
+- Code is formatted: `black --line-length 100 src/ tests/ examples/`
+- Imports are sorted: `isort --profile black --line-length 100 src/ tests/ examples/`
+- Pre-commit hooks pass: `pre-commit run --all-files`
 - New features include tests and documentation
+- Follow existing patterns for docstrings (Google-style) and type hints
+
+See [PROGRESS.md](PROGRESS.md) for current development priorities.
 
 ## Roadmap to 1.0.0
 
 See [PROGRESS.md](PROGRESS.md) for detailed progress tracking.
 
 ### Completed ✅
-- Import organization with isort
-- PEP 561 type hint support
-- Pre-commit hooks
-- Security documentation
-- GitHub Actions CI/CD
-- Pytest migration with coverage
-- Standardized error handling
-- Configuration management system
+- ✅ **Quick Wins** (8/8): Import organization, PEP 561 support, pre-commit hooks, security docs, GitHub Actions, pytest migration, Python 3.11+ requirement
+- ✅ **Error Handling**: 20+ specific exception types with error codes and structured details
+- ✅ **Configuration Management**: Centralized, type-safe configuration system
+- ✅ **Docstrings**: Google-style docstrings with 40+ practical examples for all core DynamoDB methods
 
 ### In Progress 🔄
-- Complete type hints for all modules
-- Standardize docstrings (Google-style)
+- 🔄 **Type Hints**: Adding comprehensive type hints to improve IDE support (30% → 90%+ coverage)
 
 ### Planned 📋
-- API simplification with config objects
-- Input validation with Pydantic
-- Expand test coverage to 90%+
-- Performance benchmarks
-- Debugging utilities
+- 📋 **API Simplification**: Config objects for complex method parameters
+- 📋 **Input Validation**: Pydantic schemas for runtime validation
+- 📋 **Test Coverage**: Expand from 55% to 90%+ coverage
+- 📋 **Performance Benchmarks**: Benchmark suite for performance tracking
+- 📋 **Debugging Utilities**: Enhanced debugging helpers for DynamoDB operations
 
 ## License
 
