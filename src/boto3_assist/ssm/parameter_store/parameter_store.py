@@ -88,7 +88,7 @@ class ParameterStore(SSMConnection):
                     "Values": [path],
                 }
             ]
-            for page in paginator.paginate(ParameterFilters=filters):
+            for page in paginator.paginate(ParameterFilters=filters):  # type: ignore[arg-type]
                 parameters.extend(page.get("Parameters", []))
             return parameters
         except ClientError as e:

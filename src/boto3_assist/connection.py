@@ -102,11 +102,11 @@ class Connection:
         tracker.add(service_name=self.service_name)
 
     @property
-    def asw_profile(self) -> str | None:
+    def aws_profile(self) -> str | None:
         """The AWS Profile"""
         return self.__aws_profile or EnvironmentVariables.AWS.profile()
 
-    @asw_profile.setter
+    @aws_profile.setter
     def aws_profile(self, value: str | None):
         self.__aws_profile = value
 

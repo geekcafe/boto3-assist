@@ -67,7 +67,7 @@ class ItemNotFoundError(DynamoDBError):
         key: Optional[Dict[str, Any]] = None,
         message: Optional[str] = None,
     ):
-        details = {}
+        details: Dict[str, Any] = {}
         if table_name:
             details["table_name"] = table_name
         if key:

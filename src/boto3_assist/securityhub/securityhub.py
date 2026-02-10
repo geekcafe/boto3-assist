@@ -77,9 +77,9 @@ class SecurityHub(SecurityHubConnection):
             # Update workflow status in batches of 100
             for i in range(0, len(findings_to_update), 100):
                 batch = findings_to_update[i : i + 100]
-                response = client.batch_update_findings(
-                    FindingIdentifiers=batch,
-                    Workflow={"Status": str(workflow_status).upper()},
+                response = client.batch_update_findings(  # type: ignore[assignment]
+                    FindingIdentifiers=batch,  # type: ignore[arg-type]
+                    Workflow={"Status": str(workflow_status).upper()},  # type: ignore[typeddict-item]
                     Note={"Text": note_text, "UpdatedBy": updated_by},
                 )
                 logger.debug(

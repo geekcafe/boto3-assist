@@ -61,7 +61,7 @@ class SessionSetupMixin:
                             "If you are running in a GitHub Actions environment, "
                             "you may need to set the HOME or AWS_CONFIG_FILE environment variable to '/home/runner'. "
                         )
-                elif not config.has_profile(aws_profile):
+                elif aws_profile and not config.has_profile(aws_profile):
                     error_message += f" The profile '{aws_profile}' was not found in the AWS config file in {config.get_path()}."
 
             # check for the existence of the profile and the path to the profile

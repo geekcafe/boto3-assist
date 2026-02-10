@@ -63,7 +63,10 @@ class DynamoDBKey:
             >>> key.to_dict()
             {'pk': 'user#456'}
         """
-        return {self.attribute_name: self.value}
+        val = self.value
+        if val is None:
+            raise ValueError("Value is not set")
+        return {self.attribute_name: val}
 
     @staticmethod
     def build_key(*key_value_pairs) -> str:
@@ -116,7 +119,7 @@ class DynamoDBKey:
             sk: xref#task#id#
 
         """
-        parts = []
+        parts: list[str] = []
         for key, value in key_value_pairs:
             prefix = f"{key}#" if key else ""
             if value is None:

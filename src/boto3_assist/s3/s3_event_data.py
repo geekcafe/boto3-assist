@@ -83,8 +83,11 @@ class S3ObjectData:
     @property
     def size(self) -> int:
         """Object size in bytes"""
-        size = NumberUtility.to_number(self.__s3_object_data.get("size"))
-        return size
+        size_val = self.__s3_object_data.get("size")
+        if size_val is None:
+            return 0
+        size = NumberUtility.to_number(size_val)
+        return int(size)
 
     @property
     def etag(self) -> str | None:

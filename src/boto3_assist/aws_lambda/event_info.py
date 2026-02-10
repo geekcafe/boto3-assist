@@ -278,7 +278,7 @@ class LambdaEventInfo:
         if isinstance(key, str):
             key = re.split(r"[./]", key)
 
-        value = event
+        value: Any = event
         for k in key:
             if isinstance(value, dict):
                 value = value.get(k)
