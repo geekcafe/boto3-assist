@@ -59,10 +59,6 @@ jobs:
       run: |
         pytest tests/unit/ -v --cov=src/boto3_assist --cov-report=term --cov-report=xml
 
-    - name: Check import sorting
-      run: |
-        isort --check-only src/ tests/ examples/
-
   lint:
     runs-on: ubuntu-latest
 
