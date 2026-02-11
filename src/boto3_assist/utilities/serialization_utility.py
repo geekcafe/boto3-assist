@@ -582,14 +582,26 @@ class Serialization:
                 return serialize_fn([serialize_value(v) for v in value])
             elif isinstance(value, dict):
                 return serialize_fn({k: serialize_value(v) for k, v in value.items()})
+            elif hasattr(value, "item") and callable(value.item):
+                # Handle numpy scalar types (e.g., numpy.int64, numpy.float64).
+                # .item() converts to the native Python equivalent.
+                return serialize_value(value.item())
             else:
-                return serialize_fn(
-                    Serialization.to_dict(
-                        value,
-                        serialize_fn,
-                        include_none=include_none,
+                try:
+                    return serialize_fn(
+                        Serialization.to_dict(
+                            value,
+                            serialize_fn,
+                            include_none=include_none,
+                        )
                     )
-                )
+                except AttributeError as e:
+                    raise AttributeError(
+                        f"Cannot serialize value of type {type(value).__module__}."
+                        f"{type(value).__name__} (value={value!r}). "
+                        f"Ensure all values are JSON-compatible Python types "
+                        f"before saving. Original error: {e}"
+                    ) from e
 
         instance_dict = Serialization._add_properties(
             instance, serialize_value, include_none=include_none
