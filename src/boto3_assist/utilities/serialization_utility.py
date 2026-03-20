@@ -21,7 +21,7 @@ from boto3_assist.utilities.string_utility import StringUtility
 T = TypeVar("T")
 
 
-logger = Logger()
+logger = Logger(__name__)
 
 
 class SerializableModel:

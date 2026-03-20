@@ -15,7 +15,7 @@ from botocore.exceptions import ClientError
 from boto3_assist.dynamodb.dynamodb import DynamoDB
 from boto3_assist.dynamodb.dynamodb_helpers import DynamoDBHelpers
 
-logger = Logger()
+logger = Logger(__name__)
 
 
 class DynamoDBImporter:

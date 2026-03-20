@@ -19,7 +19,7 @@ else:
     S3ServiceResource = object
 
 
-logger = Logger()
+logger = Logger(__name__)
 
 
 class S3Connection(Connection):

@@ -14,7 +14,7 @@ from jwt import InvalidTokenError, PyJWKClient
 from boto3_assist.boto3session import Boto3SessionManager
 from boto3_assist.cognito.jwks_cache import JwksCache
 
-logger = Logger()
+logger = Logger(__name__)
 
 jwks_cache = JwksCache()
 

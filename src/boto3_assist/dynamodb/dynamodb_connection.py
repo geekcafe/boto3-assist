@@ -17,7 +17,7 @@ else:
     DynamoDBServiceResource = object
 
 
-logger = Logger()
+logger = Logger(__name__)
 
 
 class DynamoDBConnection(Connection):

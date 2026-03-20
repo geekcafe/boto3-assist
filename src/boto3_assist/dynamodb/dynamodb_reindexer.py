@@ -15,7 +15,7 @@ from boto3_assist.dynamodb.dynamodb_iservice import IDynamoDBService
 from boto3_assist.dynamodb.dynamodb_model_base import DynamoDBModelBase
 from boto3_assist.utilities.serialization_utility import Serialization
 
-logger = Logger()
+logger = Logger(__name__)
 
 
 class DynamoDBReindexer:

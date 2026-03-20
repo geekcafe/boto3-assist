@@ -14,7 +14,7 @@ from boto3_assist.cognito.user import CognitoUser
 from boto3_assist.utilities.dictionary_utility import DictionaryUtilitiy
 from boto3_assist.utilities.string_utility import StringUtility
 
-logger = Logger()
+logger = Logger(__name__)
 
 
 class CognitoCustomAttributes:

@@ -11,7 +11,7 @@ from boto3.dynamodb.conditions import And, ConditionBase, Equals, Key
 
 from boto3_assist.dynamodb.dynamodb_index import DynamoDBIndex
 
-logger = Logger()
+logger = Logger(__name__)
 
 
 class DynamoDBHelpers:

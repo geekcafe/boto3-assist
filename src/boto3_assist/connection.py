@@ -15,7 +15,7 @@ from boto3_assist.connection_pool import ConnectionPool
 from boto3_assist.connection_tracker import ConnectionTracker
 from boto3_assist.environment_services.environment_variables import EnvironmentVariables
 
-logger = Logger()
+logger = Logger(__name__)
 tracker: ConnectionTracker = ConnectionTracker()
 
 

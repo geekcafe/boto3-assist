@@ -8,7 +8,7 @@ from boto3_assist.cognito.cognito_authorizer import CognitoCustomAuthorizer
 from boto3_assist.errors.custom_exceptions import Error
 from boto3_assist.http_status_codes import HttpStatusCodes
 
-logger = Logger()
+logger = Logger(__name__)
 
 
 class LambdaEventInfo:

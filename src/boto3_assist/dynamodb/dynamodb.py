@@ -18,7 +18,7 @@ from .dynamodb_helpers import DynamoDBHelpers
 from .dynamodb_index import DynamoDBIndex
 from .dynamodb_model_base import DynamoDBModelBase
 
-logger = Logger()
+logger = Logger(__name__)
 
 # Type variable for generic model support
 T = TypeVar("T", bound=DynamoDBModelBase)

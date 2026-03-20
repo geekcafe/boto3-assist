@@ -16,7 +16,7 @@ else:
     SecurityHubClient = object
 
 
-logger = Logger()
+logger = Logger(__name__)
 
 
 class SecurityHubConnection(Connection):

@@ -12,7 +12,7 @@ import pytz  # type: ignore
 from aws_lambda_powertools import Logger
 from dateutil.relativedelta import relativedelta
 
-logger = Logger()
+logger = Logger(__name__)
 
 _last_timestamp = None
 

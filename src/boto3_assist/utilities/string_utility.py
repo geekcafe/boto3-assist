@@ -18,7 +18,7 @@ from aws_lambda_powertools import Logger
 
 from boto3_assist.utilities.datetime_utility import DatetimeUtility
 
-logger = Logger()
+logger = Logger(__name__)
 
 
 class JsonEncoder(json.JSONEncoder):

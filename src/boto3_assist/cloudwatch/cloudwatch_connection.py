@@ -18,7 +18,7 @@ else:
     CloudWatchServiceResource = object
 
 
-logger = Logger()
+logger = Logger(__name__)
 tracker: CloudWatchConnectionTracker = CloudWatchConnectionTracker()
 
 

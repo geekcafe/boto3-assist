@@ -12,7 +12,7 @@ from aws_lambda_powertools import Logger
 
 from .boto3session import Boto3SessionManager
 
-logger = Logger()
+logger = Logger(__name__)
 
 
 class ConnectionPool:

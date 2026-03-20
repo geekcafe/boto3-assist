@@ -16,7 +16,7 @@ else:
     CognitoIdentityProviderClient = object
 
 
-logger = Logger()
+logger = Logger(__name__)
 
 
 class CognitoConnection(Connection):
