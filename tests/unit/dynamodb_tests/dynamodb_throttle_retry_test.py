@@ -11,9 +11,11 @@ from unittest.mock import MagicMock, patch
 
 import boto3
 from botocore.exceptions import ClientError
+from hypothesis import given, settings
+from hypothesis import strategies as st
 from moto import mock_aws
 
-from boto3_assist.dynamodb.dynamodb import DynamoDB
+from boto3_assist.dynamodb.dynamodb import RETRYABLE_THROTTLE_CODES, DynamoDB
 from examples.dynamodb.services.table_service import DynamoDBTableService
 
 
@@ -30,6 +32,32 @@ def _make_throttle_error():
     )
 
 
+def _make_throttling_exception_error():
+    """Create a ThrottlingException ClientError."""
+    return ClientError(
+        {
+            "Error": {
+                "Code": "ThrottlingException",
+                "Message": "Rate exceeded",
+            }
+        },
+        "PutItem",
+    )
+
+
+def _make_request_limit_error():
+    """Create a RequestLimitExceeded ClientError."""
+    return ClientError(
+        {
+            "Error": {
+                "Code": "RequestLimitExceeded",
+                "Message": "Account-level request limit exceeded",
+            }
+        },
+        "PutItem",
+    )
+
+
 def _make_validation_error():
     """Create a non-retryable ValidationException ClientError."""
     return ClientError(
@@ -40,6 +68,14 @@ def _make_validation_error():
             }
         },
         "UpdateItem",
+    )
+
+
+def _make_client_error(code: str) -> ClientError:
+    """Create a ClientError with the given error code."""
+    return ClientError(
+        {"Error": {"Code": code, "Message": f"Simulated {code}"}},
+        "DynamoDBOperation",
     )
 
 
@@ -150,6 +186,123 @@ class TestRetryOnThrottle(unittest.TestCase):
                 operation,
                 operation_name="test",
             )
+        mock_sleep.assert_not_called()
+
+    # --- New tests for ThrottlingException and RequestLimitExceeded ---
+
+    @patch("time.sleep", return_value=None)
+    def test_throttling_exception_triggers_retry_then_succeeds(self, mock_sleep):
+        """ThrottlingException on first attempt, succeed on second."""
+        call_count = {"n": 0}
+
+        def operation():
+            call_count["n"] += 1
+            if call_count["n"] <= 1:
+                raise _make_throttling_exception_error()
+            return {"ok": True}
+
+        result = self.db._retry_on_throttle(operation, operation_name="test")
+        self.assertEqual(result, {"ok": True})
+        self.assertEqual(call_count["n"], 2)
+        self.assertEqual(mock_sleep.call_count, 1)
+
+    @patch("time.sleep", return_value=None)
+    def test_request_limit_exceeded_triggers_retry_then_succeeds(self, mock_sleep):
+        """RequestLimitExceeded on first attempt, succeed on second."""
+        call_count = {"n": 0}
+
+        def operation():
+            call_count["n"] += 1
+            if call_count["n"] <= 1:
+                raise _make_request_limit_error()
+            return {"ok": True}
+
+        result = self.db._retry_on_throttle(operation, operation_name="test")
+        self.assertEqual(result, {"ok": True})
+        self.assertEqual(call_count["n"], 2)
+        self.assertEqual(mock_sleep.call_count, 1)
+
+    @patch("time.sleep", return_value=None)
+    def test_throttling_exception_raises_after_max_retries(self, mock_sleep):
+        """ThrottlingException on every attempt — raises after max_retries."""
+
+        def operation():
+            raise _make_throttling_exception_error()
+
+        with self.assertRaises(ClientError) as ctx:
+            self.db._retry_on_throttle(operation, max_retries=3, operation_name="test")
+        self.assertEqual(ctx.exception.response["Error"]["Code"], "ThrottlingException")
+        self.assertEqual(mock_sleep.call_count, 3)
+
+    @patch("time.sleep", return_value=None)
+    def test_request_limit_exceeded_raises_after_max_retries(self, mock_sleep):
+        """RequestLimitExceeded on every attempt — raises after max_retries."""
+
+        def operation():
+            raise _make_request_limit_error()
+
+        with self.assertRaises(ClientError) as ctx:
+            self.db._retry_on_throttle(operation, max_retries=3, operation_name="test")
+        self.assertEqual(ctx.exception.response["Error"]["Code"], "RequestLimitExceeded")
+        self.assertEqual(mock_sleep.call_count, 3)
+
+    def test_updated_default_parameters(self):
+        """Verify _retry_on_throttle defaults are max_retries=9, initial_backoff=0.5."""
+        import inspect
+
+        sig = inspect.signature(self.db._retry_on_throttle)
+        self.assertEqual(sig.parameters["max_retries"].default, 9)
+        self.assertEqual(sig.parameters["initial_backoff"].default, 0.5)
+
+
+class TestRetryOnThrottlePBT(unittest.TestCase):
+    """Property-based tests for _retry_on_throttle throttle code handling."""
+
+    def setUp(self):
+        self.db = DynamoDB()
+
+    @given(error_code=st.sampled_from(sorted(RETRYABLE_THROTTLE_CODES)))
+    @settings(max_examples=20)
+    @patch("time.sleep", return_value=None)
+    def test_pbt_retryable_codes_trigger_retry(self, mock_sleep, error_code):
+        """Property 1: Any error code in RETRYABLE_THROTTLE_CODES triggers retry."""
+        call_count = {"n": 0}
+
+        def operation():
+            call_count["n"] += 1
+            if call_count["n"] <= 1:
+                raise _make_client_error(error_code)
+            return {"ok": True}
+
+        result = self.db._retry_on_throttle(operation, operation_name="pbt-test")
+        self.assertEqual(result, {"ok": True})
+        self.assertGreater(call_count["n"], 1, f"{error_code} should have triggered a retry")
+        self.assertGreater(mock_sleep.call_count, 0)
+
+    @given(
+        error_code=st.sampled_from(
+            [
+                "ValidationException",
+                "ResourceNotFoundException",
+                "AccessDeniedException",
+                "ConditionalCheckFailedException",
+                "ItemCollectionSizeLimitExceededException",
+                "InternalServerError",
+                "ServiceUnavailable",
+            ]
+        )
+    )
+    @settings(max_examples=30)
+    @patch("time.sleep", return_value=None)
+    def test_pbt_non_retryable_codes_raise_immediately(self, mock_sleep, error_code):
+        """Property 2: Any error code NOT in RETRYABLE_THROTTLE_CODES raises immediately."""
+
+        def operation():
+            raise _make_client_error(error_code)
+
+        with self.assertRaises(ClientError) as ctx:
+            self.db._retry_on_throttle(operation, operation_name="pbt-test")
+        self.assertEqual(ctx.exception.response["Error"]["Code"], error_code)
         mock_sleep.assert_not_called()
 
 

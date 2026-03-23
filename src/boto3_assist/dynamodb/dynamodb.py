@@ -20,6 +20,14 @@ from .dynamodb_model_base import DynamoDBModelBase
 
 logger = Logger(__name__)
 
+# DynamoDB throttling error codes that should trigger retry with backoff.
+# Covers table-level throughput, GSI auto-scaling, and account-level limits.
+RETRYABLE_THROTTLE_CODES = {
+    "ProvisionedThroughputExceededException",
+    "ThrottlingException",
+    "RequestLimitExceeded",
+}
+
 # Type variable for generic model support
 T = TypeVar("T", bound=DynamoDBModelBase)
 
@@ -157,8 +165,8 @@ class DynamoDB(DynamoDBConnection):
         self,
         operation,
         *,
-        max_retries: int = 5,
-        initial_backoff: float = 0.1,
+        max_retries: int = 9,
+        initial_backoff: float = 0.5,
         operation_name: str = "DynamoDB operation",
     ):
         """
@@ -190,12 +198,9 @@ class DynamoDB(DynamoDBConnection):
                 return operation()
             except ClientError as e:
                 error_code = e.response["Error"]["Code"]
-                if (
-                    error_code == "ProvisionedThroughputExceededException"
-                    and retry_count < max_retries
-                ):
+                if error_code in RETRYABLE_THROTTLE_CODES and retry_count < max_retries:
                     logger.warning(
-                        f"{operation_name}: Throughput exceeded. "
+                        f"{operation_name}: Throttled ({error_code}). "
                         f"Retrying in {backoff_time}s (attempt {retry_count + 1}/{max_retries})"
                     )
                     time.sleep(backoff_time)
@@ -1403,9 +1408,9 @@ class DynamoDB(DynamoDBConnection):
                 request_items[table_name]["ExpressionAttributeNames"] = expression_attribute_names
 
             # Retry logic for unprocessed keys
-            max_retries = 5
+            max_retries = 9
             retry_count = 0
-            backoff_time = 0.1  # Start with 100ms
+            backoff_time = 0.5  # Start with 500ms
 
             while retry_count <= max_retries:
                 try:
@@ -1447,12 +1452,9 @@ class DynamoDB(DynamoDBConnection):
 
                 except ClientError as e:
                     error_code = e.response["Error"]["Code"]
-                    if (
-                        error_code == "ProvisionedThroughputExceededException"
-                        and retry_count < max_retries
-                    ):
+                    if error_code in RETRYABLE_THROTTLE_CODES and retry_count < max_retries:
                         logger.warning(
-                            f"Throughput exceeded. Retrying in {backoff_time}s (attempt {retry_count + 1}/{max_retries})"
+                            f"Throttled ({error_code}). Retrying in {backoff_time}s (attempt {retry_count + 1}/{max_retries})"
                         )
                         time.sleep(backoff_time)
                         backoff_time *= 2
@@ -1587,9 +1589,9 @@ class DynamoDB(DynamoDBConnection):
             request_items = {table_name: write_requests}
 
             # Retry logic for unprocessed items
-            max_retries = 5
+            max_retries = 9
             retry_count = 0
-            backoff_time = 0.1  # Start with 100ms
+            backoff_time = 0.5  # Start with 500ms
 
             while retry_count <= max_retries:
                 try:
@@ -1632,12 +1634,9 @@ class DynamoDB(DynamoDBConnection):
 
                 except ClientError as e:
                     error_code = e.response["Error"]["Code"]
-                    if (
-                        error_code == "ProvisionedThroughputExceededException"
-                        and retry_count < max_retries
-                    ):
+                    if error_code in RETRYABLE_THROTTLE_CODES and retry_count < max_retries:
                         logger.warning(
-                            f"Throughput exceeded. Retrying in {backoff_time}s (attempt {retry_count + 1}/{max_retries})"
+                            f"Throttled ({error_code}). Retrying in {backoff_time}s (attempt {retry_count + 1}/{max_retries})"
                         )
                         time.sleep(backoff_time)
                         backoff_time *= 2
