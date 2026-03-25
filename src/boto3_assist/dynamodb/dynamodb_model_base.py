@@ -7,6 +7,7 @@ MIT License.  See Project Root for the license information.
 from __future__ import annotations
 
 import datetime as dt
+import time
 from enum import Enum
 from typing import Any, Dict, List, Set, TypeVar
 
@@ -82,9 +83,23 @@ class DynamoDBModelBase(SerializableModel):
         self.__reserved_words: DynamoDBReservedWords = DynamoDBReservedWords()
         self.__auto_generate_projections: bool = auto_generate_projections
         self.__actively_serializing_data__: bool = False
+        self._ttl: int | None = None
 
     def serialization_in_progress(self) -> bool:
         return self.__actively_serializing_data__
+
+    @property
+    def ttl(self) -> int | None:
+        """Optional TTL epoch-second timestamp. When set, DynamoDB auto-deletes the item after this time."""
+        return self._ttl
+
+    @ttl.setter
+    def ttl(self, value: int | None) -> None:
+        self._ttl = int(value) if value is not None else None
+
+    def set_ttl_from_duration(self, duration_seconds: int) -> None:
+        """Set TTL to current epoch time + duration_seconds."""
+        self._ttl = int(time.time()) + duration_seconds
 
     @property
     @exclude_from_serialization

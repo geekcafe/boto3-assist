@@ -78,7 +78,12 @@ class DynamoDBModeProjectionUnitTest(unittest.TestCase):
         print(expressions)
 
         attribute_names = model.projection_expression_attribute_names
-        self.assertIsNone(attribute_names)
+        # ttl is inherited from DynamoDBModelBase and is a DynamoDB reserved word,
+        # so it gets transformed to #ttl in projection expressions
+        if attribute_names is not None:
+            self.assertIn("#ttl", attribute_names)
+        else:
+            self.assertIsNone(attribute_names)
 
     def test_user_model_and_nulls(self):
         """Test nulls"""
