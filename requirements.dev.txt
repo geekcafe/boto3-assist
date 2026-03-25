@@ -34,3 +34,4 @@ pytest-cov
 # Metadata-Version: 1.0, 1.1, 1.2, 2.0, 2.1, 2.2, 2.3.
 pkginfo
 awscli
+hypothesis
