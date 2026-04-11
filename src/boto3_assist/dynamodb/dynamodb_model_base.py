@@ -299,21 +299,29 @@ class DynamoDBModelBase(SerializableModel):
             self, include_indexes=include_indexes, include_none=include_none
         )
 
-    def to_dict(self, include_none: bool = True):
+    def to_dict(self, include_none: bool = True, keys: List[str] | None = None):
         """
         Convert the instance to a dictionary suitable for DynamoDB client.
         """
-        return self.to_dictionary(include_none=include_none)
+        return self.to_dictionary(include_none=include_none, keys=keys)
 
-    def to_dictionary(self, include_none: bool = True):
+    def to_dictionary(self, include_none: bool = True, keys: List[str] | None = None):
         """
         Convert the instance to a dictionary without an indexes/keys.
         Useful for turning an object into a dictionary for serialization.
         This is the same as to_resource_dictionary(include_indexes=False)
+
+        Args:
+            include_none: Whether to include None values in the dictionary.
+            keys: Optional list of top-level keys to retain. When None, returns
+                  the full dictionary. When provided, returns only matching keys.
         """
-        return DynamoDBSerializer.to_resource_dictionary(
+        d = DynamoDBSerializer.to_resource_dictionary(
             self, include_indexes=False, include_none=include_none
         )
+        if keys is not None:
+            d = {k: v for k, v in d.items() if k in keys}
+        return d
 
     def get_key(self, index_name: str) -> DynamoDBIndex:
         """Get the index name and key"""
