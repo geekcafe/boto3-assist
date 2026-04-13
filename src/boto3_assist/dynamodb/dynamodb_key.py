@@ -136,4 +136,7 @@ class DynamoDBKey:
                 parts.append(f"{prefix}{value}")
         key_str = "#".join(parts)
 
+        if key_str:
+            # make it case insensitive
+            key_str = key_str.lower()
         return key_str

@@ -112,7 +112,7 @@ class DynamoDBModelUnitTest(unittest.TestCase):
 
         key_1: Dict = keys[1].get("key")
         self.assertEqual(key_1.get("name"), "gsi3_sk")
-        self.assertEqual(key_1.get("key"), "firstname#John")
+        self.assertEqual(key_1.get("key"), "firstname#john")
 
         resource = user.to_resource_dictionary()
         self.assertIsNotNone(resource)
@@ -157,7 +157,7 @@ class DynamoDBModelUnitTest(unittest.TestCase):
         self.assertEqual(keys[3].partition_key.attribute_name, "gsi3_pk")
         self.assertEqual(keys[3].partition_key.value, "users#")
         self.assertEqual(keys[3].sort_key.attribute_name, "gsi3_sk")
-        self.assertEqual(keys[3].sort_key.value, "firstname#John")
+        self.assertEqual(keys[3].sort_key.value, "firstname#john")
 
         print("stop")
 
@@ -187,10 +187,10 @@ class DynamoDBModelUnitTest(unittest.TestCase):
         self.assertEqual(dictionary.get("gsi1_sk"), "email#john@example.com")
 
         self.assertEqual(dictionary.get("gsi2_pk"), "users#")
-        self.assertEqual(dictionary.get("gsi2_sk"), "lastname#Smith#firstname#John")
+        self.assertEqual(dictionary.get("gsi2_sk"), "lastname#smith#firstname#john")
 
         self.assertEqual(dictionary.get("gsi3_pk"), "users#")
-        self.assertEqual(dictionary.get("gsi3_sk"), "firstname#John#lastname#Smith")
+        self.assertEqual(dictionary.get("gsi3_sk"), "firstname#john#lastname#smith")
 
         print("stop")
 
@@ -222,6 +222,6 @@ class DynamoDBModelUnitTest(unittest.TestCase):
         self.assertEqual(dictionary.get("gsi2_sk"), "lastname#")
 
         self.assertEqual(dictionary.get("gsi3_pk"), "users#")
-        self.assertEqual(dictionary.get("gsi3_sk"), "firstname#John")
+        self.assertEqual(dictionary.get("gsi3_sk"), "firstname#john")
 
         print("stop")
