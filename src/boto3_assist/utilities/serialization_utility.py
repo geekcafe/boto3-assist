@@ -443,6 +443,9 @@ class Serialization:
         if hasattr(target, "__actively_serializing_data__"):
             setattr(target, "__actively_serializing_data__", True)
 
+        # Track unmapped keys for diagnostic logging
+        _unmapped_keys: list = []
+
         for key, value in source.items():
             if isinstance(target, dict):
                 # our target is a dictionary, so we need to handle this differently
@@ -500,6 +503,42 @@ class Serialization:
                         )
                     else:
                         raise e
+            else:
+                # Key exists in source data but has no matching property on the
+                # target model.  Collect for a single batched warning below.
+                # Skip DynamoDB infrastructure keys that are never model properties.
+                _INFRA_KEYS = {
+                    "pk",
+                    "sk",
+                    "gsi1_pk",
+                    "gsi1_sk",
+                    "gsi2_pk",
+                    "gsi2_sk",
+                    "gsi3_pk",
+                    "gsi3_sk",
+                    "gsi4_pk",
+                    "gsi4_sk",
+                    "gsi5_pk",
+                    "gsi5_sk",
+                    "ResponseMetadata",
+                    "Item",
+                }
+                if key not in _INFRA_KEYS:
+                    _unmapped_keys.append(key)
+
+        # Emit a single warning if any non-infrastructure keys were skipped.
+        # This catches model/schema drift early — data that exists in the
+        # source but will be silently lost because the target model lacks
+        # a matching property.
+        if _unmapped_keys and not isinstance(target, dict):
+            target_class = type(target).__name__
+            logger.warning(
+                f"Deserialization dropped {len(_unmapped_keys)} unmapped attribute(s) "
+                f"on '{target_class}': {_unmapped_keys}. "
+                f"These keys exist in the source data but '{target_class}' has no "
+                f"matching property — data will be lost on a read-modify-write cycle. "
+                f"Add properties to the model or verify this is intentional."
+            )
 
         if hasattr(target, "__actively_serializing_data__"):
             setattr(target, "__actively_serializing_data__", False)
