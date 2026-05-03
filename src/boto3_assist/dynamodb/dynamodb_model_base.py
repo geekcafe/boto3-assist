@@ -285,6 +285,133 @@ class DynamoDBModelBase(SerializableModel):
         # Apply merge based on strategy
         return DynamoDBSerializer.merge(updates=updates_dict, target=self, strategy=strategy)
 
+    def save_partial(
+        self,
+        table_name: str,
+        fields_to_clear: Optional[Set[str] | List[str]] = None,
+        condition_expression: Optional[str] = None,
+        expression_attribute_names: Optional[Dict[str, str]] = None,
+        expression_attribute_values: Optional[Dict[str, Any]] = None,
+        return_values: str = "NONE",
+    ) -> Dict[str, Any]:
+        """
+        Save only the populated fields of this model instance to DynamoDB.
+
+        This is a convenience method that delegates to DynamoDB.update_item_partial(),
+        automatically generating an update expression from the model's non-None fields.
+        Only fields that have been explicitly set to non-None values are updated.
+        Fields set to None are excluded from the update (unless explicitly marked with
+        CLEAR_FIELD sentinel).
+
+        Primary key fields and index fields are automatically protected from updates.
+        Reserved keywords are handled transparently without manual expression attribute
+        name management.
+
+        Args:
+            table_name: The DynamoDB table name to update in.
+            fields_to_clear: Optional set or list of field names to remove from the item.
+                These fields will be included in a REMOVE operation. Cannot include
+                primary key or index fields.
+            condition_expression: Optional condition that must be satisfied for the update
+                to succeed. If the condition fails, a RuntimeError is raised.
+            expression_attribute_names: Optional additional attribute name mappings.
+                These will be merged with auto-generated mappings for reserved keywords.
+            expression_attribute_values: Optional additional value mappings.
+                These will be merged with auto-generated value mappings.
+            return_values: What to return from the update operation:
+                - "NONE" (default): Return minimal response
+                - "ALL_NEW": Return the complete updated item
+                - "UPDATED_NEW": Return only the fields that were updated
+                - "ALL_OLD": Return the complete item before the update
+                - "UPDATED_OLD": Return only the fields that were updated, before the update
+
+        Returns:
+            DynamoDB response dict with optional Attributes based on return_values parameter.
+
+        Raises:
+            ValueError: If table_name is missing, primary keys are not populated,
+                or if attempting to clear primary key/index fields.
+            RuntimeError: If condition expression fails or serialization error occurs.
+            ClientError: For DynamoDB errors (throttling, permissions, etc.).
+
+        Examples:
+            Basic partial update - only populated fields are updated:
+                >>> user = User()
+                >>> user.id = "user-123"
+                >>> user.name = "John Doe"
+                >>> user.email = "john@example.com"
+                >>> # Only name and email are updated (id is primary key)
+                >>> response = user.save_partial(table_name="users")
+
+            Clear specific fields:
+                >>> user = User()
+                >>> user.id = "user-123"
+                >>> user.name = "Jane Doe"
+                >>> # Clear temp_field and description from the item
+                >>> response = user.save_partial(
+                ...     table_name="users",
+                ...     fields_to_clear={"temp_field", "description"}
+                ... )
+
+            Conditional write with version check:
+                >>> user = User()
+                >>> user.id = "user-123"
+                >>> user.name = "Jane Doe"
+                >>> user.version = 5
+                >>> # Only update if version hasn't changed
+                >>> response = user.save_partial(
+                ...     table_name="users",
+                ...     condition_expression="version = :expected_version",
+                ...     expression_attribute_values={":expected_version": 5}
+                ... )
+
+            Get updated item back:
+                >>> user = User()
+                >>> user.id = "user-123"
+                >>> user.name = "Jane Doe"
+                >>> response = user.save_partial(
+                ...     table_name="users",
+                ...     return_values="ALL_NEW"
+                ... )
+                >>> updated_user = response.get("Attributes", {})
+
+            Integration with merge() pattern:
+                >>> # Load existing item
+                >>> existing = User().map(db_response)
+                >>> # Merge partial updates
+                >>> existing.merge({"name": "Jane", "status": "active"})
+                >>> # Update only merged fields
+                >>> response = existing.save_partial(table_name="users")
+
+            Combining updates and clears:
+                >>> user = User()
+                >>> user.id = "user-123"
+                >>> user.name = "Jane Doe"
+                >>> user.email = "jane@example.com"
+                >>> response = user.save_partial(
+                ...     table_name="users",
+                ...     fields_to_clear={"temp_field", "old_data"}
+                ... )
+                >>> # name and email are SET, temp_field and old_data are REMOVED
+        """
+        # Import here to avoid circular imports
+        from boto3_assist.dynamodb.dynamodb import DynamoDB
+
+        # Get DynamoDB instance from connection pool for efficiency
+        db = DynamoDB.from_pool()
+
+        # Delegate to update_item_partial with self as the item
+        return db.update_item_partial(
+            item=self,
+            table_name=table_name,
+            fields_to_clear=fields_to_clear,
+            condition_expression=condition_expression,
+            expression_attribute_names=expression_attribute_names,
+            expression_attribute_values=expression_attribute_values,
+            return_values=return_values,
+            source=self.__class__.__name__,
+        )
+
     def to_client_dictionary(self, include_indexes: bool = True):
         """
         Convert the instance to a dictionary suitable for DynamoDB client.

@@ -5,7 +5,7 @@ MIT License.  See Project Root for the license information.
 """
 
 import os
-from typing import Any, Dict, List, Optional, Type, TypedDict, TypeVar, Union, overload
+from typing import Any, Dict, List, Optional, Set, Type, TypedDict, TypeVar, Union, overload
 
 from aws_lambda_powertools import Logger
 from boto3.dynamodb.conditions import Attr, ComparisonCondition, ConditionBase, Key  # And,; Equals,
@@ -758,6 +758,266 @@ class DynamoDB(DynamoDBConnection):
                 ) from e
 
             logger.exception(f"Error in update_item: {str(e)}")
+            raise
+
+    def update_item_partial(
+        self,
+        item: Union[Dict[str, Any], DynamoDBModelBase],
+        table_name: str,
+        fields_to_clear: Optional[Union[Set[str], List[str]]] = None,
+        condition_expression: Optional[str] = None,
+        expression_attribute_names: Optional[Dict[str, str]] = None,
+        expression_attribute_values: Optional[Dict[str, Any]] = None,
+        return_values: str = "NONE",
+        source: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Perform a partial update on an item in DynamoDB using only populated fields.
+
+        This is a convenience method that automatically generates an UpdateItem expression
+        from a model or dictionary. Only non-None fields are updated (SET operations).
+        Fields specified in fields_to_clear are removed (REMOVE operations).
+        Primary key fields and index fields are protected from updates.
+
+        Args:
+            item: Item to update. Can be a dictionary or DynamoDBModelBase instance.
+                Must include all primary key attributes.
+            table_name: DynamoDB table name
+            fields_to_clear: Optional set or list of field names to remove from the item
+            condition_expression: Optional condition that must be satisfied
+            expression_attribute_names: Additional attribute name mappings (merged with auto-generated)
+            expression_attribute_values: Additional value mappings (merged with auto-generated)
+            return_values: What to return ("NONE", "ALL_NEW", "UPDATED_NEW", "ALL_OLD", "UPDATED_OLD")
+            source: Optional identifier for logging/tracking
+
+        Returns:
+            DynamoDB response dict with optional Attributes based on return_values
+
+        Raises:
+            ValueError: If table_name is missing or primary keys not populated
+            RuntimeError: If condition expression fails or serialization error occurs
+            ClientError: For DynamoDB errors
+
+        Examples:
+            Basic partial update:
+                >>> user = User()
+                >>> user.id = "user-123"
+                >>> user.name = "John Doe"
+                >>> user.email = "john@example.com"
+                >>> db = DynamoDB()
+                >>> # Only name and email are updated (id is primary key)
+                >>> response = db.update_item_partial(item=user, table_name="users")
+
+            Clear specific fields:
+                >>> response = db.update_item_partial(
+                ...     item=user,
+                ...     table_name="users",
+                ...     fields_to_clear={"temp_field", "description"}
+                ... )
+
+            With conditional write:
+                >>> response = db.update_item_partial(
+                ...     item=user,
+                ...     table_name="users",
+                ...     condition_expression="version = :expected_version",
+                ...     expression_attribute_values={":expected_version": 5}
+                ... )
+
+            With return values:
+                >>> response = db.update_item_partial(
+                ...     item=user,
+                ...     table_name="users",
+                ...     return_values="ALL_NEW"
+                ... )
+                >>> updated_user = response.get("Attributes", {})
+        """
+        # Import here to avoid circular imports
+        from .partial_update_builder import PartialUpdateBuilder
+
+        try:
+            # Validate table_name
+            if not table_name:
+                raise ValueError("table_name is required for update_item_partial()")
+
+            # Validate return_values
+            valid_return_values = {"NONE", "ALL_NEW", "UPDATED_NEW", "ALL_OLD", "UPDATED_OLD"}
+            if return_values not in valid_return_values:
+                raise ValueError(
+                    f"return_values must be one of {valid_return_values}, got {return_values}"
+                )
+
+            # Convert model to dict if needed
+            if not isinstance(item, dict):
+                if not isinstance(item, DynamoDBModelBase):
+                    raise RuntimeError(
+                        f"Item is not a dictionary or DynamoDBModelBase. Type: {type(item).__name__}. "
+                        "Unable to update item in DynamoDB."
+                    )
+                try:
+                    item_dict = item.to_resource_dictionary(
+                        include_none=False, include_indexes=False
+                    )
+                except Exception as e:  # pylint: disable=w0718
+                    logger.exception(e)
+                    raise RuntimeError(
+                        "An error occurred during model conversion. The item was not updated."
+                    ) from e
+            else:
+                item_dict = item.copy()
+
+            # Get the model instance for index information
+            model_instance = item if isinstance(item, DynamoDBModelBase) else None
+
+            # Extract primary key fields
+            if model_instance:
+                primary_index = model_instance.indexes.primary
+                if primary_index is None:
+                    # No primary index defined, use default pk/sk
+                    pk_name = "pk"
+                    sk_name = "sk"
+                else:
+                    pk_name = primary_index.partition_key.attribute_name
+                    sk_name = (
+                        primary_index.sort_key.attribute_name if primary_index.sort_key else None
+                    )
+
+                # Validate primary keys are populated
+                if pk_name not in item_dict or item_dict[pk_name] is None:
+                    raise ValueError(f"Primary key field '{pk_name}' is not populated")
+                if sk_name and (sk_name not in item_dict or item_dict[sk_name] is None):
+                    raise ValueError(f"Primary key field '{sk_name}' is not populated")
+
+                # Build primary key for update
+                key = {pk_name: item_dict[pk_name]}
+                if sk_name:
+                    key[sk_name] = item_dict[sk_name]
+
+                # Get protected fields (primary key and index fields)
+                protected_fields = {pk_name}
+                if sk_name:
+                    protected_fields.add(sk_name)
+
+                # Add GSI fields to protected set
+                if primary_index:
+                    for gsi in model_instance.indexes.secondaries.values():
+                        if gsi.partition_key and gsi.partition_key.attribute_name:
+                            protected_fields.add(gsi.partition_key.attribute_name)
+                        if gsi.sort_key and gsi.sort_key.attribute_name:
+                            protected_fields.add(gsi.sort_key.attribute_name)
+            else:
+                # For dict input, assume pk and sk are the primary keys
+                if "pk" not in item_dict or item_dict["pk"] is None:
+                    raise ValueError("Primary key field 'pk' is not populated")
+                if "sk" not in item_dict or item_dict["sk"] is None:
+                    raise ValueError("Primary key field 'sk' is not populated")
+
+                key = {"pk": item_dict["pk"], "sk": item_dict["sk"]}
+                protected_fields = {"pk", "sk"}
+
+            # Remove primary key and index fields from update dict
+            fields_to_update = {k: v for k, v in item_dict.items() if k not in protected_fields}
+
+            # Validate fields_to_clear
+            if fields_to_clear:
+                fields_to_clear_set = (
+                    set(fields_to_clear) if isinstance(fields_to_clear, list) else fields_to_clear
+                )
+                # Check for protected fields in fields_to_clear
+                protected_in_clear = fields_to_clear_set & protected_fields
+                if protected_in_clear:
+                    raise ValueError(
+                        f"Cannot clear primary key or index fields: {protected_in_clear}"
+                    )
+            else:
+                fields_to_clear_set = set()
+
+            # Validate at least one field to update
+            if not fields_to_update and not fields_to_clear_set:
+                raise ValueError("No fields to update or clear")
+
+            # Build update expression using PartialUpdateBuilder
+            builder = PartialUpdateBuilder()
+            components = builder.build_update_expression(
+                fields_to_update=fields_to_update,
+                fields_to_clear=fields_to_clear_set,
+            )
+
+            # Merge expression attribute names
+            merged_names = {}
+            if components.expression_attribute_names:
+                merged_names.update(components.expression_attribute_names)
+            if expression_attribute_names:
+                merged_names.update(expression_attribute_names)
+
+            # Merge expression attribute values
+            merged_values = {}
+            if components.expression_attribute_values:
+                merged_values.update(components.expression_attribute_values)
+            if expression_attribute_values:
+                merged_values.update(expression_attribute_values)
+
+            # Convert numeric types to Decimal
+            merged_values = DecimalConversionUtility.convert_native_types_to_decimals(merged_values)
+
+            # Call update_item with generated expression
+            response = self.update_item(
+                table_name=table_name,
+                key=key,
+                update_expression=components.update_expression,
+                expression_attribute_names=merged_names if merged_names else None,
+                expression_attribute_values=merged_values if merged_values else None,
+                condition_expression=condition_expression,
+                return_values=return_values,
+            )
+
+            # Log successful update
+            field_count = len(fields_to_update) + len(fields_to_clear_set)
+            logger.info(
+                {
+                    "source": source,
+                    "metric_filter": "update_item_partial",
+                    "table_name": table_name,
+                    "field_count": field_count,
+                }
+            )
+
+            return response
+
+        except ValueError as e:
+            logger.warning(
+                {
+                    "source": source,
+                    "metric_filter": "update_item_partial",
+                    "error": str(e),
+                }
+            )
+            raise
+        except RuntimeError as e:
+            logger.warning(
+                {
+                    "source": source,
+                    "metric_filter": "update_item_partial",
+                    "error": str(e),
+                }
+            )
+            raise
+        except ClientError as e:
+            logger.exception(
+                {
+                    "source": source,
+                    "metric_filter": "update_item_partial",
+                    "error": str(e),
+                }
+            )
+            raise
+        except Exception as e:  # pylint: disable=w0718
+            logger.exception(
+                {
+                    "source": source,
+                    "metric_filter": "update_item_partial",
+                    "error": str(e),
+                }
+            )
             raise
 
     def query(

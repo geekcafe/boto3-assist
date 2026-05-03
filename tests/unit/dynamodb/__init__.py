@@ -1,0 +1,1 @@
+# DynamoDB tests package
