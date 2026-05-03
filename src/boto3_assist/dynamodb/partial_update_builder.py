@@ -10,7 +10,7 @@ expressions from model fields, handling reserved keywords and field filtering.
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, Set, Tuple
+from typing import Any, Dict, Optional, Set, Tuple
 
 from boto3_assist.dynamodb.dynamodb_reserved_words import DynamoDBReservedWords
 

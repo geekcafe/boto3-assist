@@ -9,7 +9,7 @@ from __future__ import annotations
 import datetime as dt
 import time
 from enum import Enum
-from typing import Any, Dict, List, Set, TypeVar
+from typing import Any, Dict, List, Optional, Set, TypeVar
 
 from boto3.dynamodb.types import TypeSerializer
 
