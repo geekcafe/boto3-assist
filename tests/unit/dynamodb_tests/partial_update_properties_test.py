@@ -162,7 +162,7 @@ class TestIdempotenceOfPartialUpdates(unittest.TestCase):
     @settings(max_examples=50)
     def test_idempotence_of_partial_updates(self, fields):
         """
-        Test that calling save_partial() twice with the same fields produces
+        Test that calling update_item_partial() twice with the same fields produces
         the same result as calling it once.
         """
         # Skip if no fields to update
@@ -449,7 +449,7 @@ class TestPrimaryKeyImmutability(unittest.TestCase):
 
     **Validates: Requirements 6.5, 9.5**
 
-    Primary key fields should never be updated via save_partial().
+    Primary key fields should never be updated via update_item_partial().
     """
 
     def setUp(self):
@@ -672,7 +672,7 @@ class TestModelInstanceImmutability(unittest.TestCase):
 
     **Validates: Requirements 6.3**
 
-    Calling save_partial() should not modify the model instance.
+    Calling update_item_partial() should not modify the model instance.
     """
 
     def setUp(self):
@@ -688,7 +688,7 @@ class TestModelInstanceImmutability(unittest.TestCase):
     @settings(max_examples=50)
     def test_model_instance_not_modified(self, fields):
         """
-        Test that calling save_partial() doesn't modify the model instance.
+        Test that calling update_item_partial() doesn't modify the model instance.
         """
         # Skip if no fields to update
         if not fields:
@@ -703,7 +703,7 @@ class TestModelInstanceImmutability(unittest.TestCase):
             if hasattr(model, field_name):
                 setattr(model, field_name, field_value)
 
-        # Capture model state before save_partial
+        # Capture model state before update_item_partial
         model_state_before = {
             "pk": model.pk,
             "sk": model.sk,
@@ -715,9 +715,9 @@ class TestModelInstanceImmutability(unittest.TestCase):
         # Save initial item
         self.db.save(item=model, table_name=self.table_name)
 
-        # Call save_partial - may raise ValueError if no fields to update
+        # Call update_item_partial - may raise ValueError if no fields to update
         try:
-            model.save_partial(table_name=self.table_name)
+            self.db.update_item_partial(item=model, table_name=self.table_name)
         except ValueError:
             # Skip if no fields to update (all fields are protected)
             return

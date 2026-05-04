@@ -770,6 +770,7 @@ class DynamoDB(DynamoDBConnection):
         expression_attribute_values: Optional[Dict[str, Any]] = None,
         return_values: str = "NONE",
         source: Optional[str] = None,
+        exclude_empty_collections: bool = True,
     ) -> Dict[str, Any]:
         """
         Perform a partial update on an item in DynamoDB using only populated fields.
@@ -778,6 +779,8 @@ class DynamoDB(DynamoDBConnection):
         from a model or dictionary. Only non-None fields are updated (SET operations).
         Fields specified in fields_to_clear are removed (REMOVE operations).
         Primary key fields and index fields are protected from updates.
+        By default, empty collections ([], {}) are excluded to prevent accidentally
+        overwriting populated arrays/maps in DynamoDB with empty defaults.
 
         Args:
             item: Item to update. Can be a dictionary or DynamoDBModelBase instance.
@@ -789,6 +792,10 @@ class DynamoDB(DynamoDBConnection):
             expression_attribute_values: Additional value mappings (merged with auto-generated)
             return_values: What to return ("NONE", "ALL_NEW", "UPDATED_NEW", "ALL_OLD", "UPDATED_OLD")
             source: Optional identifier for logging/tracking
+            exclude_empty_collections: If True (default), empty lists [] and empty dicts {}
+                are excluded from the update to prevent overwriting populated collections
+                in DynamoDB with empty defaults. Set to False if you intentionally want to
+                overwrite a collection with an empty value.
 
         Returns:
             DynamoDB response dict with optional Attributes based on return_values
@@ -916,6 +923,15 @@ class DynamoDB(DynamoDBConnection):
 
             # Remove primary key and index fields from update dict
             fields_to_update = {k: v for k, v in item_dict.items() if k not in protected_fields}
+
+            # Exclude empty collections ([], {}) to prevent overwriting populated
+            # arrays/maps in DynamoDB with empty model defaults
+            if exclude_empty_collections:
+                fields_to_update = {
+                    k: v
+                    for k, v in fields_to_update.items()
+                    if not (isinstance(v, (list, dict)) and len(v) == 0)
+                }
 
             # Validate fields_to_clear
             if fields_to_clear:

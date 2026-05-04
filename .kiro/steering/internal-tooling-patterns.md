@@ -66,21 +66,27 @@ Use the `.merge()` method to populate only specific fields from a dictionary or 
 # CORRECT — use merge() to update specific fields
 existing_user = User().map(db_response)
 existing_user.merge({"name": "Jane Doe", "status": "active"})
-response = existing_user.save_partial(table_name="users")
+response = db.update_item_partial(item=existing_user, table_name="users")
 ```
 
-### Use `.save_partial()` for Selective Updates
+### Use `db.update_item_partial()` for Selective Updates
 
-Use the `.save_partial()` method to update only populated fields without replacing the entire item.
+Use the `DynamoDB.update_item_partial()` method to update only populated fields without replacing the entire item. Models are DTOs only and should not perform database actions directly.
 
 ```python
-# CORRECT — save_partial() updates only non-None fields
+# CORRECT — use db.update_item_partial() for selective updates
+db = DynamoDB()
 user = User()
 user.id = "user-123"
 user.name = "Jane Doe"
 user.email = "jane@example.com"
 # Only name and email are updated (id is primary key)
-response = user.save_partial(table_name="users")
+response = db.update_item_partial(item=user, table_name="users")
+```
+
+```python
+# WRONG — don't call database methods on models
+response = user.save_partial(table_name="users")  # Don't do this
 ```
 
 ## Testing Patterns
@@ -285,13 +291,14 @@ Always include type hints for better IDE support and code clarity:
 
 ```python
 # CORRECT — include type hints
-def save_partial(
+def update_item_partial(
     self,
+    item: Union[Dict[str, Any], DynamoDBModelBase],
     table_name: str,
     fields_to_clear: Optional[Set[str]] = None,
     return_values: str = "NONE",
 ) -> Dict[str, Any]:
-    """Save only populated fields to DynamoDB"""
+    """Update only populated fields in DynamoDB"""
     ...
 ```
 
@@ -301,16 +308,18 @@ Include docstrings with examples:
 
 ```python
 # CORRECT — include comprehensive docstrings
-def save_partial(
+def update_item_partial(
     self,
+    item: Union[Dict[str, Any], DynamoDBModelBase],
     table_name: str,
     fields_to_clear: Optional[Set[str]] = None,
     return_values: str = "NONE",
 ) -> Dict[str, Any]:
     """
-    Save only the populated fields of this model instance to DynamoDB.
+    Perform a partial update on an item in DynamoDB using only populated fields.
 
     Args:
+        item: Item to update (dict or DynamoDBModelBase instance)
         table_name: The DynamoDB table name
         fields_to_clear: Optional set of field names to remove
         return_values: What to return ("NONE", "ALL_NEW", "UPDATED_NEW", etc.)
@@ -319,10 +328,11 @@ def save_partial(
         DynamoDB response dict with optional Attributes
 
     Examples:
+        >>> db = DynamoDB()
         >>> user = User()
         >>> user.id = "user-123"
         >>> user.name = "John Doe"
-        >>> response = user.save_partial(table_name="users")
+        >>> response = db.update_item_partial(item=user, table_name="users")
     """
     ...
 ```
