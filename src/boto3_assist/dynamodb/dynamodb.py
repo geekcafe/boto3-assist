@@ -778,7 +778,10 @@ class DynamoDB(DynamoDBConnection):
         This is a convenience method that automatically generates an UpdateItem expression
         from a model or dictionary. Only non-None fields are updated (SET operations).
         Fields specified in fields_to_clear are removed (REMOVE operations).
-        Primary key fields and index fields are protected from updates.
+        Primary key fields are protected from updates.
+        When a model instance is provided, prep_for_save() is called to recompute GSI
+        key attributes, and those attributes are included in the update expression so
+        that GSI indexes stay in sync with the model's current field values.
         By default, empty collections ([], {}) are excluded to prevent accidentally
         overwriting populated arrays/maps in DynamoDB with empty defaults.
 
@@ -861,8 +864,13 @@ class DynamoDB(DynamoDBConnection):
                         "Unable to update item in DynamoDB."
                     )
                 try:
+                    # include_indexes=True so that GSI key attributes are
+                    # included in the serialized dict and become part of the
+                    # SET expression, keeping GSI indexes in sync.
+                    # NOTE: The caller is responsible for calling prep_for_save()
+                    # before passing the model if GSI keys need recomputation.
                     item_dict = item.to_resource_dictionary(
-                        include_none=False, include_indexes=False
+                        include_none=False, include_indexes=True
                     )
                 except Exception as e:  # pylint: disable=w0718
                     logger.exception(e)
@@ -899,18 +907,13 @@ class DynamoDB(DynamoDBConnection):
                 if sk_name:
                     key[sk_name] = item_dict[sk_name]
 
-                # Get protected fields (primary key and index fields)
+                # Get protected fields (primary key fields only — these are used
+                # in the Key parameter and cannot be updated).
+                # GSI key attributes are NOT protected because they must be
+                # included in the update expression to keep GSI indexes in sync.
                 protected_fields = {pk_name}
                 if sk_name:
                     protected_fields.add(sk_name)
-
-                # Add GSI fields to protected set
-                if primary_index:
-                    for gsi in model_instance.indexes.secondaries.values():
-                        if gsi.partition_key and gsi.partition_key.attribute_name:
-                            protected_fields.add(gsi.partition_key.attribute_name)
-                        if gsi.sort_key and gsi.sort_key.attribute_name:
-                            protected_fields.add(gsi.sort_key.attribute_name)
             else:
                 # For dict input, assume pk and sk are the primary keys
                 if "pk" not in item_dict or item_dict["pk"] is None:
