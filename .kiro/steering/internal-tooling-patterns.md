@@ -27,10 +27,12 @@ user = User.from_response(response)  # Don't do this
 
 ### Use `.prep_for_save()` Before Saving
 
-Always call `prep_for_save()` before saving a model. This recomputes GSI keys and sets timestamps.
+Call `prep_for_save()` before saving a model to set defaults (ID, timestamps, etc.) that are intentionally left `None` on a fresh model. GSI keys are NOT computed by `prep_for_save()` — they are computed automatically by the lambda accessors on the index definitions when `to_resource_dictionary()` is called (which happens inside `db.save()`).
+
+Properties start as `None` so models can be used cleanly as query templates (e.g., only setting `tenant_id` for a GSI lookup without triggering ID generation).
 
 ```python
-# CORRECT — prepare model before saving
+# CORRECT — prep_for_save sets defaults, then save evaluates GSI key lambdas
 user = User()
 user.id = "user-123"
 user.name = "John Doe"
