@@ -161,6 +161,44 @@ class DynamoDB(DynamoDBConnection):
 
         return DecimalConversionUtility.convert_decimals_to_native_types(response)
 
+    @staticmethod
+    def _is_client_format(item: Dict[str, Any]) -> bool:
+        """Determine if a dict item is in DynamoDB client (typed) format.
+
+        The DynamoDB client API uses typed attribute values like:
+            {"pk": {"S": "user#123"}, "age": {"N": "25"}}
+
+        The resource API uses native Python types:
+            {"pk": "user#123", "age": 25}
+
+        This method checks whether the item uses client format by inspecting
+        the first value. A value is considered client format if it is a dict
+        whose keys are all valid DynamoDB type descriptors.
+
+        This replaces the naive heuristic of `isinstance(first_value, dict)`
+        which incorrectly identifies resource-format items that happen to have
+        a dict-valued property (e.g., config_snapshot, metadata) as the first
+        key in iteration order.
+
+        Args:
+            item: The dictionary to check.
+
+        Returns:
+            True if the item appears to be in DynamoDB client (typed) format.
+        """
+        if not item:
+            return False
+
+        # DynamoDB type descriptors
+        type_descriptors = {"S", "N", "B", "SS", "NS", "BS", "NULL", "BOOL", "L", "M"}
+
+        first_value = next(iter(item.values()))
+        if not isinstance(first_value, dict):
+            return False
+
+        # All keys in the first value must be valid DynamoDB type descriptors
+        return bool(first_value) and all(k in type_descriptors for k in first_value.keys())
+
     def _retry_on_throttle(
         self,
         operation,
@@ -347,7 +385,7 @@ class DynamoDB(DynamoDBConnection):
                 # (DynamoDB doesn't accept float, requires Decimal)
                 item = DecimalConversionUtility.convert_native_types_to_decimals(item)
 
-            if isinstance(item, dict) and isinstance(next(iter(item.values())), dict):
+            if isinstance(item, dict) and self._is_client_format(item):
                 # Use boto3.client syntax
                 # client API style
                 params = {
