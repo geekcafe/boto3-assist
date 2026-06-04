@@ -460,6 +460,18 @@ class DynamoDB(DynamoDBConnection):
                 else:
                     raise RuntimeError(f"Conditional check failed for item in {table_name}") from e
 
+            if error_code == "ResourceNotFoundException":
+                msg = (
+                    f"DynamoDB table '{table_name}' does not exist or is not accessible. "
+                    f"Verify the DYNAMODB_TABLE_NAME environment variable is set correctly "
+                    f"and the table has been deployed to this region/account."
+                )
+                logger.error({"source": f"{source}", "metric_filter": "put_item", "error": msg})
+                raise ClientError(
+                    {"Error": {"Code": error_code, "Message": msg}},
+                    "PutItem",
+                ) from e
+
             logger.exception({"source": f"{source}", "metric_filter": "put_item", "error": str(e)})
             raise
 
@@ -673,6 +685,28 @@ class DynamoDB(DynamoDBConnection):
                 raise ValueError(
                     f"Unknown call_type of {call_type}. Supported call_types [resource | client]"
                 )
+        except ClientError as e:
+            error_code = e.response["Error"]["Code"]
+            if error_code == "ResourceNotFoundException":
+                msg = (
+                    f"DynamoDB table '{table_name}' does not exist or is not accessible. "
+                    f"Verify the DYNAMODB_TABLE_NAME environment variable is set correctly "
+                    f"and the table has been deployed to this region/account."
+                )
+                logger.error({"source": f"{source}", "metric_filter": "get_item", "error": msg})
+                if self.raise_on_error:
+                    raise ClientError(
+                        {"Error": {"Code": error_code, "Message": msg}},
+                        "GetItem",
+                    ) from e
+                response = {"exception": msg}
+            else:
+                logger.exception(
+                    {"source": f"{source}", "metric_filter": "get_item", "error": str(e)}
+                )
+                response = {"exception": str(e)}
+                if self.raise_on_error:
+                    raise e
         except Exception as e:  # pylint: disable=w0718
             logger.exception({"source": f"{source}", "metric_filter": "get_item", "error": str(e)})
 
@@ -1269,6 +1303,26 @@ class DynamoDB(DynamoDBConnection):
                     operation_name="query",
                 )
             )
+        except ClientError as e:
+            error_code = e.response["Error"]["Code"]
+            if error_code == "ResourceNotFoundException":
+                msg = (
+                    f"DynamoDB table '{table_name}' does not exist or is not accessible. "
+                    f"Verify the DYNAMODB_TABLE_NAME environment variable is set correctly "
+                    f"and the table has been deployed to this region/account."
+                )
+                logger.error({"source": f"{source}", "metric_filter": "query", "error": msg})
+                if self.raise_on_error:
+                    raise ClientError(
+                        {"Error": {"Code": error_code, "Message": msg}},
+                        "Query",
+                    ) from e
+                response = {"exception": msg}
+            else:
+                logger.exception({"source": f"{source}", "metric_filter": "query", "error": str(e)})
+                response = {"exception": str(e)}
+                if self.raise_on_error:
+                    raise e
         except Exception as e:  # pylint: disable=w0718
             logger.exception({"source": f"{source}", "metric_filter": "query", "error": str(e)})
             response = {"exception": str(e)}
@@ -1373,10 +1427,25 @@ class DynamoDB(DynamoDBConnection):
             raise ValueError("table_name and primary_key must be provided.")
 
         table = self.dynamodb_resource.Table(table_name)
-        response = self._retry_on_throttle(
-            lambda: table.delete_item(Key=primary_key),
-            operation_name="delete",
-        )
+        try:
+            response = self._retry_on_throttle(
+                lambda: table.delete_item(Key=primary_key),
+                operation_name="delete",
+            )
+        except ClientError as e:
+            error_code = e.response["Error"]["Code"]
+            if error_code == "ResourceNotFoundException":
+                msg = (
+                    f"DynamoDB table '{table_name}' does not exist or is not accessible. "
+                    f"Verify the DYNAMODB_TABLE_NAME environment variable is set correctly "
+                    f"and the table has been deployed to this region/account."
+                )
+                logger.error({"metric_filter": "delete_item", "error": msg})
+                raise ClientError(
+                    {"Error": {"Code": error_code, "Message": msg}},
+                    "DeleteItem",
+                ) from e
+            raise
 
         return response
 
