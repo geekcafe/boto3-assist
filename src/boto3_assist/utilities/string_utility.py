@@ -261,13 +261,20 @@ class StringUtility:
     @staticmethod
     def generate_sortable_uuid():
         """
-        Generates a unique id for the execution event
+        Generates a unique id for the execution event.
+
+        Format: {epoch_seconds}-{fractional}-{uuid}
+        Example: 1781456856-061292-8a631638-6813-11f1-8000-000000000000
+
+        The hyphen separator is URL-safe (no percent-encoding needed in paths).
+        Previously used a colon separator which required URL-encoding and caused
+        issues with API Gateway path parameter handling.
         """
         epoch_time = time.time()
         sortable_uuid: uuid.UUID = DatetimeUtility.uuid1_utc(timestamp=epoch_time)
 
         time_stamp = str(epoch_time).replace(".", "-")
-        sortable_id = f"{time_stamp}:{str(sortable_uuid)}"
+        sortable_id = f"{time_stamp}-{str(sortable_uuid)}"
         return sortable_id
 
     @staticmethod
