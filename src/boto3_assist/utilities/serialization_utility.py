@@ -8,6 +8,7 @@ import datetime as dt
 import decimal
 import inspect
 import json
+import re
 import typing
 import uuid
 from datetime import datetime
@@ -22,6 +23,11 @@ T = TypeVar("T")
 
 
 logger = Logger(__name__)
+
+# Pattern matching DynamoDB GSI key attributes (gsi1_pk, gsi2_sk, gsi10_pk, etc.)
+# These are infrastructure keys that never map to model properties — they are
+# computed by index lambda accessors during serialization (to_resource_dictionary).
+_GSI_KEY_PATTERN = re.compile(r"^gsi\d+_(pk|sk)$")
 
 
 class SerializableModel:
@@ -507,23 +513,15 @@ class Serialization:
                 # Key exists in source data but has no matching property on the
                 # target model.  Collect for a single batched warning below.
                 # Skip DynamoDB infrastructure keys that are never model properties.
+                # Uses a regex pattern for GSI keys so new indexes don't require
+                # updating this set.
                 _INFRA_KEYS = {
                     "pk",
                     "sk",
-                    "gsi1_pk",
-                    "gsi1_sk",
-                    "gsi2_pk",
-                    "gsi2_sk",
-                    "gsi3_pk",
-                    "gsi3_sk",
-                    "gsi4_pk",
-                    "gsi4_sk",
-                    "gsi5_pk",
-                    "gsi5_sk",
                     "ResponseMetadata",
                     "Item",
                 }
-                if key not in _INFRA_KEYS:
+                if key not in _INFRA_KEYS and not _GSI_KEY_PATTERN.match(key):
                     _unmapped_keys.append(key)
 
         # Emit a single warning if any non-infrastructure keys were skipped.
