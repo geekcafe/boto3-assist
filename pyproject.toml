@@ -1,6 +1,6 @@
 [project]
 name = "boto3_assist"
-version = "0.65.0"
+version = "0.66.0"
 
 authors = [{ name = "Eric Wilson", email = "boto3-assist@geekcafe.com" }]
 description = "Additional boto3 wrappers to make your life a little easier"
