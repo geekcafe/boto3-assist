@@ -307,9 +307,15 @@ class DynamoDBModelBase(SerializableModel):
 
     def to_dictionary(self, include_none: bool = True, keys: List[str] | None = None):
         """
-        Convert the instance to a dictionary without an indexes/keys.
-        Useful for turning an object into a dictionary for serialization.
-        This is the same as to_resource_dictionary(include_indexes=False)
+        Convert the instance to a dictionary without indexes/keys.
+        Useful for turning an object into a dictionary for serialization
+        (e.g. an API response).
+
+        Numeric values are emitted as NATIVE Python types — a ``float`` stays a
+        ``float`` and a ``Decimal`` becomes ``int``/``float`` — so a downstream
+        ``json.dumps`` renders them as JSON numbers rather than strings. This is
+        the key difference from ``to_resource_dictionary(include_indexes=False)``,
+        which is DynamoDB-write-bound and emits ``Decimal``.
 
         Args:
             include_none: Whether to include None values in the dictionary.
@@ -317,7 +323,10 @@ class DynamoDBModelBase(SerializableModel):
                   the full dictionary. When provided, returns only matching keys.
         """
         d = DynamoDBSerializer.to_resource_dictionary(
-            self, include_indexes=False, include_none=include_none
+            self,
+            include_indexes=False,
+            include_none=include_none,
+            native_numbers=True,
         )
         if keys is not None:
             d = {k: v for k, v in d.items() if k in keys}
@@ -432,12 +441,19 @@ class DynamoDBSerializer:
         instance: DynamoDBModelBase,
         include_indexes: bool = True,
         include_none: bool = False,
+        native_numbers: bool = False,
     ) -> Dict[str, Any]:
         """
         Convert a Python class instance to a dictionary suitable for DynamoDB resource.
 
         Args:
         - instance: The class instance to be converted.
+        - include_indexes: Whether to add the computed pk/sk/GSI key attributes.
+        - include_none: Whether to include None values.
+        - native_numbers: When ``False`` (default), numeric values are emitted as
+          ``Decimal`` — the format DynamoDB requires for a resource write. When
+          ``True`` (used by ``DynamoDBModelBase.to_dictionary()``), numeric values
+          are emitted as native ``int``/``float`` for an app-facing/API dictionary.
 
         Returns:
         - dict: A dictionary representation of the class instance suitable for DynamoDB resource.
@@ -446,6 +462,7 @@ class DynamoDBSerializer:
             instance,
             lambda x: x,
             include_none=include_none,
+            native_numbers=native_numbers,
         )
 
         if include_indexes:

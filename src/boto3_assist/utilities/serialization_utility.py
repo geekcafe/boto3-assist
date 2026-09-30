@@ -66,9 +66,18 @@ class SerializableModel:
     def to_dictionary(self) -> Dict[str, Any]:
         """
         Convert the object to a dictionary. Same as .dict()
+
+        This is the app-facing serializer: numeric values are emitted as native
+        Python types (a ``float`` stays a ``float``; a ``Decimal`` becomes
+        ``int``/``float``), never DynamoDB's ``Decimal``.
         """
         # return Serialization.convert_object_to_dict(self)
-        return Serialization.to_dict(instance=self, serialize_fn=lambda x: x, include_none=True)
+        return Serialization.to_dict(
+            instance=self,
+            serialize_fn=lambda x: x,
+            include_none=True,
+            native_numbers=True,
+        )
 
     def to_wide_dictionary(self) -> Dict:
         """
@@ -574,12 +583,40 @@ class Serialization:
             ) from e
 
     @staticmethod
+    def _decimal_to_native(value: decimal.Decimal) -> int | float:
+        """Convert a ``Decimal`` to a native Python numeric type.
+
+        Whole values become ``int`` (e.g. ``Decimal('1')`` -> ``1``); fractional
+        values become ``float`` (e.g. ``Decimal('0.65')`` -> ``0.65``). Mirrors
+        ``DecimalConversionUtility.convert_decimals_to_native_types`` so a value
+        read from DynamoDB round-trips through serialization with a stable native
+        type.
+        """
+        if value == value.to_integral_value():
+            return int(value)
+        return float(value)
+
+    @staticmethod
     def to_dict(
         instance: SerializableModel | dict,
         serialize_fn,
         include_none: bool = True,
+        native_numbers: bool = False,
     ) -> Dict[str, Any]:
-        """To Dict / Dictionary"""
+        """To Dict / Dictionary.
+
+        Args:
+            instance: The model (or dict) to serialize.
+            serialize_fn: Per-value serialize hook (identity for resource dicts,
+                a ``TypeSerializer`` for client dicts).
+            include_none: Whether to include ``None`` values.
+            native_numbers: When ``True`` (app-facing ``to_dictionary()`` path),
+                numeric values are emitted as native Python types — a ``float``
+                stays a ``float`` and a ``Decimal`` becomes ``int``/``float``.
+                When ``False`` (default; DynamoDB resource/client write path),
+                a ``float`` is converted to ``Decimal`` for storage fidelity and
+                an existing ``Decimal`` passes through unchanged.
+        """
 
         if instance is None:
             return {}
@@ -600,14 +637,25 @@ class Serialization:
                         instance=value,
                         serialize_fn=lambda x: x,
                         include_none=include_none,
+                        native_numbers=native_numbers,
                     )
                 )
             if isinstance(value, dt.datetime):
                 return serialize_fn(value.isoformat())
             elif isinstance(value, float):
-                v = serialize_fn(decimal.Decimal(str(value)))
-                return v
+                # Native (app-facing) serialization keeps the float as-is;
+                # DynamoDB write serialization converts it to Decimal so the
+                # value is stored with full precision as a Number.
+                if native_numbers:
+                    return serialize_fn(value)
+                return serialize_fn(decimal.Decimal(str(value)))
             elif isinstance(value, decimal.Decimal):
+                # Native serialization converts a Decimal back to a native int/
+                # float (whole -> int, fractional -> float) so an API response
+                # never carries a Decimal (which json.dumps would stringify).
+                # DynamoDB write serialization passes the Decimal through.
+                if native_numbers:
+                    return serialize_fn(Serialization._decimal_to_native(value))
                 return serialize_fn(value)
             elif isinstance(value, uuid.UUID):
                 return serialize_fn(str(value))
@@ -630,6 +678,7 @@ class Serialization:
                             value,
                             serialize_fn,
                             include_none=include_none,
+                            native_numbers=native_numbers,
                         )
                     )
                 except AttributeError as e:
