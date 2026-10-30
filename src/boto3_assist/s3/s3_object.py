@@ -110,6 +110,7 @@ class S3Object:
         expiration: int = 3600,
         method_type: str = "POST",
         user_id: Optional[str] = None,
+        conditions: Optional[List[Any]] = None,
     ) -> Dict[str, Any]:
         """
         Create a signed URL for uploading a file to S3.
@@ -119,6 +120,12 @@ class S3Object:
         :param aws_profile: The name of the AWS profile to use.
         :param aws_region: The name of the AWS region to use.
         :param expiration: The number of seconds the URL is valid for.
+        :param conditions: Optional POST policy conditions passed straight through to
+            boto3 ``generate_presigned_post(Conditions=...)``, e.g.
+            ``[["content-length-range", 1, 10485760]]`` so S3 itself rejects bodies
+            outside that size range. Only supported for ``method_type="POST"``;
+            a ``ValueError`` is raised if given for PUT or GET. ``None`` (default)
+            produces exactly the same policy as before.
         :return: The signed URL.
         """
         start = DatetimeUtility.get_utc_now()
@@ -143,6 +150,11 @@ class S3Object:
         key = key_path
         method_type = method_type.upper()
 
+        if conditions is not None and method_type != "POST":
+            # Never ignore a requested constraint silently: PUT/GET presigned URLs
+            # have no policy document to carry it.
+            raise ValueError("conditions are only supported for POST presigned uploads")
+
         signed_url: str | Dict[str, Any]
         if method_type == "PUT":
             signed_url = self.connection.client.generate_presigned_url(
@@ -163,6 +175,7 @@ class S3Object:
             signed_url = self.connection.client.generate_presigned_post(
                 bucket_name,
                 key,
+                Conditions=conditions,
                 ExpiresIn=expiration,  # URL is valid for x seconds
             )
         elif method_type == "GET":
